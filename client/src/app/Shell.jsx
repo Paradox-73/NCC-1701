@@ -143,7 +143,7 @@ export default function Shell({ powered, aboard }) {
       <div className="redwash" aria-hidden="true" />
       <TopBar user={user} condition={condition} standDown={standDown} onLift={() => setOverlay('lift')} onSignOut={() => logout()} />
       <div className="railing" aria-hidden="true" />
-      <i key={lift} className="lift-light" aria-hidden="true" />
+      <div key={lift} className="lift-doors" aria-hidden="true"><i /><i /></div>
       <div key={location.pathname} className={`view ${location.pathname === '/bridge' ? 'view--bridge' : 'view--station'}`}>
         <Routes location={location}>
           <Route path="/bridge" element={<Bridge powered={powered} viewer={viewer} onViewer={nextView} onGo={go} user={user} />} />

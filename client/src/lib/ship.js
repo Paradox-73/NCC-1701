@@ -47,6 +47,7 @@ onEvent('log', (l) => {
   if (Number(l?.shipId ?? SHIP) !== SHIP) return;
   logLine(l, true);
   if (l.sound) play(CUE[l.sound] ?? l.sound);
+  else if (l.by === 'log') play('intercom'); // a scenario script line (runner.js sends by: 'log')
 });
 onEvent('scenario', (s) => { ship.scenario = s; if (s?.state === 'ended' || s?.state === 'stopped') ship.scene = null; });
 onEvent('fx', (f) => {

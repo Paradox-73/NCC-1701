@@ -4,13 +4,19 @@ import express from 'express';
 import helmet from 'helmet';
 import { Server } from 'socket.io';
 import parser from 'socket.io-msgpack-parser';
+import { Detector } from './anomaly/detector.js';
+import { makeAlerts } from './alerts.js';
 import { checkSecrets, loadConfig } from './config.js';
 import { connectDb, disconnectDb, ensureAlertsTtl, ensureTelemetry } from './db.js';
+import { setupIngest } from './ingest/namespace.js';
+import { Writer } from './ingest/writer.js';
+import { Broadcaster } from './live/broadcaster.js';
 import { makeLogger } from './logger.js';
 import { Metrics } from './metrics.js';
 import { authRoutes } from './routes/auth.js';
 import { errorHandler, limiter, requireAuth } from './middleware/index.js';
 import { seed } from './seed.js';
+import { SourceStates } from './state/sourceState.js';
 
 /** Builds the whole server; nothing listens or connects until start(). */
 export function createServer(overrides = {}) {
@@ -31,6 +37,30 @@ export function createServer(overrides = {}) {
   let telemetry = null;
   const getTelemetry = () => telemetry;
   const metrics = new Metrics();
+  const alerts = makeAlerts({ io, log, metrics });
+  const detector = new Detector({ onAlert: alerts.raise, debounceMs: config.debounceMs, linkLossMs: config.linkLossMs });
+  const states = new SourceStates();
+  const writer = new Writer({
+    getCollection: getTelemetry,
+    flushMs: config.flushMs,
+    flushSamples: config.flushSamples,
+    highWater: config.highWater,
+    log,
+  });
+  const broadcaster = new Broadcaster({ io, config, metrics, states, detector });
+  const ingest = setupIngest({ io, config, metrics, writer, states, detector, broadcaster, log });
+  const nsp = io.of('/live');
+  metrics.gauges = () => ({
+    sourcesConnected: ingest.sockets.size,
+    dashboards: nsp.sockets.size,
+    writerQueue: writer.depth,
+    lastFlushSize: writer.lastFlush.size,
+    lastFlushMs: Math.round(writer.lastFlush.ms * 10) / 10,
+    written: writer.written,
+    writeFailures: writer.failed,
+    backpressured: writer.backpressured,
+    backpressureMs: writer.backpressureTotalMs,
+  });
 
   app.use(helmet());
   app.use(cors({ origin: config.corsOrigin }));
@@ -45,24 +75,31 @@ export function createServer(overrides = {}) {
   let stopped = false;
 
   return {
-    config, app, io, httpServer, metrics, log, getTelemetry,
+    config, app, io, httpServer, metrics, writer, states, detector, ingest, alerts, log, getTelemetry,
     async start() {
       checkSecrets(config);
       await connectDb(config.mongoUri);
       telemetry = await ensureTelemetry(config.telemetryTtlSec, { timeseries: config.telemetryTimeseries, log });
       await ensureAlertsTtl(config.alertsTtlSec);
       await seed(log);
+      await alerts.closeStale();
+      await ingest.load();
       await new Promise((resolve) => httpServer.listen(config.port, resolve));
+      broadcaster.start();
+      timers.push(setInterval(() => detector.tick(), 250).unref(), setInterval(() => ingest.save(), 5000).unref());
       const port = httpServer.address().port;
       log.info({ port }, 'NCC-1701 server listening');
       return port;
     },
-    /** Stops timers and connections, then disconnects. */
+    /** Stops timers and connections, writes everything still queued, then disconnects. */
     async stop() {
       if (stopped) return;
       stopped = true;
       timers.forEach(clearInterval);
+      broadcaster.stop();
       await new Promise((resolve) => io.close(resolve));
+      await writer.stop();
+      await ingest.save();
       metrics.stop();
       await disconnectDb();
     },

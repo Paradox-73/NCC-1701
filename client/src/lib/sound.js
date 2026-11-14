@@ -35,6 +35,8 @@ function ensureContext() {
   master = ctx.createGain();
   master.gain.value = 0.25; // -12 dB
   master.connect(ctx.destination);
+  // headphones plugged in or paired after the page opened: follow the system's new default output, not the old one
+  navigator.mediaDevices?.addEventListener?.('devicechange', () => { ctx.setSinkId?.('').catch(() => {}); });
   for (const cue of CUES) load(`sfx/${cue}.mp3`).then((buf) => buf && buffers.set(cue, buf)); // else the synth stands in
   load('audio/theme.mp3').then((buf) => buf && startMusic(buf));
 }

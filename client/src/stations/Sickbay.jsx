@@ -4,7 +4,7 @@ import VirtualList from '../components/VirtualList.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import { useTick } from '../lib/hooks.js';
 import { getRing } from '../lib/store.js';
-import { DECKS, canSee, levelOf, linkOf, meta, monState, pad2, read, useCommand, useFeed, worst } from './parts/data.js';
+import { DECKS, canSee, levelOf, meta, monState, pad2, read, useCommand, useFeed, worst } from './parts/data.js';
 import { useHistory, useHistoryData } from './parts/history.js';
 import { C, Chip, ConsoleStrip, J, LevelChip, LitButton, Monitor, Num, Station, clamp, fmt, useCanvas } from './parts/ui.jsx';
 
@@ -22,6 +22,8 @@ const VITALS = [
 ];
 const CLS = [C.raised, C.dev1, C.warn, C.crit]; // under 1, 1-2, 2-3, over 3 standard deviations (DESIGN.md heatmap)
 const MEDICAL = 'Medical records: CMO and captain only.';
+// the overview lists ships only, so a crew hub counts as silent when its newest sample is over 5 s old
+const isStale = (hub) => { const r = getRing(hub, BIO[0]); return !!r?.len && Date.now() - r.lastTs > 5000; };
 const who = (n) => `Crew ${pad3(n)} · Deck ${pad2(DECK_OF(n))} · ${DECKS[DECK_OF(n) - 1]}`;
 
 /** Each crew member's own baseline per vital: the median of what the store holds (up to 600 samples), refreshed every 15 s. */
@@ -68,7 +70,7 @@ function CrewGrid({ hub, base, sel, onSel }) {
   const geo = useRef(null);
   const ref = useCanvas((ctx, w, h) => {
     ctx.clearRect(0, 0, w, h);
-    const stale = linkOf(hub) === 'lost';
+    const stale = isStale(hub);
     const L = w < 520 ? 26 : 112, cols = 38, gap = w < 520 ? 1.5 : 3;
     const cell = Math.max(4, Math.min(18, (w - L - 12) / cols - gap, (h - 16) / 12 - gap - 1));
     const rowH = cell + gap + 1, top = Math.max(8, (h - rowH * 12) / 2);
@@ -107,7 +109,7 @@ function CrewGrid({ hub, base, sel, onSel }) {
         onMouseMove={(e) => setTip(at(e))} onMouseLeave={() => setTip(null)} onClick={(e) => { const p = at(e); if (p) onSel(p.n); }}
         onKeyDown={(e) => { const k = { ArrowRight: 1, ArrowLeft: -1, ArrowDown: 38, ArrowUp: -38 }[e.key]; if (k) { e.preventDefault(); move(k); } }} />
       {tip && (() => {
-        const s = crewStatus(hub, base.current, tip.n, linkOf(hub) === 'lost');
+        const s = crewStatus(hub, base.current, tip.n, isStale(hub));
         return (
           <div className="chart-tip" style={{ display: 'block', left: Math.min(tip.x + 14, 9999), top: tip.y + 14, pointerEvents: 'none', minWidth: 190 }}>
             <div className="t">{who(tip.n)}</div>
@@ -179,7 +181,7 @@ export default function Sickbay({ shipId = 1 }) {
   const cmd = useCommand(shipId);
   const medical = canSee(user, BIO[0]);
   const stBio = monState(user, hub, BIO);
-  const stale = linkOf(hub) === 'lost';
+  const stale = isStale(hub);
   const all = medical ? BY_DECK.flat().map((n) => ({ n, ...crewStatus(hub, base.current, n, stale) })) : [];
   const watch = all.filter((c) => c.cls >= 2).sort((a, b) => b.cls - a.cls || b.z - a.z);
   const shown = sel ?? watch[0]?.n ?? null; // until someone is picked, the bed shows the crew member furthest from baseline

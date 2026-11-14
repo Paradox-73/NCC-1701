@@ -124,16 +124,16 @@ function Pads({ src }) {
 
 function DeckStack({ src, sel, onSel }) {
   return (
-    <div role="listbox" aria-label="Decks" className="st-fill-scroll" style={{ display: 'grid', gap: 3, padding: '10px 10px 10px 6px', height: '100%', alignContent: 'start' }}>
+    <div role="listbox" aria-label="Decks" className="st-fill-scroll" style={{ display: 'grid', gap: 1, padding: '6px 10px 6px 6px', height: '100%', alignContent: 'start' }}>
       {DECKS.map((name, i) => {
         const d = i + 1;
         const lv = worst(deckKeys(d).map((k) => levelOf(k, read(src, k))));
         const on = sel === d;
         return (
           <button key={d} type="button" role="option" aria-selected={on} onClick={() => onSel(d)} className="eng-deck" data-level={lv || undefined}
-            style={{ display: 'grid', gridTemplateColumns: 'minmax(70px, 34%) 26px minmax(0, 1fr) auto', alignItems: 'center', gap: 10, minHeight: 23, padding: '0 6px', border: 0, borderRadius: 4, cursor: 'pointer', textAlign: 'left', background: on ? C.raised : 'transparent', boxShadow: on ? `inset 0 0 0 1px ${C.accent}88` : 'none' }}>
+            style={{ display: 'grid', gridTemplateColumns: 'minmax(70px, 34%) 26px minmax(0, 1fr) auto', alignItems: 'center', gap: 10, minHeight: 18, padding: '0 6px', border: 0, borderRadius: 4, cursor: 'pointer', textAlign: 'left', background: on ? C.raised : 'transparent', boxShadow: on ? `inset 0 0 0 1px ${C.accent}88` : 'none' }}>
             <span style={{ display: 'flex', justifyContent: 'center' }} aria-hidden="true">
-              <i style={{ display: 'block', height: 15, width: `${PROFILE[i] * 100}%`, borderRadius: i < 6 ? 8 : 4, background: lv === 'crit' ? 'var(--color-crit-fill)' : lv === 'warn' ? C.warn : on ? '#2b4a66' : '#23282f', boxShadow: lv ? `0 0 8px ${lv === 'crit' ? '#ff4a5566' : '#ffd23f55'}` : 'inset 0 1px 0 #ffffff12' }} />
+              <i style={{ display: 'block', height: 12, width: `${PROFILE[i] * 100}%`, borderRadius: i < 6 ? 8 : 4, background: lv === 'crit' ? 'var(--color-crit-fill)' : lv === 'warn' ? C.warn : on ? '#2b4a66' : '#23282f', boxShadow: lv ? `0 0 8px ${lv === 'crit' ? '#ff4a5566' : '#ffd23f55'}` : 'inset 0 1px 0 #ffffff12' }} />
             </span>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: C.mute }}>{pad2(d)}</span>
             <span style={{ fontSize: 13, color: on ? C.ink : C.ink2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</span>
@@ -200,27 +200,29 @@ export default function Engineering({ shipId = 1 }) {
   );
 
   return (
-    <Station name="Engineering" division="ops" ship={src} rows="minmax(250px, 3fr) minmax(112px, 1.15fr) minmax(250px, 3.1fr)" desk={desk}>
+    <Station name="Engineering" division="ops" ship={src} rows="minmax(230px, 2.6fr) minmax(128px, 1.1fr) minmax(286px, 3.2fr)" desk={desk}>
         <Monitor title="Reaction chamber" meta="matter / antimatter" state={st('warp')} className="st-c4" style={{ '--mh': '300px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(110px, 44%) 1fr', height: '100%' }}>
             <div style={{ position: 'relative' }}><Chamber src={src} /></div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '12px 12px 12px 4px', minWidth: 0 }}>
-              <Readout src={src} k="reactionRate" label="Reaction rate" unit="% rated" />
-              <Readout src={src} k="chamberTemp" label="Chamber temperature" />
-              <dl className="st-kv">
-                <dt>Intermix deviation</dt><dd><Val src={src} k="intermixDev" dec={2} /></dd>
-                <dt>Warp field</dt><dd><Val src={src} k="warpField" dec={1} /></dd>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 12px 10px 4px', minWidth: 0 }}>
+              <Readout src={src} k="reactionRate" label="Reaction rate" unit="% rated" sparkH={22} />
+              <Readout src={src} k="chamberTemp" label="Chamber temperature" sparkH={22} />
+              <dl className="st-kv" style={{ gridTemplateColumns: 'auto 1fr auto 1fr', gap: '4px 8px' }}>
+                <dt>Intermix</dt><dd style={{ fontSize: 14 }}><Val src={src} k="intermixDev" dec={2} /></dd>
+                <dt>Field</dt><dd style={{ fontSize: 14 }}><Val src={src} k="warpField" dec={1} /></dd>
               </dl>
             </div>
           </div>
         </Monitor>
         <Monitor title="Dilithium" meta="crystal articulation" state={st('warp')} className="st-c4">
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px 16px 12px', gap: 6 }}>
-            <span className="st-label">Crystal efficiency</span>
-            <div style={{ maxWidth: 210, width: '100%', margin: '0 auto', flex: '1 1 auto', minHeight: 0 }}>
-              <ArcGauge v={read(src, 'dilithiumEff')} k="dilithiumEff" min={0} max={100} ticks={[0, 25, 50, 75, 100]} unit="%" dec={1} numClass="st-num" />
+          <div className="st-split" style={{ display: 'grid', gridTemplateColumns: 'minmax(150px, 1fr) minmax(0, 1fr)', gap: 14, alignItems: 'center', height: '100%', padding: '8px 14px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
+              <span className="st-label">Crystal efficiency</span>
+              <div style={{ width: '100%', maxWidth: 190 }}>
+                <ArcGauge v={read(src, 'dilithiumEff')} k="dilithiumEff" min={0} max={100} ticks={[0, 25, 50, 75, 100]} unit="%" dec={1} numClass="st-num" below />
+              </div>
             </div>
-            <Readout src={src} k="dilithiumTemp" label="Crystal chamber temperature" />
+            <Readout src={src} k="dilithiumTemp" label="Crystal chamber temperature" sparkH={40} />
           </div>
         </Monitor>
         <Monitor title="Nacelles" meta="warp and impulse" state={st('warp', 'impulse')} className="st-c4" style={{ '--mh': '280px' }}>
@@ -229,8 +231,8 @@ export default function Engineering({ shipId = 1 }) {
             <BarGauge v={read(src, 'nacelleStbd')} k="nacelleStbd" label="Stbd" min={0} max={130} h="auto" segs={20} dec={0} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
               <Readout src={src} k="nacelleDelta" label="Imbalance" size="st-sm" sparkH={20} />
-              <Readout src={src} k="impulseReactor" label="Impulse reactor" unit="% rated" size="st-sm" sparkH={20} />
-              <Readout src={src} k="impulseTemp" label="Impulse temperature" size="st-sm" sparkH={20} />
+              <Readout src={src} k="impulseReactor" label="Impulse reactor" unit="% rated" size="st-sm" spark={false} />
+              <Readout src={src} k="impulseTemp" label="Impulse temperature" size="st-sm" spark={false} />
             </div>
           </div>
         </Monitor>
@@ -240,9 +242,9 @@ export default function Engineering({ shipId = 1 }) {
         <Monitor title="Transporter" meta="room 1" state={st('transporter')} className="st-c4" style={{ '--mh': '160px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', height: '100%' }}>
             <div style={{ position: 'relative' }}><Pads src={src} /></div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '10px 12px', justifyContent: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '6px 12px', justifyContent: 'center' }}>
               <Chip level={xp === 3 ? 'crit' : xp ? 'info' : 'off'}>{XP[xp] ?? 'IDLE'}</Chip>
-              <dl className="st-kv" style={{ fontSize: 12 }}>
+              <dl className="st-kv" style={{ fontSize: 12, rowGap: 2 }}>
                 <dt>Energy</dt><dd style={{ fontSize: 13 }}><Val src={src} k="xpEnergy" dec={1} /></dd>
                 <dt>Lock</dt><dd style={{ fontSize: 13 }}><Val src={src} k="xpLock" dec={0} /></dd>
                 <dt>Pattern</dt><dd style={{ fontSize: 13 }}><Val src={src} k="xpPattern" dec={1} /></dd>

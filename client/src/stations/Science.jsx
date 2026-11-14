@@ -160,6 +160,7 @@ function Lifeforms({ src, showCo2 }) {
       const t1 = cd.xs[m - 1], i0 = cd.xs.findIndex((x) => x > t1 - 30);
       const dt = t1 - cd.xs[i0], dv = cd.ys[m - 1] - cd.ys[i0];
       if (dt > 5 && dv > 0 && cd.ys[m - 1] < 5000) co2Eta = (5000 - cd.ys[m - 1]) / (dv / dt);
+      if (co2Eta > 900) co2Eta = null; // a slow drift is not a forecast worth printing
     }
   }
   return (
@@ -171,7 +172,7 @@ function Lifeforms({ src, showCo2 }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '10px 14px 10px 4px' }}>
         <div className="st-ro"><span className="st-label">Aboard now</span><span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}><Num v={fit?.last ?? read(src, 'lifeforms')} dec={0} className="st-num st-sm" level={levelOf('lifeforms', fit?.last)} /><LevelChip level={levelOf('lifeforms', fit?.last)} /></span></div>
         <div className="st-ro"><span className="st-label">Doubling time</span><span className="st-num st-xs">{doubling ? `${fmt(doubling, 1)} s` : '—'}</span></div>
-        {showCo2 && <div className="st-ro"><span className="st-label">Deck 9 CO₂ passes 5,000 ppm</span><span className="st-num st-xs">{co2Eta ? `in ${fmt(co2Eta, 0)} s` : 'not rising'}</span></div>}
+        {showCo2 && <div className="st-ro"><span className="st-label">Deck 9 CO₂ passes 5,000 ppm</span><span className="st-num st-xs">{co2Eta ? `in ${fmt(co2Eta, 0)} s` : 'not on this trend'}</span></div>}
         <span className="st-label" style={{ marginTop: 'auto' }}>Dashed: straight-line fit to log(count) over the last minute.</span>
       </div>
     </div>

@@ -60,9 +60,9 @@ export function readAgo(src, key, ms) {
   return v;
 }
 
-/** 'live', 'lost' or 'unknown' from the server's 5 Hz overview (bit 0 = sending). */
+/** 'live', 'lost' or 'unknown' from the server's 5 Hz overview (bit 0 = sending). The overview lists ships only. */
 export function linkOf(src) {
-  if (!state.overviewPrimed) return 'unknown';
+  if (!state.overviewPrimed || !SHIPS.some((s) => s.id === src)) return 'unknown';
   return state.overview.get(src)?.flags & 1 ? 'live' : 'lost';
 }
 
@@ -131,8 +131,8 @@ export function useCommand(shipId) {
     setPending(type);
     const t0 = performance.now();
     try {
-      await api(`/api/ships/${shipId}/command`, { method: 'POST', body: { type, ...payload } });
-      setLast({ ok: true, text: `${say}, aye · ${Math.round(performance.now() - t0)} ms` });
+      const res = await api(`/api/ships/${shipId}/command`, { method: 'POST', body: { type, ...payload } });
+      setLast({ ok: true, text: `${res?.text ?? `${say}, aye`} · ${Math.round(performance.now() - t0)} ms` });
       return true;
     } catch (e) {
       setLast({ ok: false, text: `${say}: ${e.message}` });

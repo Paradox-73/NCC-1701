@@ -41,7 +41,7 @@ function SectorMap({ ids }) {
     const span = Math.max(300, x1 - x0, y1 - y0) * 1.3, mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
     const s = Math.min(w, h) / span;
     const P = (x, y) => [w / 2 + (x - mx) * s, h / 2 - (y - my) * s];
-    const step = span > 1200 ? 200 : span > 600 ? 100 : 50;
+    const step = [25, 50, 100, 200, 500, 1000, 2000].find((x) => x * s >= 64) ?? 5000; // labels at least 64 px apart
     ctx.lineWidth = 1; ctx.font = '400 10px "Space Mono", monospace'; ctx.fillStyle = C.mute;
     for (let gx = Math.ceil((mx - w / 2 / s) / step) * step; gx <= mx + w / 2 / s; gx += step) {
       const [px] = P(gx, 0); ctx.strokeStyle = '#ffffff0e'; ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, h); ctx.stroke();

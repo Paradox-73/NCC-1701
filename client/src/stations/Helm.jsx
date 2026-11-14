@@ -44,12 +44,12 @@ function NavPlot({ src, others }) {
     const r = ringOf(src, 'posX');
     ctx.strokeStyle = C.chart1; ctx.lineWidth = 2;
     let i0 = 0;
-    const n = eachSlot(r, 120000, () => {});
+    const n = eachSlot(r, 120000, () => {}), every = Math.max(1, Math.floor(n / 240));
     eachSlot(r, 120000, (i) => {
       const [px, py] = P(r.cols.posX[i], r.cols.posY[i]);
-      ctx.globalAlpha = 0.1 + 0.6 * (i0 / Math.max(1, n));
+      ctx.globalAlpha = 0.15 + 0.7 * ((i0 * every) / Math.max(1, n)); // older trail fades out
       if (i0++ === 0) { ctx.beginPath(); ctx.moveTo(px, py); } else { ctx.lineTo(px, py); ctx.stroke(); ctx.beginPath(); ctx.moveTo(px, py); }
-    }, Math.max(1, Math.floor(n / 240)));
+    }, every);
     ctx.globalAlpha = 1;
     // course: where the ship will be in one minute at this speed (DOMAIN.md: speed / 400 su a second)
     const ahead = Math.max(12, (sp / 400) * 60), rad = (hd * Math.PI) / 180;

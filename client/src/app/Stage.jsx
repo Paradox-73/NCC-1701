@@ -68,37 +68,42 @@ function useIntro() {
   return { audio, start, fadeOut };
 }
 
-/** Engage: the click that unlocks sound. Then the narration types in step with the audio until the theme starts. */
+/** Engage: the click that unlocks sound. Then the narration types in step with the audio, and the login comes on the beat drop. */
 function ColdOpen({ intro, onStart, onDone }) {
-  const [t, setT] = useState(null); // ms into the intro; null before Engage
+  const [shown, setShown] = useState(null); // narration lines on screen; null before Engage
   const lines = useRef(LINES.map((l) => (typeof l === 'function' ? l() : l))).current;
   const skip = useCallback(() => { intro.fadeOut(900); onDone(); }, [intro, onDone]);
 
   const alive = useRef(true);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []); // set again on remount (StrictMode runs effects twice)
   const engage = async () => {
-    const t0 = performance.now();
-    setT(0);
+    setShown(0);
     const a = await intro.start();
     if (!alive.current) return undefined; // skipped while the audio was starting
     onStart();
-    // the audio's own clock keeps the lines on the narration; the wall clock covers a refused or stalled play
-    const clock = () => Math.max(a && !a.paused && a.currentTime > 0.05 ? a.currentTime * 1000 : 0, performance.now() - t0 - 250);
-    const id = setInterval(() => setT((prev) => Math.max(prev ?? 0, clock())), 100);
-    return () => clearInterval(id);
+    const t0 = performance.now();
+    // The audio's own clock times the lines and the drop; the wall clock takes over with no audio, or one stalled
+    // over a second. Read every frame, so the login lands within a frame of the drop.
+    const clock = () => Math.max(a ? a.currentTime * 1000 : 0, performance.now() - t0 - (a ? 1000 : 0));
+    let id = requestAnimationFrame(function tick() {
+      const ms = clock();
+      if (ms >= THEME_AT) { onDone(); return; }
+      setShown(NARRATION_AT.filter((at) => ms >= at).length);
+      id = requestAnimationFrame(tick);
+    });
+    return () => cancelAnimationFrame(id);
   };
   const stop = useRef(null);
   useEffect(() => () => stop.current?.(), []);
-  useEffect(() => { if (t != null && t >= THEME_AT) { stop.current?.(); onDone(); } }, [t, onDone]);
   useEffect(() => {
-    if (t == null) return undefined;
+    if (shown == null) return undefined;
     const onKey = (e) => { if (!['Shift', 'Control', 'Alt', 'Meta', 'Tab', 'm', 'M'].includes(e.key)) skip(); };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [t == null, skip]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [shown == null, skip]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onEngage = async () => { stop.current = await engage(); };
-  if (t == null) {
+  if (shown == null) {
     return (
       <div className="gate">
         <div className="gate__panel">
@@ -120,7 +125,7 @@ function ColdOpen({ intro, onStart, onDone }) {
   return (
     <div className="coldopen" onPointerDown={skip}>
       <div className="narration" aria-live="polite">
-        {lines.map((l, i) => <Typed key={i} text={l} on={t >= NARRATION_AT[i]} />)}
+        {lines.map((l, i) => <Typed key={i} text={l} on={i < shown} />)}
       </div>
       <div className="coldopen__bar" onPointerDown={(e) => e.stopPropagation()}>
         <SoundToggle />

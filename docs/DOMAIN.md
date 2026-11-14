@@ -37,7 +37,7 @@ The engine today has one channel list for every source, one rate per source and 
 
 1. **Source kinds.** `KINDS = { ship: { channels, groups }, crew: { channels, groups } }` and `SOURCES[i].kind`. `SAMPLE_LEN`, `CHANNEL_INDEX`, `GROUP_CHANNELS`, `packSample`, `unpackSample` and `checkPacked` look the kind up by source id. The crew channel list is generated in code (section 4).
 2. **Roles with ships and commands.** Each role gets `ships` (source ids it may see) and `commands` (command types it may send), as in section 6.
-3. **Wider overview rows.** `[sourceId, flags, condition, warpFactor×100, weakestShield×10, posX×10, posY×10, heading×10]`, so the bridge tiles and the fleet map need no telemetry subscription. 5 Hz, volatile, as now.
+3. **Wider overview rows.** `[sourceId, flags, condition, warpFactor×100, weakestShield×10, posX×10, posY×10, heading×10]`, with condition 0 normal, 1 yellow, 2 red, so the bridge tiles and the fleet map need no telemetry subscription. 5 Hz, volatile, as now.
 4. **Ship state on the server.** Condition per ship, the command route, the scenario runner and a room `ship:<id>` for condition changes, log lines, scenario progress and command acknowledgements (sections 6 to 8).
 5. **Ingest security alerts.** Alerts raised from the ingest counters: refused handshakes, invalid samples and throttled samples per second (section 5).
 6. **Stored rate per kind.** `storeEvery` in each kind: the crew hub stores one sample in 5 when hosted; live frames stay at 1 Hz.

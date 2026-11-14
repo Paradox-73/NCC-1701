@@ -1,0 +1,27 @@
+# Deploy main: the client to Vercel, the server to Render. Each step runs only once its secrets are set
+# (repo Settings → Secrets and variables → Actions): VERCEL_TOKEN, VERCEL_ORG_ID, VERCEL_PROJECT_ID, RENDER_DEPLOY_HOOK.
+name: deploy
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Server (Render deploy hook)
+        if: env.RENDER_DEPLOY_HOOK != ''
+        run: curl -fsS -X POST "$RENDER_DEPLOY_HOOK" > /dev/null
+      - name: Client (Vercel, built on Vercel from vercel.json)
+        if: env.VERCEL_TOKEN != ''
+        run: npx --yes vercel@39 deploy --prod --yes --token "$VERCEL_TOKEN"

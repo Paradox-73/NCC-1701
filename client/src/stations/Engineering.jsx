@@ -4,7 +4,8 @@ import { useAuth } from '../lib/auth.jsx';
 import { useTick } from '../lib/hooks.js';
 import { DECK_NAMES, levelOf, meta, monState, pad2, read, useCommand, useFeed, worst } from './parts/data.js';
 import { useHistory, useHistoryData } from './parts/history.js';
-import { ArcGauge, J, Station, BarGauge, C, Chip, ConsoleStrip, HBar, LevelChip, LitButton, Monitor, Num, Readout, Val, calmRange, clamp, decOf, fmt, useCanvas } from './parts/ui.jsx';
+import { ArcGauge, BarGauge, Chip, ConsoleStrip, HBar, J, LevelChip, LitButton, Monitor, Num, Station } from '../ui/index.js';
+import { C, Readout, Val, calmRange, clamp, decOf, fmt, useCanvas } from './parts/ui.jsx';
 
 // the hull profile each deck band draws, saucer then engineering hull
 const PROFILE = [0.2, 0.52, 0.84, 1, 0.94, 0.72, 0.18, 0.36, 0.58, 0.62, 0.58, 0.44];
@@ -80,8 +81,8 @@ function PowerBar({ src }) {
         <div style={{ width: 150 }}><Readout src={src} k="powerTotal" label="Total output" unit="% rated" sparkH={22} /></div>
         <div style={{ width: 130 }} className="st-ro">
           <span className="st-label">Battery</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Num v={read(src, 'battery')} dec={0} className="st-num st-sm" level={levelOf('battery', read(src, 'battery'))} /><span className="st-unit">%</span><LevelChip level={levelOf('battery', read(src, 'battery'))} /></span>
-          <HBar v={read(src, 'battery')} k="battery" label="Emergency battery charge" />
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Num value={read(src, 'battery')} dec={0} className="st-num st-sm" level={levelOf('battery', read(src, 'battery'))} /><span className="st-unit">%</span><LevelChip level={levelOf('battery', read(src, 'battery'))} /></span>
+          <HBar value={read(src, 'battery')} k="battery" label="Emergency battery charge" />
         </div>
       </div>
     </div>
@@ -133,7 +134,7 @@ function DeckStack({ src, sel, onSel }) {
           <button key={d} type="button" role="option" aria-selected={on} onClick={() => onSel(d)} className="eng-deck" data-level={lv || undefined}
             style={{ display: 'grid', gridTemplateColumns: 'minmax(70px, 34%) 26px minmax(0, 1fr) auto', alignItems: 'center', gap: 10, minHeight: 18, padding: '0 6px', border: 0, borderRadius: 4, cursor: 'pointer', textAlign: 'left', background: on ? C.raised : 'transparent', boxShadow: on ? `inset 0 0 0 1px ${C.accent}88` : 'none' }}>
             <span style={{ display: 'flex', justifyContent: 'center' }} aria-hidden="true">
-              <i style={{ display: 'block', height: 12, width: `${PROFILE[i] * 100}%`, borderRadius: i < 6 ? 8 : 4, background: lv === 'crit' ? 'var(--color-crit-fill)' : lv === 'warn' ? C.warn : on ? '#2b4a66' : '#23282f', boxShadow: lv ? `0 0 8px ${lv === 'crit' ? '#ff4a5566' : '#ffd23f55'}` : 'inset 0 1px 0 #ffffff12' }} />
+              <i style={{ display: 'block', height: 12, width: `${PROFILE[i] * 100}%`, borderRadius: i < 6 ? 8 : 4, background: lv === 'crit' ? 'var(--crit-fill)' : lv === 'warn' ? C.warn : on ? '#2b4a66' : '#23282f', boxShadow: lv ? `0 0 8px ${lv === 'crit' ? '#ff4a5566' : '#ffd23f55'}` : 'inset 0 1px 0 #ffffff12' }} />
             </span>
             <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: C.mute }}>{pad2(d)}</span>
             <span style={{ fontSize: 13, color: on ? C.ink : C.ink2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{name}</span>
@@ -158,7 +159,7 @@ function DeckDetail({ src, deck }) {
         {DECK_FIELDS.map(([f, label]) => (
           <button key={f} type="button" onClick={() => setField(f)} aria-pressed={field === f}
             style={{ border: 0, borderRadius: 6, padding: '8px 10px 6px', textAlign: 'left', cursor: 'pointer', background: field === f ? C.raised : '#ffffff06', boxShadow: field === f ? `inset 0 0 0 1px ${C.accent}88` : 'none' }}>
-            <Readout src={src} k={`${f}_${pad2(deck)}`} label={label} size="st-sm" sparkH={20} />
+            <Readout src={src} k={`${f}_${pad2(deck)}`} label={label} size="sm" sparkH={20} />
           </button>
         ))}
       </div>
@@ -183,19 +184,19 @@ export default function Engineering({ shipId = 1 }) {
   const cmd = useCommand(shipId);
   const st = (...g) => monState(user, src, g);
   const xp = Math.round(read(src, 'xpState') ?? 0);
-  const preset = (p) => cmd.send('engineering.allocate', { preset: p }, `${p[0].toUpperCase()}${p.slice(1)} power allocation`);
+  const preset = (p) => cmd.send('engineering.allocate', { preset: p });
   const presetOn = (p) => PRESETS[p].every((x, i) => Math.abs((read(src, ALLOC[i][0]) ?? -99) - x) < 2);
   const sys = (keys) => worst(keys.map((k) => levelOf(k, read(src, k))));
   const decksLv = worst(Array.from({ length: 12 }, (_, i) => sys(deckKeys(i + 1))));
   const warpLv = sys(['reactionRate', 'intermixDev', 'dilithiumEff', 'dilithiumTemp', 'chamberTemp', 'nacelleDelta', 'warpField']);
 
   const desk = (
-    <ConsoleStrip seed={11} cmd={cmd} jewels={[J('WARP', warpLv, st('warp')), J('IMPULSE', sys(['impulseReactor', 'impulseTemp']), st('impulse')), J('POWER', sys(['powerTotal', 'battery']), st('power')), J('DECKS', decksLv, st('lifesupport')), J('TRANSPORT', xp === 3 ? 'crit' : sys(['xpEnergy', 'xpLock', 'xpPattern']), st('transporter'))]}>
+    <ConsoleStrip seed={11} jewels={[J('WARP', warpLv, st('warp')), J('IMPULSE', sys(['impulseReactor', 'impulseTemp']), st('impulse')), J('POWER', sys(['powerTotal', 'battery']), st('power')), J('DECKS', decksLv, st('lifesupport')), J('TRANSPORT', xp === 3 ? 'crit' : sys(['xpEnergy', 'xpLock', 'xpPattern']), st('transporter'))]}>
       <LitButton color="amber" label="Cruise" onClick={() => preset('cruise')} lit={presetOn('cruise')} {...cmd.bind('engineering.allocate')} />
       <LitButton color="red" label="Combat" onClick={() => preset('combat')} lit={presetOn('combat')} {...cmd.bind('engineering.allocate')} />
       <LitButton color="yellow" label="Emergency power" onClick={() => preset('emergency')} lit={presetOn('emergency')} {...cmd.bind('engineering.allocate')} />
-      <LitButton color="green" label="Energize" onClick={() => cmd.send('transporter.energize', {}, 'Energize')} lit={xp === 1 || xp === 2} {...cmd.bind('transporter.energize')} />
-      <LitButton color="red" label="Cold restart" onClick={() => cmd.send('engineering.coldRestart', {}, 'Cold restart')} {...cmd.bind('engineering.coldRestart')} />
+      <LitButton color="green" label="Energize" onClick={() => cmd.send('transporter.energize')} lit={xp === 1 || xp === 2} {...cmd.bind('transporter.energize')} />
+      <LitButton color="red" label="Cold restart" onClick={() => cmd.send('engineering.coldRestart')} {...cmd.bind('engineering.coldRestart')} />
     </ConsoleStrip>
   );
 
@@ -219,7 +220,7 @@ export default function Engineering({ shipId = 1 }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
               <span className="st-label">Crystal efficiency</span>
               <div style={{ width: '100%', maxWidth: 190 }}>
-                <ArcGauge v={read(src, 'dilithiumEff')} k="dilithiumEff" min={0} max={100} ticks={[0, 25, 50, 75, 100]} unit="%" dec={1} numClass="st-num" below />
+                <ArcGauge value={read(src, 'dilithiumEff')} k="dilithiumEff" min={0} max={100} ticks={[0, 25, 50, 75, 100]} unit="%" dec={1} numClass="st-num" below />
               </div>
             </div>
             <Readout src={src} k="dilithiumTemp" label="Crystal chamber temperature" sparkH={40} />
@@ -227,12 +228,12 @@ export default function Engineering({ shipId = 1 }) {
         </Monitor>
         <Monitor title="Nacelles" meta="warp and impulse" state={st('warp', 'impulse')} className="st-c4" style={{ '--mh': '280px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'auto auto minmax(0, 1fr)', gap: 18, height: '100%', padding: 14 }}>
-            <BarGauge v={read(src, 'nacellePort')} k="nacellePort" label="Port" min={0} max={130} h="auto" segs={20} dec={0} />
-            <BarGauge v={read(src, 'nacelleStbd')} k="nacelleStbd" label="Stbd" min={0} max={130} h="auto" segs={20} dec={0} />
+            <BarGauge value={read(src, 'nacellePort')} k="nacellePort" label="Port" min={0} max={130} h="auto" segs={20} dec={0} />
+            <BarGauge value={read(src, 'nacelleStbd')} k="nacelleStbd" label="Stbd" min={0} max={130} h="auto" segs={20} dec={0} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
-              <Readout src={src} k="nacelleDelta" label="Imbalance" size="st-sm" sparkH={20} />
-              <Readout src={src} k="impulseReactor" label="Impulse reactor" unit="% rated" size="st-sm" spark={false} />
-              <Readout src={src} k="impulseTemp" label="Impulse temperature" size="st-sm" spark={false} />
+              <Readout src={src} k="nacelleDelta" label="Imbalance" size="sm" sparkH={20} />
+              <Readout src={src} k="impulseReactor" label="Impulse reactor" unit="% rated" size="sm" spark={false} />
+              <Readout src={src} k="impulseTemp" label="Impulse temperature" size="sm" spark={false} />
             </div>
           </div>
         </Monitor>

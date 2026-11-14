@@ -6,6 +6,7 @@ export const THEME = {
   panel: '#14161a',
   raised: '#1e2127',
   bulkhead: '#56625e',
+  line: '#ffffff14',
   railing: '#e0522a',
   ink: '#f1f3f5',
   ink2: '#b3b9c2',
@@ -14,10 +15,12 @@ export const THEME = {
   ready: '#3edb6a',
   warn: '#ffd23f',
   crit: '#ff4a55',
+  critInk: '#ff7a82',
   redAlert: '#ff2a3d',
   chart1: '#7cc4ff',
   chart2: '#f4efe2',
   scope: '#58c4ff',
+  dev1: '#2f6fae', // crew grid, 1 to 2 standard deviations from baseline
   lit: { red: '#ff3b30', amber: '#ff9a1f', yellow: '#ffd83d', green: '#3edb6a', blue: '#3fa3ff', white: '#f4efe2' },
   division: { command: '#edbe4f', science: '#7ab4e8', ops: '#e8503a', fleet: '#f4efe2' },
 };

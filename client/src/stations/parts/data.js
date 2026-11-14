@@ -1,10 +1,10 @@
 // Station data access: channel metadata and limits from the registry, latest values straight from the store's ring
 // buffers, room subscriptions with a history backfill, and the command route. Every lookup tolerates a channel or group
 // the registry does not have yet: it reads as "no data", never as an error.
-import { useEffect, useState } from 'react';
-import { CHANNEL_BY_KEY, GROUP_CHANNELS, RULES, SOURCES, roleMayCommand } from '@ncc/shared/schema.js';
-import { api } from '../../lib/api.js';
+import { useEffect } from 'react';
+import { CHANNEL_BY_KEY, GROUP_CHANNELS, SOURCES } from '@ncc/shared/schema.js';
 import { useAuth } from '../../lib/auth.jsx';
+import { mayCommand, refuseCommand, sendCommand, usePending } from '../../lib/commands.js';
 import { useSubscription } from '../../lib/hooks.js';
 import { backfill, getRing, state } from '../../lib/store.js';
 
@@ -17,19 +17,8 @@ export const SHIPS = SOURCES.filter((s) => (s.kind ? s.kind === 'ship' : s.id <=
 export const shipName = (id) => SOURCES.find((s) => s.id === id)?.name ?? `Source ${id}`;
 export const shipCode = (id) => SOURCES.find((s) => s.id === id)?.code ?? `#${id}`;
 
-// warn and critical limits per channel and side, from RULES.thresholds
-const LIM = {};
-for (const r of RULES?.thresholds ?? []) (LIM[r.channel] ??= {})[r.dir] = r;
-export const limitsOf = (key) => LIM[key];
-
-/** 'crit', 'warn' or null for a reading against its threshold rules. */
-export function levelOf(key, v) {
-  const l = LIM[key];
-  if (!l || v == null || Number.isNaN(v)) return null;
-  if ((l.high && v > l.high.critical) || (l.low && v < l.low.critical)) return 'crit';
-  if ((l.high && v > l.high.warn) || (l.low && v < l.low.warn)) return 'warn';
-  return null;
-}
+/** 'crit', 'warn' or null for a reading against its threshold rules; limitsOf gives the rules by side. */
+export { alarmOf as levelOf, limitsOf } from '../../lib/limits.js';
 export const worst = (levels) => (levels.includes('crit') ? 'crit' : levels.includes('warn') ? 'warn' : null);
 export const WORD = { crit: 'RED', warn: 'YELLOW' };
 
@@ -110,33 +99,21 @@ export const pad2 = (n) => String(n).padStart(2, '0');
 export { DECK_NAMES, stardate } from '@ncc/shared/schema.js';
 
 /**
- * Commands to a ship (DOMAIN.md section 7). `send` posts it; the button that sent it blinks until the server answers,
- * and `last` holds the answer for the console's status line ("Warp factor 7, aye · 38 ms").
+ * Commands to a ship (DOMAIN.md section 7), through the shell's command path: the button bound to a type blinks while
+ * any order of that type is in flight, and the shell's feedback line shows the server's answer or the refusal.
  */
 export function useCommand(shipId) {
   const { user } = useAuth();
-  const [pending, setPending] = useState(null);
-  const [last, setLast] = useState(null);
-  const can = (type) => roleMayCommand(user?.role, type);
+  const pending = usePending();
+  const can = (type) => mayCommand(user, type);
   /** Resolves true when the server acknowledged the command. */
-  const send = async (type, payload = {}, say = type) => {
-    if (!can(type)) { setLast({ ok: false, text: `${say}: not your station's order` }); return false; }
-    setPending(type);
-    const t0 = performance.now();
-    try {
-      const res = await api(`/api/ships/${shipId}/command`, { method: 'POST', body: { type, ...payload } });
-      setLast({ ok: true, text: `${res?.text ?? `${say}, aye`} · ${Math.round(performance.now() - t0)} ms` });
-      return true;
-    } catch (e) {
-      setLast({ ok: false, text: `${say}: ${e.message}` });
-      return false;
-    } finally {
-      setPending(null);
-    }
+  const send = async (type, payload = {}) => {
+    if (!can(type)) { refuseCommand(type, payload, 'not an order this role may give'); return false; }
+    return (await sendCommand(type, payload, shipId)).ok;
   };
   /** Props for the LitButton that sends `type`: blinks while in flight, disabled when the role may not send it. */
-  const bind = (type) => ({ pending: pending === type, disabled: !can(type), title: can(type) ? undefined : 'Not an order this role may give' });
-  return { send, pending, last, can, bind };
+  const bind = (type) => ({ pending: pending(type), disabled: !can(type), title: can(type) ? undefined : 'Not an order this role may give' });
+  return { send, pending, can, bind };
 }
 
 /** Alerts the role can see for one source, newest first (the store keeps them newest first). */

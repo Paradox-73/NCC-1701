@@ -5,7 +5,8 @@ import { useAuth } from '../lib/auth.jsx';
 import { useTick } from '../lib/hooks.js';
 import { ackAlert, state } from '../lib/store.js';
 import { isOpen, meta, shipCode, stardate } from './parts/data.js';
-import { C, Chip, Monitor, Station, fmt, useKeys } from './parts/ui.jsx';
+import { Chip, DivisionPill, Monitor, Station, useKeys } from '../ui/index.js';
+import { C, fmt } from './parts/ui.jsx';
 
 const SEV = { critical: ['crit', 'RED'], warn: ['warn', 'YELLOW'], info: ['info', 'INFO'] };
 const FILTERS = [['open', 'Open'], ['red', 'Red'], ['yellow', 'Yellow'], ['all', 'All']];
@@ -89,7 +90,7 @@ export default function Alerts({ open, onClose, shipId }) {
       <div className="st-drawer-bg" onClick={onClose} aria-hidden="true" />
       <aside className="st-drawer" role="dialog" aria-modal="true" aria-label="Alerts">
         <header>
-          <span className="st-pill" data-div="fleet" aria-hidden="true" />
+          <DivisionPill division="fleet" />
           <h2>ALERTS</h2>
           <button ref={closeRef} type="button" className="st-x" onClick={onClose} aria-label="Close alerts">
             <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2 L12 12 M12 2 L2 12" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>

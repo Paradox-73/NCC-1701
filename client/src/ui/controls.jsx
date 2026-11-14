@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { play } from '../lib/sound.js';
 
 export const cx = (...a) => a.filter(Boolean).join(' ');
@@ -24,17 +24,25 @@ export function LitButton({ color = 'blue', label, keyCap, lit, pressed, pending
   return (
     <button type="button" className={cx('lit', `lit--${color}`, size && `lit--${size}`, lit && 'is-lit', pending && 'is-pending', className)}
       aria-pressed={pressed} aria-busy={pending || undefined} onClick={press} {...rest}>
-      <span className="lit__flash" ref={flash} aria-hidden="true" />
+      <span className="lit__flash" aria-hidden="true" />
       {label ?? children}
       {keyCap && <KeyCap>{keyCap}</KeyCap>}
     </button>
   );
 }
 
+export const STATUS_WORD = { ok: 'nominal', info: 'information', warn: 'yellow alert', crit: 'red alert', off: 'no signal' };
+
 /** A small round lamp. status: ok | info | warn | crit | off. Always labelled, by text beside it or by `label`. */
 export const Jewel = ({ status = 'ok', label, size }) => (
   <i className={cx('jewel', size === 'lg' && 'jewel--lg')} data-status={status} role={label ? 'img' : undefined} aria-label={label} aria-hidden={label ? undefined : true} />
 );
+
+/** A status word on a small plate: YELLOW, LOADED, LINK. level: warn | crit | ok | info | off. */
+export const Chip = ({ level, children }) => <span className="chip" data-level={level}>{children}</span>;
+
+/** The word that always goes with a status colour: YELLOW or RED (or the words given). Nothing while nominal. */
+export const LevelChip = ({ level, warn = 'YELLOW', crit = 'RED' }) => (level === 'warn' || level === 'crit' ? <Chip level={level}>{level === 'crit' ? crit : warn}</Chip> : null);
 
 // Small seeded generator, so a grid keeps its pattern across renders and reloads.
 const rng = (seed) => () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
@@ -74,11 +82,4 @@ export function useFlicker(value) {
     el.classList.remove('is-flicker'); void el.offsetWidth; el.classList.add('is-flicker');
   }, [value]);
   return ref;
-}
-
-/** True once, for a short while after mount: lets a screen play its power-up animation. */
-export function usePowerOn(ms = 1400) {
-  const [on, setOn] = useState(true);
-  useEffect(() => { const t = setTimeout(() => setOn(false), ms); return () => clearTimeout(t); }, [ms]);
-  return on;
 }

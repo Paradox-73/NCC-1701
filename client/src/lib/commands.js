@@ -38,7 +38,18 @@ export async function sendCommand(type, payload = {}, shipId = 1) {
   return result;
 }
 
+/** Reports an order refused before it was sent (the role may not give it), as a failed result. */
+export function refuseCommand(type, payload, error) {
+  const result = { type, payload, ok: false, error, at: Date.now() };
+  resultListeners.forEach((fn) => fn(result));
+}
+
 const subscribe = (fn) => { listeners.add(fn); return () => listeners.delete(fn); };
+/** Re-renders while orders are in flight; returns a test for one command type. */
+export function usePending() {
+  useSyncExternalStore(subscribe, () => version);
+  return (type) => inflight.has(type);
+}
 /** { pending, send } for one command type: bind `pending` to a LitButton so it blinks until the ack. */
 export function useCommand(type, shipId = 1) {
   useSyncExternalStore(subscribe, () => version);

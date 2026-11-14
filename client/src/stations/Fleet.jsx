@@ -5,7 +5,8 @@ import { useAuth } from '../lib/auth.jsx';
 import { useSubscription, useTick } from '../lib/hooks.js';
 import { ackAlert, state } from '../lib/store.js';
 import { SHIPS, alertFlagOf, conditionOf, isOpen, levelOf, linkOf, posOf, read, ringOf, shipCode, shipName, stardate, useCommand } from './parts/data.js';
-import { C, Chip, ConsoleStrip, J, LevelChip, LitButton, Monitor, Num, Station, clamp, fmt, useCanvas } from './parts/ui.jsx';
+import { Chip, ConsoleStrip, J, LevelChip, LitButton, Monitor, Num, Station } from '../ui/index.js';
+import { C, clamp, fmt, useCanvas } from './parts/ui.jsx';
 
 const COND = { red: ['crit', 'RED ALERT'], yellow: ['warn', 'YELLOW ALERT'], normal: ['ok', 'NORMAL'] };
 const ringColor = (id) => {
@@ -103,17 +104,17 @@ function ShipCard({ id, onOpen }) {
   const body = (
     <>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-        <i className="st-pill" style={{ '--pill': ringColor(id) }} aria-hidden="true" />
+        <i className="pill" style={{ '--div': ringColor(id) }} aria-hidden="true" />
         <span style={{ font: '700 13px var(--font-mono)' }}>{shipCode(id)}</span>
         <span style={{ font: '400 10px var(--font-display)', letterSpacing: '0.08em', color: C.ink2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{shipName(id).toUpperCase()}</span>
         <span style={{ marginLeft: 'auto' }}><Chip level={link === 'live' ? 'ok' : link === 'lost' ? 'crit' : 'off'}>{link === 'live' ? 'LINK' : link === 'lost' ? 'LOST' : '—'}</Chip></span>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}><Chip level={lv === 'ok' ? 'ok' : lv}>{cond ? `CONDITION ${word}` : word}</Chip></div>
       <dl className="st-kv" style={{ gridTemplateColumns: 'auto 1fr auto 1fr', gap: '4px 10px' }}>
-        <dt>Warp</dt><dd style={{ fontSize: 14 }}><Num v={posOf(id)?.warp ?? read(id, 'warpFactor')} dec={1} className="" /></dd>
-        <dt>Weakest shield</dt><dd style={{ fontSize: 14 }}><Num v={sh} dec={0} className="" level={shLv} /><span className="st-unit">%</span>{shLv && <> <LevelChip level={shLv} /></>}</dd>
+        <dt>Warp</dt><dd style={{ fontSize: 14 }}><Num value={posOf(id)?.warp ?? read(id, 'warpFactor')} dec={1} className="" /></dd>
+        <dt>Weakest shield</dt><dd style={{ fontSize: 14 }}><Num value={sh} dec={0} className="" level={shLv} /><span className="st-unit">%</span>{shLv && <> <LevelChip level={shLv} /></>}</dd>
         <dt>Open alerts</dt><dd style={{ fontSize: 14 }}>{open}</dd>
-        <dt>Crew</dt><dd style={{ fontSize: 14 }}><Num v={read(id, 'crewAboard')} className="" /><span className="st-unit">aboard</span></dd>
+        <dt>Crew</dt><dd style={{ fontSize: 14 }}><Num value={read(id, 'crewAboard')} className="" /><span className="st-unit">aboard</span></dd>
       </dl>
     </>
   );
@@ -163,7 +164,7 @@ function System() {
     <div className="st-split" style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 0.9fr) minmax(0, 1.4fr)', height: '100%' }}>
       <div style={{ padding: '10px 14px', borderRight: '1px solid #ffffff0d', minWidth: 0 }}>
         <dl className="st-kv" style={{ gap: '5px 12px' }}>
-          {rows.map(([l, v]) => <Fragment key={l}><dt>{l}</dt><dd style={{ fontSize: 14 }}><Num v={v} dec={0} className="" /></dd></Fragment>)}
+          {rows.map(([l, v]) => <Fragment key={l}><dt>{l}</dt><dd style={{ fontSize: 14 }}><Num value={v} dec={0} className="" /></dd></Fragment>)}
         </dl>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', padding: 10, minWidth: 0, minHeight: 160 }}>
@@ -218,7 +219,7 @@ export default function Fleet({ onOpenShip }) {
   const admin = !!user?.admin;
   const lost = ids.filter((id) => linkOf(id) === 'lost').length;
   const desk = (
-    <ConsoleStrip seed={59} cmd={cmd} jewels={ids.map((id) => J(shipCode(id), linkOf(id) === 'lost' ? 'crit' : alertFlagOf(id), linkOf(id) === 'unknown' ? 'off' : 'live'))}>
+    <ConsoleStrip seed={59} jewels={ids.map((id) => J(shipCode(id), linkOf(id) === 'lost' ? 'crit' : alertFlagOf(id), linkOf(id) === 'unknown' ? 'off' : 'live'))}>
       <LitButton color="red" label="Stop scenario" onClick={() => cmd.send('scenario.stop', {}, 'Stop the scenario').then((ok) => ok && setRunning(null))} {...cmd.bind('scenario.stop')} />
       <LitButton color="white" label="Ack all yellow" onClick={() => state.alerts.filter((a) => isOpen(a) && a.severity === 'warn').slice(0, 50).forEach((a) => ackAlert(a.id))} disabled={!user?.canAck} />
     </ConsoleStrip>
@@ -237,11 +238,11 @@ export default function Fleet({ onOpenShip }) {
       <Monitor title="Fleet log" meta="alerts from every ship" className="st-c5" style={{ '--mh': '300px' }}>
         <FleetLog canAck={!!user?.canAck} />
       </Monitor>
-      <Monitor title="System" meta="server · 1 Hz" state={admin ? 'live' : 'restricted'} note="Server metrics: Starfleet Command only." className="st-c7" style={{ '--mh': '320px' }}>
+      <Monitor title="System" meta="server · 1 Hz" state={admin ? 'live' : 'restricted'} restricted="Server metrics: Starfleet Command only." className="st-c7" style={{ '--mh': '320px' }}>
         <System />
       </Monitor>
-      <Monitor title="Scenarios" meta="launcher and timeline" state={admin || user?.role === 'captain' ? 'live' : 'restricted'} note="Scenarios: captain and Starfleet Command only." className="st-c12">
-        <Scenarios cmd={cmd} running={running} setRunning={setRunning} />
+      <Monitor title="Scenarios" meta="launcher and timeline" state={admin || user?.role === 'captain' ? 'live' : 'restricted'} restricted="Scenarios: captain and Starfleet Command only." className="st-c12">
+        <Scenarios running={running} setRunning={setRunning} />
       </Monitor>
     </Station>
   );

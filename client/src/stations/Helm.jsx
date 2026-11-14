@@ -2,7 +2,8 @@ import { useRef } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useSubscription, useTick } from '../lib/hooks.js';
 import { SHIPS, eachSlot, levelOf, monState, read, ringOf, shipCode, useCommand, useFeed, worst } from './parts/data.js';
-import { ArcGauge, J, Station, BarGauge, C, Chip, ConsoleStrip, HBar, LitButton, Monitor, Num, Readout, Val, clamp, fmt, levelColor, useCanvas, useKeys } from './parts/ui.jsx';
+import { ArcGauge, BarGauge, Chip, ConsoleStrip, HBar, J, LitButton, Monitor, Num, Station, useKeys } from '../ui/index.js';
+import { C, Readout, Val, clamp, fmt, levelColor, useCanvas } from './parts/ui.jsx';
 
 const SPAN = 320; // sector units across the shorter side of the plot
 const fresh = (src) => { const r = ringOf(src, 'posX'); return r?.len && Date.now() - r.lastTs < 5000; };
@@ -133,7 +134,7 @@ function ShieldRing({ src }) {
       </svg>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 8, alignItems: 'center' }}>
-        <span className="st-label">Generator load</span><HBar v={read(src, 'shieldLoad')} k="shieldLoad" max={150} label="Shield generator load" />
+        <span className="st-label">Generator load</span><HBar value={read(src, 'shieldLoad')} k="shieldLoad" max={150} label="Shield generator load" />
         <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, whiteSpace: 'nowrap' }}><Val src={src} k="shieldLoad" dec={0} /></span>
       </div>
     </div>
@@ -144,7 +145,7 @@ function Bank({ src, k, label }) {
   const v = read(src, k);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, height: '100%' }}>
-      <BarGauge v={v} k={k} label={label} min={0} max={100} h="auto" segs={14} dec={0} />
+      <BarGauge value={v} k={k} label={label} min={0} max={100} h="auto" segs={14} dec={0} />
       <Chip level={v == null ? 'off' : v >= 99.5 ? 'ok' : 'info'}>{v == null ? '—' : v >= 99.5 ? 'CHARGED' : 'CHARGING'}</Chip>
     </div>
   );
@@ -165,7 +166,7 @@ function Torpedoes({ src }) {
         ))}
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
-        <Num v={read(src, 'torpedoes')} dec={0} className="st-num st-xl" /><span className="st-label">photon torpedoes left</span>
+        <Num value={read(src, 'torpedoes')} dec={0} className="st-num st-xl" /><span className="st-label">photon torpedoes left</span>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 4 }} aria-hidden="true">
         {Array.from({ length: cap }, (_, i) => <i key={i} style={{ height: 6, borderRadius: 2, background: i < left ? C.amber : '#ffffff12', boxShadow: i < left ? '0 0 4px #ff9a1f66' : 'none' }} />)}
@@ -186,21 +187,21 @@ export default function Helm({ shipId = 1 }) {
   const st = (...g) => monState(user, src, g);
   const wf = read(src, 'warpFactor'), up = read(src, 'shieldsUp') >= 0.5, imp = read(src, 'impulse');
   const sp = read(src, 'speed');
-  const order = (type, payload, say) => cmd.send(type, payload, say);
-  const warpTo = (f) => { const x = clamp(Math.round(f), 0, 9); order('helm.warp', { factor: x }, x ? `Warp factor ${x}` : 'Drop to impulse'); };
+  const order = cmd.send;
+  const warpTo = (f) => { const x = clamp(Math.round(f), 0, 9); order('helm.warp', { factor: x }); };
   const keys = {
     ArrowUp: () => warpTo((wf ?? 0) + 1), ArrowDown: () => warpTo((wf ?? 0) - 1),
-    i: () => order('helm.impulse', { percent: 100 }, 'Full impulse'), x: () => order('helm.stop', {}, 'All stop'),
-    ArrowLeft: () => order('helm.heading', { delta: -5 }, 'Come about 5° to port'), ArrowRight: () => order('helm.heading', { delta: 5 }, 'Come about 5° to starboard'),
-    'Shift+S': () => order('tactical.shields', { up: !up }, up ? 'Lower shields' : 'Raise shields'),
-    p: () => order('tactical.phasers', { bank: 'fore' }, 'Fire phasers'), 'Shift+P': () => order('tactical.torpedo', {}, 'Fire photon torpedo'),
+    i: () => order('helm.impulse', { percent: 100 }), x: () => order('helm.stop', {}),
+    ArrowLeft: () => order('helm.heading', { delta: -5 }), ArrowRight: () => order('helm.heading', { delta: 5 }),
+    'Shift+S': () => order('tactical.shields', { up: !up }),
+    p: () => order('tactical.phasers', { bank: 'fore' }), 'Shift+P': () => order('tactical.torpedo', {}),
   };
   for (let d = 0; d <= 9; d++) keys[String(d)] = () => warpTo(d);
   useKeys(keys);
   const sys = (ks) => worst(ks.map((k) => levelOf(k, read(src, k))));
 
   const desk = (
-    <ConsoleStrip seed={7} cmd={cmd} jewels={[J('HELM', sys(['warpFactor', 'descentRate']), st('helm')), J('SHIELDS', sys(['shieldFore', 'shieldAft', 'shieldPort', 'shieldStbd', 'shieldLoad']), st('shields')), J('WEAPONS', sys(['phaserTemp']), st('weapons')), J('SENSORS', sys(['contactRange']), st('sensors'))]}>
+    <ConsoleStrip seed={7} jewels={[J('HELM', sys(['warpFactor', 'descentRate']), st('helm')), J('SHIELDS', sys(['shieldFore', 'shieldAft', 'shieldPort', 'shieldStbd', 'shieldLoad']), st('shields')), J('WEAPONS', sys(['phaserTemp']), st('weapons')), J('SENSORS', sys(['contactRange']), st('sensors'))]}>
       <LitButton color="amber" label="Warp −" keyCap="↓" onClick={keys.ArrowDown} {...cmd.bind('helm.warp')} />
       <LitButton color="amber" label="Warp +" keyCap="↑" onClick={keys.ArrowUp} {...cmd.bind('helm.warp')} lit={wf >= 1} />
       <LitButton color="amber" label="Full impulse" keyCap="I" onClick={keys.i} {...cmd.bind('helm.impulse')} lit={imp >= 99} />
@@ -220,18 +221,18 @@ export default function Helm({ shipId = 1 }) {
         </Monitor>
         <Monitor title="Warp factor" meta="cubic warp scale" state={st('helm')} className="st-c4">
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '6px 16px 14px', gap: 10 }}>
-            <div style={{ maxWidth: 215, width: '100%', margin: '0 auto' }}>
-              <ArcGauge v={wf} k="warpFactor" min={0} max={9} ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]} numClass="st-num st-hero" dec={2} unit="" below />
+            <div style={{ maxWidth: 180, width: '100%', margin: '0 auto' }}>
+              <ArcGauge value={wf} k="warpFactor" min={0} max={9} ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]} numClass="st-num st-hero" dec={2} unit="" below />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 10, alignItems: 'center' }}>
-              <span className="st-label">Impulse</span><HBar v={imp} k="impulse" label="Impulse power" />
-              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}><Num v={imp} dec={0} className="" /><span className="st-unit">%</span></span>
+              <span className="st-label">Impulse</span><HBar value={imp} k="impulse" label="Impulse power" />
+              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}><Num value={imp} dec={0} className="" /><span className="st-unit">%</span></span>
             </div>
             <dl className="st-kv">
-              <dt>Speed</dt><dd><Num v={sp} dec={sp != null && sp < 10 ? 2 : 0} className="" /><span className="st-unit">× light</span></dd>
-              <dt>Heading</dt><dd><Num v={read(src, 'heading')} dec={1} className="" /><span className="st-unit">°</span></dd>
-              <dt>Position</dt><dd><Num v={read(src, 'posX')} dec={1} className="" /><span className="st-unit">,</span> <Num v={read(src, 'posY')} dec={1} className="" /><span className="st-unit">su</span></dd>
-              {read(src, 'orbitAlt') > 50 && <><dt>Orbit altitude</dt><dd><Num v={read(src, 'orbitAlt')} dec={0} className="" /><span className="st-unit">km</span></dd><dt>Descent rate</dt><dd><Val src={src} k="descentRate" dec={0} /></dd></>}
+              <dt>Speed</dt><dd><Num value={sp} dec={sp != null && sp < 10 ? 2 : 0} className="" /><span className="st-unit">× light</span></dd>
+              <dt>Heading</dt><dd><Num value={read(src, 'heading')} dec={1} className="" /><span className="st-unit">°</span></dd>
+              <dt>Position</dt><dd><Num value={read(src, 'posX')} dec={1} className="" /><span className="st-unit">,</span> <Num value={read(src, 'posY')} dec={1} className="" /><span className="st-unit">su</span></dd>
+              {read(src, 'orbitAlt') > 50 && <><dt>Orbit altitude</dt><dd><Num value={read(src, 'orbitAlt')} dec={0} className="" /><span className="st-unit">km</span></dd><dt>Descent rate</dt><dd><Val src={src} k="descentRate" dec={0} /></dd></>}
             </dl>
           </div>
         </Monitor>

@@ -5,7 +5,8 @@ import { useAuth } from '../lib/auth.jsx';
 import { useTick } from '../lib/hooks.js';
 import { canSee, levelOf, monState, shipCode } from './parts/data.js';
 import { useHistory, useHistoryData } from './parts/history.js';
-import { C, ConsoleStrip, J, LitButton, LevelChip, Monitor, Num, Station, calmRange, decOf, fmt } from './parts/ui.jsx';
+import { ConsoleStrip, J, LevelChip, LitButton, Monitor, Num, Station } from '../ui/index.js';
+import { C, calmRange, decOf, fmt } from './parts/ui.jsx';
 
 const RANGES = [['1 min', 60], ['5 min', 300], ['15 min', 900], ['1 hour', 3600]];
 
@@ -35,7 +36,7 @@ export default function History({ shipId = 1 }) {
     </ConsoleStrip>
   );
   if (!source || !groups.length) {
-    return <Station name="History" division="fleet" ship={null} desk={desk}><Monitor title="History" state="restricted" className="st-c12" style={{ '--mh': '240px' }} note="Your role sees no channels." /></Station>;
+    return <Station name="History" division="fleet" ship={null} desk={desk}><Monitor title="History" state="restricted" className="st-c12" style={{ '--mh': '240px' }} restricted="Your role sees no channels." /></Station>;
   }
 
   return (
@@ -58,7 +59,7 @@ export default function History({ shipId = 1 }) {
           </div>
           <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'baseline', gap: 8 }}>
             <span className="st-label">Now</span>
-            <Num v={last} dec={m ? decOf(ch) : 0} className="st-num st-sm" level={level} /><span className="st-unit">{m?.unit}</span><LevelChip level={level} />
+            <Num value={last} dec={m ? decOf(ch) : 0} className="st-num st-sm" level={level} /><span className="st-unit">{m?.unit}</span><LevelChip level={level} />
           </span>
         </div>
       </Monitor>

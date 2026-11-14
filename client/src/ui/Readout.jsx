@@ -1,44 +1,49 @@
-import { useEffect, useLayoutEffect, useRef } from 'react';
+import { isValidElement, useEffect, useLayoutEffect, useRef } from 'react';
+import { CHANNEL_BY_KEY } from '@ncc/shared/schema.js';
 import { reducedMotion } from '../lib/chartTheme.js';
-import { LEVEL_WORD } from '../lib/limits.js';
 import { onFrame } from '../lib/raf.js';
-import { cx } from './controls.jsx';
+import { LevelChip, cx } from './controls.jsx';
 import { Icon } from './icons.jsx';
 
-const fmt = (v, dec) => (v == null || Number.isNaN(v) ? '—' : Number(v).toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec }));
-const ease = (t) => 1 - (1 - t) ** 3;
+const formats = new Map();
+/** A number with `dec` decimals in en-US grouping, or a dash when there is none. */
+export function fmt(v, dec = 0) {
+  if (v == null || !Number.isFinite(v)) return '—';
+  let f = formats.get(dec);
+  if (!f) formats.set(dec, (f = new Intl.NumberFormat('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec })));
+  return f.format(v);
+}
+/** The decimals a channel's readings carry, from its scale in the registry. */
+export const decOf = (key) => { const s = CHANNEL_BY_KEY[key]?.scale ?? 1; return s >= 100 ? 2 : s >= 10 ? 1 : 0; };
+
+/** Eases from the last value to `v` over `ms` on the shared animation loop, calling apply(x) every frame. Reduced motion jumps. */
+export function useTween(v, ms, apply) {
+  const cur = useRef(null);
+  const ap = useRef(apply);
+  ap.current = apply;
+  useLayoutEffect(() => {
+    const from = cur.current;
+    if (!Number.isFinite(v) || !Number.isFinite(from) || from === v || reducedMotion()) { cur.current = v; ap.current(v); return undefined; }
+    const t0 = performance.now();
+    const off = onFrame((t) => {
+      const k = Math.min(1, (t - t0) / ms);
+      const x = from + (v - from) * (1 - (1 - k) ** 3);
+      cur.current = x;
+      ap.current(x);
+      if (k === 1) off();
+    });
+    return off;
+  }, [v, ms]);
+}
 
 /**
- * A number that ticks to each new value in 240 ms, on the shared animation loop. React never renders the digits,
- * so a tick costs no re-render. Reduced motion jumps straight to the value.
+ * A number that ticks to each new value in 240 ms. React never renders the digits, so a tick costs no re-render.
+ * level: warn | crit colours it (and a word must stand next to it).
  */
-export function Num({ value, dec = 0, ms = 240, className }) {
-  const el = useRef(null);
-  const st = useRef({ shown: value, from: value, to: value, t0: 0, off: null });
-  useLayoutEffect(() => { if (el.current) el.current.textContent = fmt(st.current.shown, dec); }, [dec]);
-  useEffect(() => {
-    const s = st.current;
-    const valid = value != null && !Number.isNaN(value);
-    const prevValid = s.shown != null && !Number.isNaN(s.shown);
-    if (!valid || !prevValid || reducedMotion() || Math.abs(value - s.shown) < 10 ** -dec / 2) {
-      s.shown = value;
-      if (el.current) el.current.textContent = fmt(value, dec);
-      return undefined;
-    }
-    s.from = s.shown;
-    s.to = value;
-    s.t0 = performance.now();
-    s.off?.();
-    s.off = onFrame((t) => {
-      const k = Math.min(1, (t - s.t0) / ms);
-      s.shown = s.from + (s.to - s.from) * ease(k);
-      if (el.current) el.current.textContent = fmt(s.shown, dec);
-      if (k >= 1) { s.off(); s.off = null; }
-    });
-    return undefined;
-  }, [value, dec, ms]);
-  useEffect(() => () => st.current.off?.(), []);
-  return <span ref={el} className={cx('num', className)} />;
+export function Num({ value, dec = 0, ms = 240, className, level }) {
+  const ref = useRef(null);
+  useTween(value, ms, (x) => { if (ref.current) ref.current.textContent = fmt(x, dec); });
+  return <span ref={ref} className={cx('num', className)} data-level={level === 'warn' || level === 'crit' ? level : undefined} />;
 }
 
 /**
@@ -75,10 +80,11 @@ export function Sparkline({ data, band, domain, status, className }) {
 }
 
 /**
- * Label, big ticking number, unit, change arrow and sparkline. status: ok | warn | crit | off; past a limit the
- * number takes the colour and a word (YELLOW, RED) stands next to it, so colour never carries meaning alone.
+ * Label, big ticking number, unit, change arrow, the level word and a sparkline. status: ok | warn | crit | off; past
+ * a limit the number takes the colour and a word (YELLOW, RED) stands next to it, so colour never carries meaning
+ * alone. spark: data for the SVG sparkline, or an element drawn in its place. size: sm | lg.
  */
-export function Readout({ label, value, unit, dec = 0, status = 'ok', trend, spark, band, domain, size, className }) {
+export function Readout({ label, title, value, unit, dec = 0, status = 'ok', trend, spark, band, domain, size, className }) {
   const ref = useRef(null);
   const prev = useRef(status);
   useEffect(() => {
@@ -90,14 +96,14 @@ export function Readout({ label, value, unit, dec = 0, status = 'ok', trend, spa
   }, [status]);
   return (
     <div ref={ref} className={cx('readout', size && `readout--${size}`, className)} data-status={status}>
-      <span className="readout__label">{label}</span>
+      <span className="readout__label" title={title}>{label}</span>
       <span className="readout__value">
         <Num className="readout__num" value={status === 'off' ? null : value} dec={dec} />
         {unit && <span className="readout__unit">{unit}</span>}
-        {trend ? <Icon name={trend > 0 ? 'up' : 'down'} className="readout__trend" /> : null}
+        {trend ? <Icon name={trend > 0 ? 'up' : 'down'} className="readout__trend" title={trend > 0 ? 'Rising' : 'Falling'} /> : null}
       </span>
-      {LEVEL_WORD[status] ? <span className="readout__word">{LEVEL_WORD[status]}</span> : <span />}
-      {spark && <div style={{ gridColumn: '1 / -1' }}><Sparkline data={spark} band={band} domain={domain} status={status} /></div>}
+      <span className="readout__word"><LevelChip level={status} /></span>
+      {spark && <div className="readout__spark">{isValidElement(spark) ? spark : <Sparkline data={spark} band={band} domain={domain} status={status} />}</div>}
     </div>
   );
 }

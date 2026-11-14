@@ -1,89 +1,110 @@
 import { useEffect, useRef } from 'react';
+import { CHANNEL_BY_KEY } from '@ncc/shared/schema.js';
 import { reducedMotion } from '../lib/chartTheme.js';
+import { alarmOf, limitsOf } from '../lib/limits.js';
 import { onFrame } from '../lib/raf.js';
 import { cx } from './controls.jsx';
+import { Num, decOf, fmt, useTween } from './Readout.jsx';
+import { THEME } from './theme.js';
 
-const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, Number.isFinite(v) ? v : lo));
+const clamp = (v, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, Number.isFinite(v) ? v : lo));
+const levelColor = (l) => (l === 'crit' ? THEME.crit : l === 'warn' ? THEME.warn : null);
 const RAD = Math.PI / 180;
-const CX = 100, CY = 100, R = 78;
-const pt = (a, r = R) => [CX + r * Math.cos(a * RAD), CY + r * Math.sin(a * RAD)];
-const arcPath = (a0, a1, r = R) => {
-  const [x0, y0] = pt(a0, r);
-  const [x1, y1] = pt(a1, r);
-  return `M${x0.toFixed(2)} ${y0.toFixed(2)}A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
+
+// The warn and critical limits of a channel that fall strictly inside [lo, hi], as [value, 'w' | 'c'].
+function limitTicks(k, lo, hi) {
+  const lim = limitsOf(k);
+  const out = [];
+  for (const side of ['high', 'low']) if (lim?.[side]) for (const [v, c] of [[lim[side].warn, 'w'], [lim[side].critical, 'c']]) if (v > lo && v < hi) out.push([v, c]);
+  return out;
+}
+
+const polar = (x, y, r, deg) => [x + r * Math.sin(deg * RAD), y - r * Math.cos(deg * RAD)];
+const arcPath = (x, y, r, a0, a1) => {
+  const [x0, y0] = polar(x, y, r, a0), [x1, y1] = polar(x, y, r, a1);
+  return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
 };
 
 /**
- * A 240 degree arc with a needle that eases to each new value (warp factor 0-9, reactor output).
- * ticks: values that get a tick and a number. band: the normal band [lo, hi], drawn under the arc.
+ * A 240° arc with a needle that eases to each value (warp factor, crystal efficiency). With a channel `k` its warn
+ * and critical zones are dashed round the outside and the arc takes their colour past a limit. The number sits under
+ * the arc with `below`, otherwise inside its opening.
  */
-export function ArcGauge({ value, min = 0, max = 9, ticks, band, status = 'ok', label, className, children }) {
-  const needle = useRef(null);
-  const fill = useRef(null);
-  const st = useRef({ shown: clamp(value, min, max), off: null });
-  const angle = (v) => 150 + (240 * (clamp(v, min, max) - min)) / (max - min || 1);
-  const draw = (v) => {
-    const a = angle(v);
-    needle.current?.setAttribute('transform', `rotate(${a.toFixed(2)} ${CX} ${CY})`);
-    fill.current?.setAttribute('d', a - 150 < 0.5 ? '' : arcPath(150, a));
-  };
-  useEffect(() => {
-    const s = st.current;
-    const to = clamp(value, min, max);
-    s.off?.();
-    if (reducedMotion()) { s.shown = to; draw(to); return undefined; }
-    const from = s.shown;
-    const t0 = performance.now();
-    s.off = onFrame((t) => {
-      const k = Math.min(1, (t - t0) / 700);
-      s.shown = from + (to - from) * (1 - (1 - k) ** 3);
-      draw(s.shown);
-      if (k >= 1) { s.off(); s.off = null; }
-    });
-    return () => { s.off?.(); s.off = null; };
-  }, [value, min, max]); // eslint-disable-line react-hooks/exhaustive-deps
-  const tickList = ticks ?? Array.from({ length: Math.round(max - min) + 1 }, (_, i) => min + i);
+export function ArcGauge({ value, k, min, max, ticks = [], label, unit, dec, numClass = 'arc__num', tickDec = 0, below = false }) {
+  const m = CHANNEL_BY_KEY[k];
+  const lo = min ?? m?.min ?? 0, hi = max ?? m?.max ?? 100;
+  const level = alarmOf(k, value);
+  const ang = (x) => -120 + clamp((x - lo) / (hi - lo)) * 240;
+  const needle = useRef(null), fill = useRef(null);
+  const R = 84, X = 100, Y = 100, L = (Math.PI * R * 240) / 180;
+  useTween(value ?? lo, 600, (x) => {
+    needle.current?.setAttribute('transform', `rotate(${ang(x)} ${X} ${Y})`);
+    fill.current?.setAttribute('stroke-dashoffset', String(L * (1 - clamp((x - lo) / (hi - lo)))));
+  });
+  const lim = limitsOf(k);
+  const zones = [];
+  if (lim?.high) zones.push([lim.high.warn, lim.high.critical, THEME.warn], [lim.high.critical, hi, THEME.crit]);
+  if (lim?.low) zones.push([lim.low.warn, lim.low.critical, THEME.warn], [lo, lim.low.critical, THEME.crit]);
+  const u = unit ?? m?.unit;
   return (
-    <svg className={cx('arc', className)} viewBox="0 0 200 172" data-status={status} role="img" aria-label={`${label ?? 'Gauge'}: ${value == null ? 'no signal' : value}`}>
-      <path className="track" d={arcPath(150, 390)} strokeWidth="10" />
-      {band && <path className="band" d={arcPath(angle(band[0]), angle(band[1]), R + 9)} strokeWidth="3" />}
-      <path ref={fill} className="fill" d="" strokeWidth="10" />
-      {tickList.map((v) => {
-        const a = angle(v);
-        const [x0, y0] = pt(a, R - 12);
-        const [x1, y1] = pt(a, R - 20);
-        const [lx, ly] = pt(a, R - 31);
-        return (
-          <g key={v}>
-            <line className="tick major" x1={x0} y1={y0} x2={x1} y2={y1} />
-            <text className="ticklabel" x={lx} y={ly}>{v}</text>
-          </g>
-        );
-      })}
-      <line ref={needle} className="needle" x1={CX} y1={CY} x2={CX + R - 8} y2={CY} transform={`rotate(${angle(st.current.shown)} ${CX} ${CY})`} />
-      <circle className="hub" cx={CX} cy={CY} r="6" />
-      {children}
-    </svg>
+    <div className={cx('arc', below && 'arc--below')} data-level={level ?? undefined}>
+      <svg className="arc__dial" viewBox={below ? '0 0 200 150' : '0 0 200 168'} role="img"
+        aria-label={`${label ?? m?.label ?? 'Gauge'}: ${value == null ? 'no reading' : fmt(value, dec ?? decOf(k))} ${u ?? ''}`}>
+        <path d={arcPath(X, Y, R, -120, 120)} fill="none" stroke="#ffffff12" strokeWidth="10" strokeLinecap="round" />
+        <path ref={fill} d={arcPath(X, Y, R, -120, 120)} fill="none" stroke={levelColor(level) ?? THEME.chart1} strokeOpacity="0.85" strokeWidth="10" strokeLinecap="round" strokeDasharray={`${L} ${L}`} strokeDashoffset={L} />
+        {zones.map(([a, b, col]) => {
+          const x0 = Math.min(a, b), x1 = Math.max(a, b);
+          if (x1 <= lo || x0 >= hi) return null;
+          return <path key={`${a}${col}`} d={arcPath(X, Y, R + 11, ang(Math.max(lo, x0)), ang(Math.min(hi, x1)))} fill="none" stroke={col} strokeWidth="3" strokeDasharray="3 2" />;
+        })}
+        {ticks.map((t) => {
+          const [x0, y0] = polar(X, Y, R - 9, ang(t)), [x1, y1] = polar(X, Y, R - 16, ang(t)), [tx, ty] = polar(X, Y, R - 27, ang(t));
+          return (
+            <g key={t}>
+              <line x1={x0} y1={y0} x2={x1} y2={y1} stroke={THEME.mute} strokeWidth="1.5" />
+              <text x={tx} y={ty + 3.5} textAnchor="middle" fontSize="10" fill={THEME.mute}>{fmt(t, tickDec)}</text>
+            </g>
+          );
+        })}
+        <g ref={needle} transform={`rotate(-120 ${X} ${Y})`}>
+          <path d={`M${X - 3} ${Y} L${X} ${Y - R + 4} L${X + 3} ${Y} Z`} fill={THEME.ink} />
+        </g>
+        <circle cx={X} cy={Y} r="7" fill={THEME.raised} stroke={THEME.bulkhead} />
+      </svg>
+      <div className="arc__read">
+        <Num value={value} dec={dec ?? decOf(k)} className={numClass} level={level} />
+        {u ? <span className="unit">{u}</span> : null}
+      </div>
+    </div>
   );
 }
 
-/**
- * Vertical segmented bar with limit ticks (nacelle output, shield quadrants, deck oxygen).
- * warn / crit: limit values drawn as dashed ticks.
- */
-export function BarGauge({ value, min = 0, max = 100, segments = 16, warn, crit, status = 'ok', label, dec = 0, unit = '' }) {
-  const k = value == null ? 0 : (clamp(value, min, max) - min) / (max - min || 1);
-  const on = Math.round(k * segments);
-  const at = (v) => `${(((clamp(v, min, max) - min) / (max - min || 1)) * 100).toFixed(1)}%`;
+/** Vertical segmented bar with the channel's limit ticks (nacelle output, phaser banks, sensor arrays). */
+export function BarGauge({ value, k, label, min, max, unit, dec, segs = 16, h = 120, showValue = true }) {
+  const m = CHANNEL_BY_KEY[k];
+  const lo = min ?? m?.min ?? 0, hi = max ?? m?.max ?? 100;
+  const level = alarmOf(k, value);
+  const on = value == null ? 0 : Math.round(clamp((value - lo) / (hi - lo)) * segs);
+  const u = unit ?? m?.unit;
   return (
-    <div className="bar" data-status={status} role="img" aria-label={`${label}: ${value == null ? 'no signal' : `${value.toFixed(dec)} ${unit}`}`}>
-      <div className="bar__track">
-        {Array.from({ length: segments }, (_, i) => <span key={i} className={cx('bar__seg', i < on && 'on')} />)}
-        {warn != null && <span className="bar__limit" style={{ bottom: at(warn) }} />}
-        {crit != null && <span className="bar__limit crit" style={{ bottom: at(crit) }} />}
+    <div className="bar" data-level={level ?? undefined} role="meter" aria-valuemin={lo} aria-valuemax={hi} aria-valuenow={value ?? undefined}
+      aria-label={`${label ?? m?.label}${value == null ? ', no reading' : `, ${fmt(value, dec ?? decOf(k))} ${u ?? ''}`}`}>
+      {showValue && <span className="bar__val"><Num value={value} dec={dec ?? decOf(k)} /><span className="unit">{u}</span></span>}
+      <div className="bar__col" style={{ height: h }}>
+        {Array.from({ length: segs }, (_, i) => <i key={i} className={cx('bar__seg', i < on && 'on')} />)}
+        {limitTicks(k, lo, hi).map(([v, c]) => <b key={`${c}${v}`} className={`bar__tick ${c}`} style={{ bottom: `${((v - lo) / (hi - lo)) * 100}%` }} />)}
       </div>
-      <span className="bar__value">{value == null ? '—' : value.toFixed(dec)}</span>
-      {label && <span className="bar__label">{label}</span>}
+      {label && <span className="bar__lab">{label}</span>}
+    </div>
+  );
+}
+
+/** A thin horizontal bar from `min` to `max` (impulse, generator load, battery). */
+export function HBar({ value, k, min = 0, max = 100, label }) {
+  const level = alarmOf(k, value);
+  return (
+    <div className="hbar" data-level={level ?? undefined} role="meter" aria-valuemin={min} aria-valuemax={max} aria-valuenow={value ?? undefined} aria-label={label}>
+      <i style={{ width: `${value == null ? 0 : clamp((value - min) / (max - min)) * 100}%` }} />
     </div>
   );
 }

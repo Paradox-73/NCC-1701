@@ -29,6 +29,18 @@ export function bandOf(key) {
   return lo === c.min && hi === c.max ? null : [lo, hi];
 }
 
+/** 'warn' or 'crit' when a reading is past a limit, else null: the level a colour and its word must show. */
+export const alarmOf = (key, v) => { const l = levelOf(key, v); return l === 'warn' || l === 'crit' ? l : null; };
+
+/** A channel's threshold rules by side, { high, low } (each { warn, critical }), or undefined when it has none. */
+export function limitsOf(key) {
+  const rules = RULES_BY_CHANNEL[key];
+  if (!rules) return undefined;
+  const out = {};
+  for (const r of rules) out[r.dir] = r;
+  return out;
+}
+
 export const LEVEL_WORD = { warn: 'YELLOW', crit: 'RED' };
 const worse = { off: 0, ok: 1, warn: 2, crit: 3 };
 /** The most serious of several levels. */

@@ -3,7 +3,8 @@ import { useAuth } from '../lib/auth.jsx';
 import { useTick } from '../lib/hooks.js';
 import { alertsFor, canSee, levelOf, meta, monState, read, useCommand, useFeed, worst } from './parts/data.js';
 import { useHistory } from './parts/history.js';
-import { BarGauge, J, C, Chip, ConsoleStrip, LevelChip, LitButton, Monitor, Num, Readout, Station, clamp, fmt, levelColor, useCanvas } from './parts/ui.jsx';
+import { BarGauge, Chip, ConsoleStrip, J, LevelChip, LitButton, Monitor, Num, Station } from '../ui/index.js';
+import { C, Readout, clamp, fmt, levelColor, useCanvas } from './parts/ui.jsx';
 
 const SWEEP_MS = 4000; // one turn of the scope (DESIGN.md SweepScope)
 const NOISE_DB = 3.5; // returns under this are the sensor noise floor (DOMAIN.md: 1-3 dB)
@@ -170,7 +171,7 @@ function Lifeforms({ src, showCo2 }) {
         {hm.status === 'ready' && !(fit?.last >= 1) && <div className="st-blank" style={{ pointerEvents: 'none' }}><span>No unregistered life-forms aboard. The forecast starts when a count appears.</span></div>}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '10px 14px 10px 4px' }}>
-        <div className="st-ro"><span className="st-label">Aboard now</span><span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}><Num v={fit?.last ?? read(src, 'lifeforms')} dec={0} className="st-num st-sm" level={levelOf('lifeforms', fit?.last)} /><LevelChip level={levelOf('lifeforms', fit?.last)} /></span></div>
+        <div className="st-ro"><span className="st-label">Aboard now</span><span style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}><Num value={fit?.last ?? read(src, 'lifeforms')} dec={0} className="st-num st-sm" level={levelOf('lifeforms', fit?.last)} /><LevelChip level={levelOf('lifeforms', fit?.last)} /></span></div>
         <div className="st-ro"><span className="st-label">Doubling time</span><span className="st-num st-xs">{doubling ? `${fmt(doubling, 1)} s` : '—'}</span></div>
         {showCo2 && <div className="st-ro"><span className="st-label">Deck 9 CO₂ passes 5,000 ppm</span><span className="st-num st-xs">{co2Eta ? `in ${fmt(co2Eta, 0)} s` : 'not on this trend'}</span></div>}
         <span className="st-label" style={{ marginTop: 'auto' }}>Dashed: straight-line fit to log(count) over the last minute.</span>
@@ -239,15 +240,15 @@ export default function Science({ shipId = 1 }) {
   const [mode, setMode] = useState('short');
   const cmd = useCommand(shipId);
   const st = (...g) => monState(user, src, g);
-  const scan = (m, say) => cmd.send('science.scan', { mode: m }, say);
+  const scan = (m) => cmd.send('science.scan', { mode: m });
   // the scope's scale is local to this console; the scan pass goes to the ship only when the role may order one
-  const range = (m) => { setMode(m); if (cmd.can('science.scan')) scan(m, m === 'long' ? 'Long-range scan' : 'Short-range scan'); };
+  const range = (m) => { setMode(m); if (cmd.can('science.scan')) scan(m); };
   const sys = (ks) => worst(ks.map((k) => levelOf(k, read(src, k))));
-  const p = cmd.pending === 'science.scan';
+  const p = cmd.pending('science.scan');
   const desk = (
-    <ConsoleStrip seed={23} cmd={cmd} jewels={[J('LONG RANGE', sys(['lrSensor']), st('sensors')), J('SHORT RANGE', sys(['srSensor']), st('sensors')), J('ION FLUX', sys(['ionFlux']), st('sensors')), J('LIFE-FORMS', sys(['lifeforms']), st('sensors'))]}>
-      <LitButton color="blue" label="Scan" onClick={() => scan(mode, 'Sensor sweep')} {...cmd.bind('science.scan')} />
-      <LitButton color="blue" label="Focus contact" onClick={() => scan('focus', 'Focus sensors on the contact')} {...cmd.bind('science.scan')} disabled={!cmd.can('science.scan') || !(read(src, 'contacts') >= 1 || read(src, 'contactSnr') >= NOISE_DB)} />
+    <ConsoleStrip seed={23} jewels={[J('LONG RANGE', sys(['lrSensor']), st('sensors')), J('SHORT RANGE', sys(['srSensor']), st('sensors')), J('ION FLUX', sys(['ionFlux']), st('sensors')), J('LIFE-FORMS', sys(['lifeforms']), st('sensors'))]}>
+      <LitButton color="blue" label="Scan" onClick={() => scan(mode)} {...cmd.bind('science.scan')} />
+      <LitButton color="blue" label="Focus contact" onClick={() => scan('focus')} {...cmd.bind('science.scan')} disabled={!cmd.can('science.scan') || !(read(src, 'contacts') >= 1 || read(src, 'contactSnr') >= NOISE_DB)} />
       <LitButton color="white" label="Long range" onClick={() => range('long')} pressed={mode === 'long'} pending={p} />
       <LitButton color="white" label="Short range" onClick={() => range('short')} pressed={mode === 'short'} pending={p} />
     </ConsoleStrip>
@@ -269,8 +270,8 @@ export default function Science({ shipId = 1 }) {
       </Monitor>
       <Monitor title="Sensor arrays" meta="health" state={st('sensors')} className="st-c4" style={{ '--mh': '220px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'auto auto minmax(0, 1fr)', gap: 16, height: '100%', padding: 12 }}>
-          <BarGauge v={read(src, 'lrSensor')} k="lrSensor" label="Long" min={0} max={100} h="auto" segs={14} dec={0} />
-          <BarGauge v={read(src, 'srSensor')} k="srSensor" label="Short" min={0} max={100} h="auto" segs={14} dec={0} />
+          <BarGauge value={read(src, 'lrSensor')} k="lrSensor" label="Long" min={0} max={100} h="auto" segs={14} dec={0} />
+          <BarGauge value={read(src, 'srSensor')} k="srSensor" label="Short" min={0} max={100} h="auto" segs={14} dec={0} />
           <Readout src={src} k="ionFlux" label="Ion flux" unit="index" />
         </div>
       </Monitor>

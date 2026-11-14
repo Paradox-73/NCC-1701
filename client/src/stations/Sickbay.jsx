@@ -7,7 +7,8 @@ import { getRing } from '../lib/store.js';
 import { crewHubOf, crewLabel, deckOfCrew } from '@ncc/shared/schema.js';
 import { DECK_NAMES, canSee, levelOf, meta, monState, pad2, read, useCommand, useFeed, worst } from './parts/data.js';
 import { useHistory, useHistoryData } from './parts/history.js';
-import { C, Chip, ConsoleStrip, J, LevelChip, LitButton, Monitor, Num, Station, calmRange, clamp, fmt, useCanvas } from './parts/ui.jsx';
+import { Chip, ConsoleStrip, J, LevelChip, LitButton, Monitor, Num, Station } from '../ui/index.js';
+import { C, calmRange, clamp, fmt, useCanvas } from './parts/ui.jsx';
 
 // DOMAIN.md section 4: crew 001-012 on deck 1, then 38 a deck; four vitals each, one group per deck on the crew hub
 const pad3 = (n) => String(n).padStart(3, '0');
@@ -197,16 +198,16 @@ export default function Sickbay({ shipId = 1 }) {
   const counts = [0, 1, 2, 3].map((c) => all.filter((x) => x.cls === c).length);
   const sumState = monState(user, shipId, ['crewsummary']);
   const desk = (
-    <ConsoleStrip seed={43} cmd={cmd} jewels={[J('BIOSIGNS', counts[3] ? 'crit' : counts[2] ? 'warn' : null, stBio), J('CREW', worst(['crewWatch', 'crewCritical'].map((k) => levelOf(k, read(shipId, k)))), sumState)]}>
-      <LitButton color="green" label="Inoculate" onClick={() => cmd.send('medical.inoculate', {}, 'Inoculate the infected crew')} {...cmd.bind('medical.inoculate')} />
-      <LitButton color="yellow" label={deckOfInterest ? `Quarantine deck ${pad2(deckOfInterest)}` : 'Quarantine deck'} onClick={() => cmd.send('medical.quarantine', { deck: deckOfInterest }, `Quarantine deck ${deckOfInterest}`)} {...cmd.bind('medical.quarantine')} disabled={!deckOfInterest || !cmd.can('medical.quarantine')} />
+    <ConsoleStrip seed={43} jewels={[J('BIOSIGNS', counts[3] ? 'crit' : counts[2] ? 'warn' : null, stBio), J('CREW', worst(['crewWatch', 'crewCritical'].map((k) => levelOf(k, read(shipId, k)))), sumState)]}>
+      <LitButton color="green" label="Inoculate" onClick={() => cmd.send('medical.inoculate')} {...cmd.bind('medical.inoculate')} />
+      <LitButton color="yellow" label={deckOfInterest ? `Quarantine deck ${pad2(deckOfInterest)}` : 'Quarantine deck'} onClick={() => cmd.send('medical.quarantine', { deck: deckOfInterest })} {...cmd.bind('medical.quarantine')} disabled={!deckOfInterest || !cmd.can('medical.quarantine')} />
     </ConsoleStrip>
   );
 
   return (
     <Station name="Sickbay" division="science" ship={shipId} rows="minmax(250px, 1.25fr) minmax(220px, 1fr)" desk={desk}
       end={medical ? `${fmt(counts[2] + counts[3], 0)} over 2σ · ${fmt(counts[3], 0)} over 3σ` : null}>
-      <Monitor title="Crew biosigns" meta="430 crew · by deck · distance from own baseline" state={stBio} note={MEDICAL} className="st-c8" style={{ '--mh': '300px' }}>
+      <Monitor title="Crew biosigns" meta="430 crew · by deck · distance from own baseline" state={stBio} restricted={MEDICAL} className="st-c8" style={{ '--mh': '300px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <div style={{ position: 'relative', flex: 1, minHeight: 0 }}><CrewGrid hub={hub} base={base} sel={shown} onSel={setSel} /></div>
           <div className="st-legend" style={{ padding: '4px 12px 8px' }}>
@@ -218,10 +219,10 @@ export default function Sickbay({ shipId = 1 }) {
       <Monitor title="Watch list" meta="over 2σ from baseline" state={sumState} className="st-c4" style={{ '--mh': '320px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <dl className="st-kv" style={{ gridTemplateColumns: 'repeat(4, auto 1fr)', padding: '10px 12px', gap: '6px 8px', borderBottom: '1px solid #ffffff0d' }}>
-            <dt>Aboard</dt><dd style={{ fontSize: 14 }}><Num v={read(shipId, 'crewAboard')} className="" /></dd>
-            <dt>Watch</dt><dd style={{ fontSize: 14 }}><Num v={read(shipId, 'crewWatch')} className="" level={levelOf('crewWatch', read(shipId, 'crewWatch'))} /> <LevelChip level={levelOf('crewWatch', read(shipId, 'crewWatch'))} /></dd>
-            <dt>Critical</dt><dd style={{ fontSize: 14 }}><Num v={read(shipId, 'crewCritical')} className="" level={levelOf('crewCritical', read(shipId, 'crewCritical'))} /> <LevelChip level={levelOf('crewCritical', read(shipId, 'crewCritical'))} /></dd>
-            <dt>Mean HR</dt><dd style={{ fontSize: 14 }}><Num v={read(shipId, 'crewMeanHr')} dec={0} className="" /><span className="st-unit">bpm</span></dd>
+            <dt>Aboard</dt><dd style={{ fontSize: 14 }}><Num value={read(shipId, 'crewAboard')} className="" /></dd>
+            <dt>Watch</dt><dd style={{ fontSize: 14 }}><Num value={read(shipId, 'crewWatch')} className="" level={levelOf('crewWatch', read(shipId, 'crewWatch'))} /> <LevelChip level={levelOf('crewWatch', read(shipId, 'crewWatch'))} /></dd>
+            <dt>Critical</dt><dd style={{ fontSize: 14 }}><Num value={read(shipId, 'crewCritical')} className="" level={levelOf('crewCritical', read(shipId, 'crewCritical'))} /> <LevelChip level={levelOf('crewCritical', read(shipId, 'crewCritical'))} /></dd>
+            <dt>Mean HR</dt><dd style={{ fontSize: 14 }}><Num value={read(shipId, 'crewMeanHr')} dec={0} className="" /><span className="st-unit">bpm</span></dd>
           </dl>
           {!medical ? <div style={{ position: 'relative', flex: 1 }}><div className="st-blank"><b>RESTRICTED</b><span>Counts only. {MEDICAL}</span></div></div> : (
             <div style={{ flex: 1, minHeight: 0 }}>
@@ -241,10 +242,10 @@ export default function Sickbay({ shipId = 1 }) {
           )}
         </div>
       </Monitor>
-      <Monitor title="Biobed" meta={shown ? `crew ${pad3(shown)}${sel ? '' : ' · furthest from baseline'}` : 'no patient'} state={stBio} note={MEDICAL} className="st-c4" style={{ '--mh': '300px' }}>
+      <Monitor title="Biobed" meta={shown ? `crew ${pad3(shown)}${sel ? '' : ' · furthest from baseline'}` : 'no patient'} state={stBio} restricted={MEDICAL} className="st-c4" style={{ '--mh': '300px' }}>
         <Biobed hub={hub} n={shown} />
       </Monitor>
-      <Monitor title="Vital trends" meta={shown ? `crew ${pad3(shown)} · last 10 minutes · grey stored, blue live` : 'select a crew member'} state={stBio} note={MEDICAL} className="st-c8" style={{ '--mh': '680px' }}>
+      <Monitor title="Vital trends" meta={shown ? `crew ${pad3(shown)} · last 10 minutes · grey stored, blue live` : 'select a crew member'} state={stBio} restricted={MEDICAL} className="st-c8" style={{ '--mh': '680px' }}>
         {shown ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gridAutoRows: 'minmax(0, 1fr)', gap: 10, height: '100%', padding: 10 }}>
             {VITALS.map((x) => <Trend key={`${shown}${x.v}`} hub={hub} k={`${x.v}_${pad3(shown)}`} label={x.label} unit={x.unit} dec={x.dec ?? 0} />)}

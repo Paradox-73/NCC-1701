@@ -1,6 +1,5 @@
 // The bridge's stations: route, label, division, the G-key that goes there, and who may enter.
-// Station screens live in client/src/stations/<Name>.jsx (default export). They are found at build time, so a
-// station whose file has not landed yet gets the shell's placeholder instead of a broken import.
+// Station screens live in client/src/stations/<Name>.jsx (default export), found at build time and loaded on first visit.
 const screens = import.meta.glob('../stations/*.jsx');
 export const screenOf = (name) => screens[`../stations/${name}.jsx`] ?? null;
 

@@ -6,7 +6,7 @@ import { bandOf, levelOf, worst } from '../lib/limits.js';
 import { conditionOf, ship, shipLog, stardate } from '../lib/ship.js';
 import { backfill, getRing, state } from '../lib/store.js';
 import ViewscreenView from '../three/ViewscreenView.jsx';
-import { ArcGauge, ButtonGrid, DivisionPill, Icon, Jewel, KeyCap, LitButton, Monitor, Num, Readout, SweepScope, mayCommand, useCommand } from '../ui/index.js';
+import { ArcGauge, ButtonGrid, DivisionPill, Icon, Jewel, KeyCap, LevelChip, LitButton, Monitor, Num, Readout, SweepScope, mayCommand, useCommand } from '../ui/index.js';
 import Tour from '../app/Tour.jsx';
 import { ScenarioPicker, ScenarioStrip, Ticker } from './Scenario.jsx';
 import './bridge.css';
@@ -20,6 +20,8 @@ const decOf = (key) => Math.min(2, Math.max(0, Math.round(Math.log10(CHANNEL_BY_
 const CONDITION_ALERT = { normal: 'green', yellow: 'yellow', red: 'red' };
 const FLAG_STATUS = (f) => (!(f & 1) ? 'off' : f & 4 ? 'crit' : f & 2 ? 'warn' : 'ok');
 const COND_STATUS = { normal: 'ok', yellow: 'warn', red: 'crit' };
+const SEV_LEVEL = { warning: 'warn', warn: 'warn', critical: 'crit' };
+const WARP_TICKS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 let lastZoom = null; // where the user last zoomed in, so coming back zooms out from there
 
 function useMedia(q) {
@@ -195,9 +197,7 @@ function HelmConsole({ ov }) {
       <header className="helm__title"><DivisionPill division="command" /><h3>Helm · Navigation</h3></header>
       <div className="helm__body">
         <div className="helm__warp">
-          <ArcGauge value={warp ?? 0} min={0} max={9} label="Warp factor" status={levelOf('warpFactor', warp)}>
-            <text x="100" y="162" className="arc__value">{warp == null ? '—' : warp.toFixed(1)}</text>
-          </ArcGauge>
+          <ArcGauge value={warp} k="warpFactor" min={0} max={9} ticks={WARP_TICKS} dec={1} label="Warp factor" />
           <span className="label">Warp factor</span>
         </div>
         <div className="helm__nav">
@@ -259,8 +259,7 @@ function CaptainsLog({ onOpen }) {
         {rows.map((r) => (
           <li key={r.id} className="log__row" data-sev={r.sev} data-fresh={r.fresh || undefined} data-acked={r.acked || undefined}>
             <span className="log__sd mono">{stardate(r.ts).toFixed(2)}</span>
-            {(r.sev === 'warning' || r.sev === 'warn') && <span className="chip chip--warn">YELLOW</span>}
-            {r.sev === 'critical' && <span className="chip chip--crit">RED</span>}
+            <LevelChip level={SEV_LEVEL[r.sev]} />
             <span className="log__text">{r.text}</span>
           </li>
         ))}

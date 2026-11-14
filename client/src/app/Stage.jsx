@@ -8,11 +8,7 @@ import { FLIGHT_MS, NARRATION_AT, THEME_AT } from '../three/rig.js';
 import { Delta, Icon, KeyCap, LitButton } from '../ui/index.js';
 import './stage.css';
 
-const OPENED = 'ncc.opened';
 const FADE_MS = 800;
-const flag = (k) => { try { return sessionStorage.getItem(k) === '1'; } catch { return false; } };
-const setFlag = (k) => { try { sessionStorage.setItem(k, '1'); } catch { /* private mode */ } };
-export const coldOpenSeen = () => flag(OPENED);
 const NO_SHIELDS = { fore: 0, aft: 0, port: 0, starboard: 0 }; // no bubble around the hero shot
 
 // Our own narration after the one famous opener (the show's monologue is heard, not quoted).
@@ -167,7 +163,6 @@ export default function Stage({ phase, onOpened, onBoarded, onFaded }) {
   const [gliding, setGliding] = useState(false);
   const skip = useRef(() => {});
   const intro = useIntro();
-  const opened = useCallback(() => { setFlag(OPENED); onOpened(); }, [onOpened]);
   useEffect(() => {
     const onM = (e) => { if ((e.key === 'm' || e.key === 'M') && phase === 'coldopen' && !e.target.closest?.('input')) toggleSound(); };
     window.addEventListener('keydown', onM);
@@ -202,7 +197,7 @@ export default function Stage({ phase, onOpened, onBoarded, onFaded }) {
         <StarshipView rig={rig} visible={rig !== 'wait'} spin={false} warp={2} alert="green" shields={NO_SHIELDS} />
       </div>
       <div className="stage__veil" aria-hidden="true" />
-      {phase === 'coldopen' && <ColdOpen intro={intro} onStart={() => setGliding(true)} onDone={opened} />}
+      {phase === 'coldopen' && <ColdOpen intro={intro} onStart={() => setGliding(true)} onDone={onOpened} />}
       {(phase === 'identify' || phase === 'boarding') && <Login leaving={phase === 'boarding'} />}
       {(phase === 'boarding' || phase === 'fade') && flying && <div className="stage__flash" aria-hidden="true" />}
       {phase === 'boarding' && flying && <p className="stage__skip label">Boarding the bridge · click or Esc to skip</p>}

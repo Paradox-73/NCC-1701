@@ -1,39 +1,45 @@
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { useAuth } from '../lib/auth.jsx';
 import { inField } from '../lib/keys.js';
 import { ship } from '../lib/ship.js';
 import { KeyCap, LitButton } from '../ui/index.js';
+import { TOURS } from './tours.js';
 
-const KEY = 'ncc.toured';
-const STEPS = [
-  { target: 'viewscreen', title: 'Main viewer', text: 'The live view outside the ship. V cycles forward, tactical and exterior; + and − magnify.' },
-  { target: 'tile-engineering', title: 'Stations around the rail', text: 'Each station shows one live reading. Click a station to go to its console. A lock means your role cannot enter it.' },
-  { target: 'helm', title: 'Helm and navigation', text: 'Warp factor, heading and the weakest shield, straight from the ship’s telemetry.' },
-  { target: 'chair', title: 'The captain’s chair', text: 'Condition and orders. The captain presses R for red alert, Y for yellow alert and N to stand down.' },
-  { target: 'log', title: 'Captain’s log', text: 'Alerts, orders and scenario steps, newest first. A acknowledges the newest alert.' },
-];
-const seen = () => { try { return localStorage.getItem(KEY) === '1'; } catch { return true; } };
 // a modal panel is open (turbolift, scenario picker, shortcut sheet) or a scenario is running: the tour keeps out of the way
 const busy = () => !!document.querySelector('[aria-modal="true"]') || ['running', 'awaiting'].includes(ship.scenario?.state);
 
+// a step's spotlight: a monitor by its title, the console along the bottom, or a data-tour mark
+const elOf = (s) => [...document.querySelectorAll(s.desk ? '.console-strip' : s.mon ? `section.monitor[aria-label="${s.mon}"]` : `[data-tour="${s.target}"]`)].find((el) => el.getClientRects().length)
+  ?? (s.target === 'lift' ? document.querySelector('.tabs-menu') : null); // on a phone the tabs are the menu button
+
 /**
- * The first-visit tour of the bridge: a spotlight on each part with a short caption. It waits for the visitor's first
- * click or key press on the bridge, never starts over a panel or a running scenario, and closes itself when one
- * opens. Remembered in the browser.
+ * The first-visit guide of a page (`page`: bridge, a station id, history or alerts; steps in tours.js), worded for the
+ * signed-in role: a spotlight on each part with a short caption. It starts on its own `delay` ms after the page opens,
+ * never over a panel or a running scenario (then it waits for the next click or key), and closes itself when one
+ * opens. Remembered in the browser per user and page, so every role meets every page's guide once.
  */
-export default function Tour() {
+export default function Tour({ page, delay = 600 }) {
+  const { user } = useAuth();
+  const steps = useMemo(() => (TOURS[page] ?? []).filter((x) => !x.when || x.when(user)), [page, user]);
+  const key = `ncc.toured.${user?.username}.${page}`;
+  const seen = () => { try { return !steps.length || localStorage.getItem(key) === '1'; } catch { return true; } };
   const [step, setStep] = useState(-1);
   const [box, setBox] = useState(null);
-  const done = () => { try { localStorage.setItem(KEY, '1'); } catch { /* private mode */ } setStep(-1); };
-  const s = STEPS[step];
+  const done = () => { try { localStorage.setItem(key, '1'); } catch { /* private mode */ } setStep(-1); };
+  const s = steps[step];
+  const text = s && (typeof s.text === 'function' ? s.text(user) : s.text);
 
   useEffect(() => {
     if (seen()) return undefined;
     let timer = 0;
-    // checked a moment after the press, once whatever it opened is on screen
-    const poke = () => { clearTimeout(timer); timer = setTimeout(() => { if (!busy()) { off(); setStep(0); } }, 400); };
+    const begin = () => { if (!busy()) { off(); setStep(0); } };
+    // over a panel or a scenario: a later press tries again, once whatever it opened is on screen
+    const poke = () => { clearTimeout(timer); timer = setTimeout(begin, 400); };
     const off = () => { window.removeEventListener('pointerdown', poke, true); window.removeEventListener('keydown', poke, true); };
     window.addEventListener('pointerdown', poke, true);
     window.addEventListener('keydown', poke, true);
+    timer = setTimeout(begin, delay); // no waiting for a click: the guide starts as the page opens
     return () => { off(); clearTimeout(timer); };
   }, []);
   useEffect(() => {
@@ -44,7 +50,7 @@ export default function Tour() {
 
   useLayoutEffect(() => {
     if (!s) return undefined;
-    const el = document.querySelector(`[data-tour="${s.target}"]`);
+    const el = elOf(s);
     if (!el) { setBox(null); return undefined; }
     el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     const measure = () => { const r = el.getBoundingClientRect(); setBox({ x: r.left - 8, y: r.top - 8, w: r.width + 16, h: r.height + 16 }); };
@@ -59,7 +65,7 @@ export default function Tour() {
     const onKey = (e) => {
       if (inField(e.target) && !e.target.closest('.tour')) return; // keys typed into the turbolift or a form stay theirs
       if (e.key === 'Escape') done();
-      else if (e.key === 'ArrowRight' || e.key === 'Enter') setStep((n) => (n + 1 < STEPS.length ? n + 1 : (done(), -1)));
+      else if (e.key === 'ArrowRight' || e.key === 'Enter') setStep((n) => (n + 1 < steps.length ? n + 1 : (done(), -1)));
       else if (e.key === 'ArrowLeft') setStep((n) => Math.max(0, n - 1));
       else return;
       e.preventDefault();
@@ -75,20 +81,22 @@ export default function Tour() {
   const below = box ? vh - (box.y + box.h) > 200 || box.y < 220 : true;
   const top = box ? (below ? Math.min(vh - 210, box.y + box.h + 12) : Math.max(12, box.y - 12 - 190)) : vh / 2 - 90;
   const left = box ? Math.min(vw - cardW - 12, Math.max(12, box.x + box.w / 2 - cardW / 2)) : vw / 2 - cardW / 2;
-  return (
+  // portalled to the body: a station view's own transform would otherwise shift the fixed spotlight
+  return createPortal(
     <div className="tour" role="dialog" aria-modal="false" aria-labelledby="tour-title">
       {box && <div className="tour__spot" style={{ left: box.x, top: box.y, width: box.w, height: box.h }} />}
       <div className="tour__card" style={{ left, top, width: cardW }} key={step}>
-        <p className="tour__count mono">{step + 1} / {STEPS.length}</p>
+        <p className="tour__count mono">{step + 1} / {steps.length}</p>
         <h2 id="tour-title" className="tour__title">{s.title}</h2>
-        <p className="tour__text">{s.text}</p>
+        <p className="tour__text">{text}</p>
         <div className="tour__actions">
           <button type="button" className="linkbtn" onClick={done}>Skip tour</button>
           {step > 0 && <LitButton color="white" size="sm" label="Back" onClick={() => setStep(step - 1)} />}
-          <LitButton color="blue" size="sm" label={step + 1 < STEPS.length ? 'Next' : 'Take the conn'} keyCap="↵" lit onClick={() => (step + 1 < STEPS.length ? setStep(step + 1) : done())} />
+          <LitButton color="blue" size="sm" label={step + 1 < steps.length ? 'Next' : page === 'bridge' ? 'Take the conn' : 'Got it'} keyCap="↵" lit onClick={() => (step + 1 < steps.length ? setStep(step + 1) : done())} />
         </div>
         <p className="label tour__keys"><KeyCap>←</KeyCap> <KeyCap>→</KeyCap> to step, <KeyCap>Esc</KeyCap> to close</p>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

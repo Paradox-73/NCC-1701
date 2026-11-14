@@ -47,7 +47,7 @@ export function TopBar({ user, condition, standDown, onLift, onSignOut }) {
         <Delta emblem="command" />
         <span><b>NCC-1701</b><small>U.S.S. Enterprise</small></span>
       </NavLink>
-      <nav className="tabs" aria-label="Stations">
+      <nav className="tabs" aria-label="Stations" data-tour="lift">
         {[...STATIONS, ...PAGES].map((st) => {
           const locked = !canEnter(user, st);
           return (

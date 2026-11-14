@@ -1,6 +1,6 @@
-# NCC-1701 Bridge
+# Subspace
 
-**A real-time telemetry platform you can sit inside.** Four starships and 430 crew send about 115 samples a second, which is about 20,000 channel values a second. A MERN stack validates, deduplicates, stores and fans them out by role, and they arrive on a recreation of the original-series Enterprise bridge, where every station is a live dashboard.
+**A real-time telemetry platform you can sit inside**, named for the band Starfleet sends its signals on. Four starships and 430 crew send about 115 samples a second, which is about 20,000 channel values a second. A MERN stack validates, deduplicates, stores and fans them out by role, and they arrive on a recreation of the original-series Enterprise bridge, where every station is a live dashboard.
 
 Built for the MERNify hackathon.
 

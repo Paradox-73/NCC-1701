@@ -43,7 +43,7 @@ export function TopBar({ user, condition, standDown, onLift, onSignOut }) {
   const rx = state.rx;
   return (
     <header className="topbar">
-      <NavLink to="/bridge" className="wordmark" aria-label="NCC-1701 Bridge, go to the bridge">
+      <NavLink to="/bridge" className="wordmark" aria-label="Subspace, go to the bridge">
         <Delta emblem="command" />
         <span><b>NCC-1701</b><small>U.S.S. Enterprise</small></span>
       </NavLink>

@@ -15,7 +15,7 @@ A real-time telemetry bridge for the USS Enterprise (NCC-1701), from *Star Trek:
 ![Node.js](https://img.shields.io/badge/Node.js-24-339933?logo=nodedotjs&logoColor=white)
 ![Socket.IO](https://img.shields.io/badge/Socket.IO-4-010101?logo=socketdotio&logoColor=white)
 
-[Live demo](https://ncc-1701.vercel.app) | Demo video: link coming | [Docs](docs/) | [Repository](https://github.com/Paradox-73/NCC-1701)
+[Live demo](https://subspace-1701.vercel.app) (also [ncc-1701.vercel.app](https://ncc-1701.vercel.app)) | [Demo video](https://drive.google.com/drive/folders/1VZM54i9kOGE2rhGFl7RCe29OpnfluzHg?usp=sharing) | [Docs](docs/) | [Repository](https://github.com/Paradox-73/NCC-1701)
 
 ![The bridge during Balance of Terror: warp 6, the scenario strip across the viewscreen, every station live](docs/screenshots/app-bridge.png)
 

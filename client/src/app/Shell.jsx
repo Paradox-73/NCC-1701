@@ -9,10 +9,13 @@ import { ackAlert, getRing, state } from '../lib/store.js';
 import Bridge from '../pages/Bridge.jsx';
 import { ShortcutSheet, Turbolift } from './Overlays.jsx';
 import StationRoute from './StationRoute.jsx';
-import { PAGES, STATIONS, stationAt } from './stations.js';
+import { PAGES, STATIONS, screenOf, stationAt, stationById } from './stations.js';
 import { TopBar } from './TopBar.jsx';
 import './shell.css';
 
+// Keys a station screen binds itself (client/src/stations): on that screen the shell leaves them to it, so one
+// key press never sends a command twice. Everywhere else the shell handles them.
+const OWNED_KEYS = { helm: /^([0-9]|Arrow(Up|Down|Left|Right)|[iIxXpP]|S)$/, comms: /^[hH]$/, alerts: /^[aA]$/ };
 const MAGNIFY = [1, 2, 4, 8];
 const VIEW_MODES = ['forward', 'tactical'];
 const typing = (el) => el?.closest?.('input, textarea, select, [contenteditable="true"]');
@@ -81,6 +84,7 @@ export default function Shell({ powered, aboard }) {
         if (st) { e.preventDefault(); go(st); }
         return;
       }
+      if (OWNED_KEYS[current]?.test(k) && screenOf(stationById[current].screen)) return;
       const ov = state.overview.get(1);
       const warpNow = Math.round(ov?.warp ?? getRing(1, 'helm')?.last('warpFactor') ?? 0);
       switch (k) {
@@ -117,7 +121,7 @@ export default function Shell({ powered, aboard }) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [overlay, location.pathname, go, order, say, user]);
+  }, [overlay, location.pathname, current, go, order, say, user]);
 
   const back = useCallback(() => go(STATIONS[0]), [go]);
   const nextView = useCallback(() => setViewer((v) => ({ ...v, mode: VIEW_MODES[(VIEW_MODES.indexOf(v.mode) + 1) % VIEW_MODES.length] })), []);

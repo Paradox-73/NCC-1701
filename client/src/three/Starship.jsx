@@ -1,10 +1,11 @@
-import { useMemo, useRef } from 'react';
+import { Component, Suspense, useMemo, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { OrbitControls, Stars } from '@react-three/drei';
+import { OrbitControls, Stars, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
-// Low-poly Constitution-class style ship, built only from three.js primitives (no downloaded models, no
-// textures or markings from the show). The ship points down +z, y is up, port is +x.
+// The ship: the TOS Enterprise model from client/public/models/enterprise.glb, with a low-poly ship built
+// from three.js primitives as the fallback (while the model loads, if it fails, or with model={null}).
+// Both point down +z, y is up, port is +x.
 //
 // Props (all optional, all safe to update every frame):
 //   warp     0..9                                    nacelle + deflector glow and pulse speed
@@ -140,7 +141,7 @@ const QUADRANTS = [
   { key: 'aft', phiStart: (5 * Math.PI) / 4 },
 ];
 
-function Shields({ shields }) {
+function Shields({ shields, position = [0, 0.55, 0], scale = [3.7, 2.3, 5.6] }) {
   const mats = useMemo(
     () =>
       QUADRANTS.map(
@@ -172,7 +173,7 @@ function Shields({ shields }) {
     });
   });
   return (
-    <group position={[0, 0.55, 0]} scale={[3.7, 2.3, 5.6]}>
+    <group position={position} scale={scale}>
       {QUADRANTS.map(({ key, phiStart }, i) => (
         <mesh key={key} material={mats[i]}>
           <sphereGeometry args={[1, 24, 16, phiStart, Math.PI / 2]} />
@@ -212,8 +213,124 @@ function Lights({ alert }) {
   );
 }
 
-export function Starship({ warp = 0, shields, damage, alert = 'green', spin = true }) {
-  const root = useRef();
+// ---------------------------------------------------------------------------------------------------
+// The downloaded TOS model (client/public/models/enterprise.glb, credited in CREDITS.md). Its meshes are
+// unnamed and don't follow the hull sections, so damage is worked out per pixel from where that pixel sits
+// on the ship (a small shader patch), and the warp glow is extra additive spheres on the bussard domes.
+//
+// Model units: fore is +z, up is +y, port is +x (same as the primitives ship), about 289 long.
+export const MODEL_URL = `${import.meta.env.BASE_URL}models/enterprise.glb`;
+const MODEL_LENGTH = 289;
+const SHIP_LENGTH = 10.5; // same overall size as the primitives ship, so cameras and shields fit both
+const BUSSARDS = [
+  [42, 26.2, 8.5],
+  [-42, 26.2, 8.5],
+];
+
+// Section split in model units: nacelles are the high, wide parts aft of the saucer, the saucer is the
+// high part forward, everything else counts as engineering.
+const SECTION_GLSL = /* glsl */ `
+  float shipDamage;
+  if (abs(vShipPos.x) > 30.0 && vShipPos.y > 12.0 && vShipPos.z < 20.0) shipDamage = vShipPos.x > 0.0 ? uDamage.z : uDamage.w;
+  else if (vShipPos.z > 25.0 && vShipPos.y > -2.0) shipDamage = uDamage.x;
+  else shipDamage = uDamage.y;
+  diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.70, 0.16, 0.12), shipDamage * 0.75);
+  totalEmissiveRadiance += vec3(0.75, 0.12, 0.06) * max(0.0, shipDamage - 0.5) * 1.6 * (0.6 + 0.4 * sin(uTime * 9.0));
+`;
+
+function patchDamage(material, uniforms) {
+  material.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, uniforms);
+    shader.vertexShader =
+      'uniform mat4 uRootInv;\nvarying vec3 vShipPos;\n' +
+      shader.vertexShader.replace(
+        '#include <begin_vertex>',
+        '#include <begin_vertex>\n  vShipPos = (uRootInv * modelMatrix * vec4(transformed, 1.0)).xyz;',
+      );
+    shader.fragmentShader =
+      'uniform vec4 uDamage;\nuniform float uTime;\nvarying vec3 vShipPos;\n' +
+      shader.fragmentShader.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>\n${SECTION_GLSL}`);
+  };
+  material.customProgramCacheKey = () => 'ncc-ship-damage';
+}
+
+function EnterpriseHull({ url, warp, damage }) {
+  const gltf = useGLTF(url, false, true); // no draco, meshopt decoder on
+  const frame = useRef();
+  const { scene, uniforms, bussardMats } = useMemo(() => {
+    const scene = gltf.scene.clone(true);
+    const uniforms = { uDamage: { value: new THREE.Vector4() }, uTime: { value: 0 }, uRootInv: { value: new THREE.Matrix4() } };
+    const bussardMats = [];
+    scene.traverse((o) => {
+      if (!o.isMesh) return;
+      o.material = o.material.clone();
+      patchDamage(o.material, uniforms);
+      if (/bussard/i.test(o.material.name)) bussardMats.push(o.material);
+    });
+    return { scene, uniforms, bussardMats };
+  }, [gltf]);
+  const glowMat = useMemo(() => {
+    // soft round glow: a radial gradient on a sprite, so it has no hard edge from any angle
+    const c = document.createElement('canvas');
+    c.width = c.height = 64;
+    const g = c.getContext('2d');
+    const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    grad.addColorStop(0, 'rgba(255,190,140,1)');
+    grad.addColorStop(0.35, 'rgba(255,110,50,0.55)');
+    grad.addColorStop(1, 'rgba(255,60,20,0)');
+    g.fillStyle = grad;
+    g.fillRect(0, 0, 64, 64);
+    const map = new THREE.CanvasTexture(c);
+    map.colorSpace = THREE.SRGBColorSpace;
+    return new THREE.SpriteMaterial({ map, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false });
+  }, []);
+  const glows = useRef([]);
+
+  useFrame(({ clock }) => {
+    const t = clock.elapsedTime;
+    const w = clamp(warp, 0, 9) / 9;
+    const pulse = 0.78 + 0.22 * Math.sin(t * (1.2 + w * 5));
+    uniforms.uTime.value = t;
+    uniforms.uDamage.value.set(
+      clamp(damage?.saucer ?? 0, 0, 1),
+      clamp(damage?.engineering ?? 0, 0, 1),
+      clamp(damage?.portNacelle ?? 0, 0, 1),
+      clamp(damage?.starboardNacelle ?? 0, 0, 1),
+    );
+    if (frame.current) uniforms.uRootInv.value.copy(frame.current.matrixWorld).invert();
+    for (const m of bussardMats) m.emissiveIntensity = (0.7 + 2.2 * w) * pulse;
+    glowMat.opacity = (0.15 + 0.85 * w) * pulse;
+    for (const g of glows.current) g?.scale.setScalar(26 + 22 * w * pulse);
+  });
+
+  const s = SHIP_LENGTH / MODEL_LENGTH;
+  return (
+    <group ref={frame} scale={s}>
+      <primitive object={scene} />
+      {BUSSARDS.map((p, i) => (
+        <sprite key={i} ref={(el) => (glows.current[i] = el)} position={p} material={glowMat} />
+      ))}
+    </group>
+  );
+}
+
+// If the glb can't be fetched or decoded, show the primitives ship instead of an empty scene.
+class ModelBoundary extends Component {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  componentDidCatch(err) {
+    console.warn('[starship] model failed to load, using the primitives ship', err);
+  }
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
+}
+
+// ---------------------------------------------------------------------------------------------------
+// The hand-built ship: fallback while the model loads or if it fails, and the `model={null}` option.
+function PrimitiveHull({ warp, damage, shields }) {
   const saucerMat = useHullMaterial();
   const engMat = useHullMaterial();
   const portMat = useHullMaterial();
@@ -227,9 +344,8 @@ export function Starship({ warp = 0, shields, damage, alert = 'green', spin = tr
     [],
   );
 
-  useFrame(({ clock }, dt) => {
+  useFrame(({ clock }) => {
     const t = clock.elapsedTime;
-    if (spin && root.current) root.current.rotation.y += dt * 0.12;
     const w = clamp(warp, 0, 9) / 9;
     const pulse = 0.78 + 0.22 * Math.sin(t * (1.2 + w * 5));
     glow.bussard.emissiveIntensity = (0.35 + 2.6 * w) * pulse;
@@ -242,17 +358,38 @@ export function Starship({ warp = 0, shields, damage, alert = 'green', spin = tr
   });
 
   return (
+    <group position={[0, -0.4, 0]}>
+      <Saucer material={saucerMat} />
+      <Engineering material={engMat} deflector={glow.deflector} />
+      <Nacelle side={1} material={portMat} bussard={glow.bussard} grille={glow.grille} />
+      <Nacelle side={-1} material={stbdMat} bussard={glow.bussard} grille={glow.grille} />
+      <Shields shields={shields} />
+    </group>
+  );
+}
+
+// model: URL of the glb (default the TOS Enterprise), or null for the primitives ship only.
+export function Starship({ warp = 0, shields, damage, alert = 'green', spin = true, model = MODEL_URL }) {
+  const root = useRef();
+  useFrame((_, dt) => {
+    if (spin && root.current) root.current.rotation.y += Math.min(dt, 0.1) * 0.12;
+  });
+  const primitives = <PrimitiveHull warp={warp} damage={damage} shields={shields} />;
+  return (
     <>
       {/* lights stay put while the ship turns, so the shading moves across the hull */}
       <Lights alert={alert} />
       <group ref={root}>
-        <group position={[0, -0.4, 0]}>
-          <Saucer material={saucerMat} />
-          <Engineering material={engMat} deflector={glow.deflector} />
-          <Nacelle side={1} material={portMat} bussard={glow.bussard} grille={glow.grille} />
-          <Nacelle side={-1} material={stbdMat} bussard={glow.bussard} grille={glow.grille} />
-          <Shields shields={shields} />
-        </group>
+        {model ? (
+          <ModelBoundary fallback={primitives}>
+            <Suspense fallback={primitives}>
+              <EnterpriseHull url={model} warp={warp} damage={damage} />
+              <Shields shields={shields} position={[0, 0, 0.1]} scale={[3.0, 1.9, 6.3]} />
+            </Suspense>
+          </ModelBoundary>
+        ) : (
+          primitives
+        )}
       </group>
     </>
   );

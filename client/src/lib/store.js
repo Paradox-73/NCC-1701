@@ -8,6 +8,7 @@ import { API, api } from './api.js';
 import { Ring } from './ring.js';
 
 const scaleOf = (key) => CHANNEL_BY_KEY[key].scale;
+const CONDITIONS = ['normal', 'yellow', 'red'];
 
 export { Ring };
 
@@ -33,6 +34,13 @@ export const onAlert = (fn) => { alertListeners.add(fn); return () => alertListe
 const connListeners = new Set();
 // fn('offline') when the socket drops, fn('online', { reconnect }) when it is back and its rooms are re-joined
 export const onConnection = (fn) => { connListeners.add(fn); return () => connListeners.delete(fn); };
+// any other server event (ship condition, log lines, scenario progress, command acks): fn(payload)
+const eventListeners = new Map();
+export function onEvent(name, fn) {
+  if (!eventListeners.has(name)) eventListeners.set(name, new Set());
+  eventListeners.get(name).add(fn);
+  return () => eventListeners.get(name).delete(fn);
+}
 let authLost = () => {};
 export const setAuthLostHandler = (fn) => { authLost = fn; };
 
@@ -90,6 +98,7 @@ export function connect(token) {
   socket.on('alert', (a) => addAlert(a, true));
   socket.on('alert:ack', ({ id, by }) => { const a = state.alerts.find((x) => x.id === id); if (a) a.ack = { by, at: Date.now() }; });
   socket.on('metrics', (m) => { state.metrics.latest = m; state.metrics.ver++; });
+  socket.onAny((name, payload) => eventListeners.get(name)?.forEach((fn) => fn(payload)));
 }
 
 // Sign-out: close the socket and forget everything this user could see, so the next user starts clean.
@@ -206,9 +215,13 @@ function onOverview({ sources, rx }) {
   stats.overviewIn++;
   state.overviewAt = performance.now();
   if (rx != null) state.rx = rx;
-  // row: [sourceId, flags]. The server lists only sources heard from in the last 5 s: one missing here has left.
+  // row: [sourceId, flags, condition, warp x100, weakest shield x10, posX x10, posY x10, heading x10] (DOMAIN.md);
+  // an older server sends only the first two. The server lists only sources heard from in the last 5 s.
   const listed = new Set();
-  for (const [id, flags] of sources) { listed.add(id); state.overview.set(id, { flags }); }
+  for (const [id, flags, cond, warp, shield, x, y, heading] of sources) {
+    listed.add(id);
+    state.overview.set(id, cond == null ? { flags } : { flags, condition: CONDITIONS[cond] ?? null, warp: warp / 100, shield: shield / 10, x: x / 10, y: y / 10, heading: heading / 10 });
+  }
   for (const [id, e] of state.overview) if (!listed.has(id)) e.flags = 0;
   state.overviewPrimed = true;
 }

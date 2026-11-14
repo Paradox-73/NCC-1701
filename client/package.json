@@ -10,9 +10,14 @@
     "test": "node --test test/*.test.js"
   },
   "dependencies": {
+    "@fontsource-variable/space-grotesk": "^5.3.0",
+    "@fontsource/michroma": "^5.3.0",
+    "@fontsource/space-mono": "^5.3.0",
     "@ncc/shared": "*",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.2",
+    "@react-three/postprocessing": "^3.2.2",
+    "postprocessing": "^6.39.6",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-router-dom": "^7.0.0",

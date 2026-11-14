@@ -216,7 +216,7 @@ function Rig({ mode, hit }) {
 export default function Viewscreen({ warp = 0, mode = 'space', alert = 'green', hit = false, contact, className, style }) {
   return (
     <div className={className} style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', borderRadius: 14, background: '#020308', ...style }}>
-      <Canvas dpr={[1, 1.5]} camera={{ fov: 60, near: 0.1, far: 400 }} gl={{ antialias: true, powerPreference: 'low-power' }}>
+      <Canvas dpr={[1, 1.5]} resize={{ offsetSize: true }} camera={{ fov: 60, near: 0.1, far: 400 }} gl={{ antialias: true, powerPreference: 'low-power' }}>
         <color attach="background" args={['#020308']} />
         <Rig mode={mode} hit={hit} />
         {mode === 'tactical' ? <Tactical alert={alert} contact={contact} /> : <Starfield warp={warp} mode={mode} />}

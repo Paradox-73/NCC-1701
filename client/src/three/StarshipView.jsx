@@ -16,7 +16,7 @@ export function hasWebGL() {
 
 const REDUCED = '(prefers-reduced-motion: reduce)';
 
-function useReducedMotion() {
+export function useReducedMotion() {
   const [reduced, setReduced] = useState(() => !!window.matchMedia?.(REDUCED).matches);
   useEffect(() => {
     const query = window.matchMedia?.(REDUCED);

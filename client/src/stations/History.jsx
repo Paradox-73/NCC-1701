@@ -71,7 +71,7 @@ export default function History({ shipId = 1 }) {
           { label: 'Now', content: <Headline value={last} unit={m?.unit} dec={m ? decOf(ch) : 0} level={level} /> },
           { label: 'Merge', content: <Readings items={merge} /> },
         ]} />
-      <Monitor title={m ? `${m.label}${m.unit ? ` (${m.unit})` : ''}` : 'Reading'} meta="grey stored · blue live" state={state} className="st-c12" index={2}>
+      <Monitor title={m ? `${m.label}${m.unit ? ` (${m.unit})` : ''}` : 'Reading'} meta="grey stored · blue live" state={state} className="st-c12" index={2} data-tour="history-chart">
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px 12px 10px' }}>
           <Chart key={`${src}-${ch}-${range}`} fill x="time" unit={m?.unit} getData={getData} yRange={calmRange(ch)} wait={meta.status === 'error' ? 'Waiting for live readings' : 'Loading stored readings'}
             series={[{ label: 'Stored', color: C.mute, dec: decOf(ch), unit: m?.unit }, { label: 'Live', color: C.chart1, dec: decOf(ch), unit: m?.unit }]} />

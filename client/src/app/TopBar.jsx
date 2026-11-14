@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { DivisionPill, Delta, Icon, KeyCap, LitButton, ROLE_EMBLEM, toggleSound, useCommand, useSound } from '../ui/index.js';
 import { stardate } from '../lib/ship.js';
 import { state } from '../lib/store.js';
-import { STATIONS, canEnter } from './stations.js';
+import { PAGES, STATIONS, canEnter } from './stations.js';
 
 const WORD = { normal: 'Normal', yellow: 'Yellow alert', red: 'Red alert' };
 const SHORT = { normal: 'Normal', yellow: 'Yellow', red: 'Red' }; // narrower desktops: the lamp colour says "alert
@@ -48,10 +48,10 @@ export function TopBar({ user, condition, standDown, onLift, onSignOut }) {
         <span><b>NCC-1701</b><small>U.S.S. Enterprise</small></span>
       </NavLink>
       <nav className="tabs" aria-label="Stations">
-        {STATIONS.map((st) => {
+        {[...STATIONS, ...PAGES].map((st) => {
           const locked = !canEnter(user, st);
           return (
-            <NavLink key={st.id} to={st.path} className="tab" data-division={st.division} aria-label={locked ? `${st.label}, restricted` : st.label} title={locked ? `${st.label}: ${st.who}` : `${st.label} (G then ${st.key.toUpperCase()})`}>
+            <NavLink key={st.id} to={st.path} className="tab" data-division={st.division} aria-label={locked ? `${st.label}, restricted` : st.label} title={locked ? `${st.label}: ${st.who}` : st.key ? `${st.label} (G then ${st.key.toUpperCase()})` : st.label}>
               <DivisionPill division={st.division} />
               <span className="tab__long">{st.label}</span>
               <span className="tab__short">{st.short}</span>

@@ -15,8 +15,8 @@ export const STATIONS = [
 ];
 // Pages the stations build adds next to the stations; anyone signed in may open them.
 export const PAGES = [
-  { id: 'history', path: '/history', label: 'History', division: 'fleet', screen: 'History' },
-  { id: 'alerts', path: '/alerts', label: 'Alerts', division: 'fleet', screen: 'Alerts' },
+  { id: 'history', path: '/history', label: 'History', short: 'Hist', division: 'fleet', screen: 'History' },
+  { id: 'alerts', path: '/alerts', label: 'Alerts', short: 'Alerts', division: 'fleet', screen: 'Alerts' },
 ];
 
 export const stationById = Object.fromEntries([...STATIONS, ...PAGES].map((s) => [s.id, s]));

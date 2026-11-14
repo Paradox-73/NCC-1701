@@ -86,12 +86,14 @@ export function createServer(overrides = {}) {
   app.use(helmet());
   app.use(cors({ origin: config.corsOrigin }));
   app.use(express.json({ limit: '100kb' }));
+  // the root of the API host says what it is, instead of Express's "Cannot GET /" page
+  app.get('/', (_req, res) => res.json({ name: 'Subspace API', health: '/api/health', docs: 'https://github.com/Paradox-73/NCC-1701/blob/main/docs/PROTOCOL.md' }));
   app.use('/api', limiter(config.apiRateLimit));
   app.use('/api', authRoutes({ config })); // login, me and health
   app.use('/api', requireAuth(config.jwtSecret));
   const deps = { config, states, detector, alerts, metrics, ingest, getTelemetry, writer, world };
   app.use('/api', sourceRoutes(deps), telemetryRoutes(deps), alertRoutes(deps), adminRoutes(deps), shipRoutes(deps));
-  app.use('/api', (_req, res) => res.status(404).json({ error: 'not found' }));
+  app.use((_req, res) => res.status(404).json({ error: 'not found' }));
   app.use(errorHandler(log));
 
   const timers = [];

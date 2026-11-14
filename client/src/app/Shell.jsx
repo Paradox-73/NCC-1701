@@ -64,6 +64,11 @@ export default function Shell({ powered, aboard }) {
 
   // ---- station changes ---------------------------------------------------------------------------------
   const current = stationAt(location.pathname)?.id ?? 'bridge';
+  // the browser tab names the page: "Engineering · Subspace"; signed out it is just "Subspace" again
+  useEffect(() => {
+    document.title = `${stationAt(location.pathname)?.label ?? 'Bridge'} · Subspace`;
+    return () => { document.title = 'Subspace'; };
+  }, [location.pathname]);
   const go = useCallback((st) => {
     setOverlay(null);
     if (!st || location.pathname === st.path) return;

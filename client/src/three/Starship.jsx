@@ -164,7 +164,7 @@ function Shields({ shields }) {
       const prev = last.current[key] ?? v;
       if (v < prev - 0.5) flash.current[key] = Math.min(1, (flash.current[key] ?? 0) + 0.55 + (prev - v) / 25);
       last.current[key] = v;
-      const f = (flash.current[key] ?? 0) * Math.exp(-3.2 * dt);
+      const f = (flash.current[key] ?? 0) * Math.exp(-1.6 * dt);
       flash.current[key] = f < 0.002 ? 0 : f;
       const m = mats[i];
       m.color.copy(SHIELD).lerp(SHIELD_LOW, v < 30 ? 1 - v / 30 : 0);

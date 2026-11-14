@@ -31,17 +31,21 @@ function Restricted({ station, onBack }) {
   );
 }
 
-/** A station screen, or its restricted panel. `?ship=N` shows ship N of the task force instead of the Enterprise. */
+/**
+ * A station screen, or its restricted panel. `?ship=N` (a Starfleet ship card opens /history?ship=N) shows ship N of the
+ * task force instead of the Enterprise, when the role sees that ship; another ship remounts the screen, so it starts over.
+ */
 export default function StationRoute({ station, onBack }) {
   const { user } = useAuth();
   const [params] = useSearchParams();
   if (!PAGES.includes(station) && !canEnter(user, station)) return <Restricted station={station} onBack={onBack} />;
   const Screen = SCREENS[station.id];
   const ship = Number(params.get('ship'));
+  const shipId = user.ships?.includes(ship) ? ship : undefined;
   return (
     <Boundary>
       <Suspense fallback={<div className="station-msg"><Delta emblem="command" /><span className="display">Powering up {station.label}</span></div>}>
-        <Screen station={station} {...(user.ships?.includes(ship) && { shipId: ship })} />
+        <Screen key={shipId ?? 'own'} station={station} {...(shipId && { shipId })} />
       </Suspense>
     </Boundary>
   );

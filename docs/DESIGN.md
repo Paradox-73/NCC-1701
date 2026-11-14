@@ -167,7 +167,7 @@ Below 1024 px the monitors stack in one column, the decorative grid hides, and t
 | `CaptainsLog` | Feed of alerts, commands and scenario steps, each as a log line with a stardate | Newest first, filter by severity, acknowledge button. |
 | `AlertBars` | The condition bars at the viewport edges | See Condition modes. |
 | `FleetMap` | 2D sector plot of the task force with headings, short trails and a condition ring per ship | Canvas, in the shared animation loop. |
-| `ShipCard` | One ship of the task force: registry, name, condition, warp, weakest shield, open alerts, link state | Condition from the ship's overview row. Click opens that ship: the Enterprise's bridge, or another ship's helm (`/helm?ship=N`; every station takes `?ship=N`). |
+| `ShipCard` | One ship of the task force: registry, name, condition, warp, weakest shield, open alerts, link state | Condition from the ship's overview row. Click opens that ship's history (`/history?ship=N`; every station takes `?ship=N` for a ship the role sees), so a lost ship shows its last readings. |
 | `Turbolift` | Station change, and the station picker on `Ctrl+K` | The transition is in Motion. |
 | `ScenarioConsole` | Picks a TOS episode scenario, starts and stops it, shows its timeline with step markers | Captain and admin only. The list and the step times come from `shared/scenarios`, the progress from the `scenario` event, so every console shows the same run. |
 | `KeyCap` | A small key label on a button | Space Mono 10 px in a 1 px `line` box. |

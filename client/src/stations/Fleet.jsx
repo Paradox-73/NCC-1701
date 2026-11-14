@@ -118,7 +118,7 @@ function ShipCard({ id, onOpen }) {
     </>
   );
   const style = { display: 'flex', flexDirection: 'column', gap: 8, width: '100%', padding: '10px 12px', border: 0, borderRadius: 8, textAlign: 'left', background: '#ffffff07', boxShadow: `inset 0 0 0 1px ${link === 'lost' ? '#ff4a5555' : '#ffffff12'}` };
-  return <button type="button" className="fleet-card" style={style} onClick={() => onOpen(id)} aria-label={`Open ${shipName(id)}`}>{body}</button>;
+  return <button type="button" style={style} onClick={() => onOpen(id)} aria-label={`Open the history of ${shipName(id)}`} title="Open this ship's history">{body}</button>;
 }
 
 const SEV = { critical: ['crit', 'RED'], warn: ['warn', 'YELLOW'], info: ['info', 'INFO'] };
@@ -213,8 +213,8 @@ function Scenarios({ cmd }) {
 export default function Fleet({ onOpenShip }) {
   useTick();
   const navigate = useNavigate();
-  // a ship card opens that ship: the Enterprise's bridge, or the helm of another ship of the task force
-  const open = onOpenShip ?? ((id) => navigate(id === 1 ? '/bridge' : `/helm?ship=${id}`));
+  // a ship card opens that ship's history, stored then live: for a lost ship, the record of its last minutes
+  const open = onOpenShip ?? ((id) => navigate(`/history?ship=${id}`));
   const { user } = useAuth();
   const ids = SHIPS.map((s) => s.id);
   const groups = ['helm', 'shields', 'crewsummary'].filter((g) => user?.groups?.includes(g));

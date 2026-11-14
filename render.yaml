@@ -29,5 +29,5 @@ services:
         value: 1
       - key: SIM_EMBED
         value: 1
-      - key: SIM_HZ # a low rate fits the free plan's small CPU share
-        value: 5
+      - key: SIM_PROFILE # the registry's hostedHz: Enterprise 20 Hz, sister ships 5 Hz, one sickbay hub at 1 Hz (about 34 MB of
+        value: hosted   # telemetry an hour, so the 2 h TTL stays far under the 512 MB of a free Atlas cluster)

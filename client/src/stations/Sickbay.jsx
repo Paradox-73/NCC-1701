@@ -235,7 +235,7 @@ export default function Sickbay({ shipId = 1 }) {
       </Monitor>
       <Monitor title="Watch list" meta="over 2σ from baseline" state={sumState} className="st-c4" style={{ '--mh': '320px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-          <dl className="st-kv" style={{ gridTemplateColumns: 'repeat(4, auto 1fr)', padding: '10px 12px', gap: '6px 8px', borderBottom: '1px solid #ffffff0d' }}>
+          <dl className="st-kv" style={{ gridTemplateColumns: 'repeat(2, auto 1fr)', padding: '10px 12px', gap: '6px 8px', borderBottom: '1px solid #ffffff0d' }}>
             <dt>Aboard</dt><dd style={{ fontSize: 14 }}><Num value={read(shipId, 'crewAboard')} className="" /></dd>
             <dt>Watch</dt><dd style={{ fontSize: 14 }}><Num value={read(shipId, 'crewWatch')} className="" level={levelOf('crewWatch', read(shipId, 'crewWatch'))} /> <LevelChip level={levelOf('crewWatch', read(shipId, 'crewWatch'))} /></dd>
             <dt>Critical</dt><dd style={{ fontSize: 14 }}><Num value={read(shipId, 'crewCritical')} className="" level={levelOf('crewCritical', read(shipId, 'crewCritical'))} /> <LevelChip level={levelOf('crewCritical', read(shipId, 'crewCritical'))} /></dd>

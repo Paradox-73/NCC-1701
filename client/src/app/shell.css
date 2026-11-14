@@ -138,6 +138,9 @@
 /* ---- narrow screens ------------------------------------------------------------- */
 .tab__short { display: none; }
 @media (max-width: 1540px) { .tab__long { display: none; } .tab__short { display: inline; } .tab { padding: 0 10px; } }
+/* the condition word shrinks with the tabs, so a long "Yellow alert" never pushes the last tab out of view */
+.cond__short { display: none; }
+@media (max-width: 1540px) { .cond__long { display: none; } .cond__short { display: inline; } }
 @media (max-width: 1280px) { .stat--date { display: none; } }
 @media (max-width: 1100px) { .tab__short { display: none; } .tab { padding: 0 9px; } }
 @media (max-width: 900px) {

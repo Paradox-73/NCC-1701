@@ -1,37 +1,56 @@
-import { useEffect, useLayoutEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { inField } from '../lib/keys.js';
 import { ship } from '../lib/ship.js';
 import { KeyCap, LitButton } from '../ui/index.js';
 
 const KEY = 'ncc.toured';
+const REPLAY = 'ncc:tour';
 const STEPS = [
+  { target: 'help', title: 'Help', text: 'Replay this tour, see every keyboard shortcut (?) or take the turbolift to any station (Ctrl K) from here.' },
   { target: 'viewscreen', title: 'Main viewer', text: 'The live view outside the ship. V cycles forward, tactical and exterior; + and − magnify.' },
-  { target: 'tile-engineering', title: 'Stations around the rail', text: 'Each station shows one live reading. Click a station to go to its console. A lock means your role cannot enter it.' },
+  { target: 'tile-engineering', title: 'Stations on the wall', text: 'Each monitor shows one live reading from a station. Click one to go to its console. A lock means your role cannot enter it.' },
   { target: 'helm', title: 'Helm and navigation', text: 'Warp factor, heading and the weakest shield, straight from the ship’s telemetry.' },
   { target: 'chair', title: 'The captain’s chair', text: 'Condition and orders. The captain presses R for red alert, Y for yellow alert and N to stand down.' },
-  { target: 'log', title: 'Captain’s log', text: 'Alerts, orders and scenario steps, newest first. A acknowledges the newest alert.' },
-  { target: 'lift', title: 'Turbolift', text: 'Ctrl K takes you to any station; G then a letter jumps straight there. Press ? for every shortcut.' },
+  { target: 'log', title: 'Captain’s log', text: 'The newest alerts, orders and scenario steps. All alerts opens the full list; A acknowledges the newest alert.' },
+  { target: 'lift', title: 'Turbolift', text: 'The station tabs, or Ctrl K, take you to any station; G then a letter jumps straight there. Starfleet Command, the admin sign-in, also sees fleet server metrics and the scenario launcher.' },
 ];
 const seen = () => { try { return localStorage.getItem(KEY) === '1'; } catch { return true; } };
+const modal = () => !!document.querySelector('[aria-modal="true"]');
 // a modal panel is open (turbolift, scenario picker, shortcut sheet) or a scenario is running: the tour keeps out of the way
-const busy = () => !!document.querySelector('[aria-modal="true"]') || ['running', 'awaiting'].includes(ship.scenario?.state);
+const busy = () => modal() || ['running', 'awaiting'].includes(ship.scenario?.state);
+// the first element of a step that is on screen: the turbolift is the tab row on a desktop and the menu button on a phone
+const targetOf = (name) => [...document.querySelectorAll(`[data-tour="${name}"]`)].find((el) => el.getClientRects().length) ?? null;
+
+let replay = false;
+/** Starts the tour over from its first step: at once while the bridge is open, else when it next opens (Help menu). */
+export function replayTour() {
+  replay = true;
+  window.dispatchEvent(new Event(REPLAY));
+}
 
 /**
- * The first-visit tour of the bridge: a spotlight on each part with a short caption. It waits for the visitor's first
- * click or key press on the bridge, never starts over a panel or a running scenario, and closes itself when one
- * opens. Remembered in the browser.
+ * The tour of the bridge: a spotlight on each part with a short caption. On a first visit it waits for the visitor's
+ * first click or key press on the bridge, never starts over a panel or a running scenario, and closes itself when one
+ * opens; it is remembered in the browser. Help, Replay the tour starts it again from step 1, even during a scenario.
  */
 export default function Tour() {
   const [step, setStep] = useState(-1);
   const [box, setBox] = useState(null);
-  const done = () => { try { localStorage.setItem(KEY, '1'); } catch { /* private mode */ } setStep(-1); };
+  const asked = useRef(false); // replayed from Help: only a modal panel ends it early
+  const done = () => { try { localStorage.setItem(KEY, '1'); } catch { /* private mode */ } asked.current = false; setStep(-1); };
   const s = STEPS[step];
 
+  useEffect(() => {
+    const start = () => { if (!replay) return; replay = false; asked.current = true; setStep(0); };
+    start();
+    window.addEventListener(REPLAY, start);
+    return () => window.removeEventListener(REPLAY, start);
+  }, []);
   useEffect(() => {
     if (seen()) return undefined;
     let timer = 0;
     // checked a moment after the press, once whatever it opened is on screen
-    const poke = () => { clearTimeout(timer); timer = setTimeout(() => { if (!busy()) { off(); setStep(0); } }, 400); };
+    const poke = () => { clearTimeout(timer); timer = setTimeout(() => { if (!busy()) { off(); setStep((n) => (n < 0 ? 0 : n)); } }, 400); };
     const off = () => { window.removeEventListener('pointerdown', poke, true); window.removeEventListener('keydown', poke, true); };
     window.addEventListener('pointerdown', poke, true);
     window.addEventListener('keydown', poke, true);
@@ -39,13 +58,13 @@ export default function Tour() {
   }, []);
   useEffect(() => {
     if (!s) return undefined;
-    const id = setInterval(() => { if (busy()) done(); }, 300);
+    const id = setInterval(() => { if (asked.current ? modal() : busy()) done(); }, 300);
     return () => clearInterval(id);
   }, [step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useLayoutEffect(() => {
     if (!s) return undefined;
-    const el = document.querySelector(`[data-tour="${s.target}"]`);
+    const el = targetOf(s.target);
     if (!el) { setBox(null); return undefined; }
     el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     const measure = () => { const r = el.getBoundingClientRect(); setBox({ x: r.left - 8, y: r.top - 8, w: r.width + 16, h: r.height + 16 }); };

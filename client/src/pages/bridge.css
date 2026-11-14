@@ -157,7 +157,7 @@
 
 /* ---- narrow screens: the bridge as a list of stations ---- */
 .bridge--list { display: block; overflow: visible; overflow-x: clip; background: var(--void); }
-.bridge__list { display: grid; gap: 12px; padding: 12px; padding-bottom: 32px; }
+.bridge__list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 12px; padding-bottom: 32px; } /* a long ticker line must not widen the column past the phone */
 .bridge__list > * { position: relative; left: auto; top: auto; width: auto; height: auto; }
 .bridge--list .viewscreen { height: auto; }
 .bridge--list .viewscreen__glass { aspect-ratio: 16 / 9; flex: none; border-radius: 16px; padding: 5px; }

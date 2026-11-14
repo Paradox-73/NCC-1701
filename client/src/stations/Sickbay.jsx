@@ -262,7 +262,7 @@ export default function Sickbay({ shipId = 1 }) {
       <Monitor title="Biobed" meta={shown ? `crew ${pad3(shown)}${sel ? '' : ' · furthest from baseline'}` : 'no patient'} state={stBio} restricted={MEDICAL} className="st-c4" style={{ '--mh': '300px' }}>
         <Biobed hub={hub} n={shown} />
       </Monitor>
-      <Monitor title="Vital trends" meta={shown ? `crew ${pad3(shown)} · last 10 minutes · grey stored, blue live` : 'select a crew member'} state={stBio} restricted={MEDICAL} className="st-c8" style={{ '--mh': '680px' }}>
+      <Monitor title="Vital trends" meta={shown ? `crew ${pad3(shown)} · last 10 minutes · grey stored, blue live` : 'select a crew member'} state={stBio} restricted={MEDICAL} className="st-c8" style={{ '--mh': shown ? '680px' : '200px' }}>
         {shown ? (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gridAutoRows: 'minmax(0, 1fr)', gap: 10, height: '100%', padding: 10 }}>
             {VITALS.map((x) => <Trend key={`${shown}${x.v}`} hub={hub} k={`${x.v}_${pad3(shown)}`} label={x.label} unit={x.unit} dec={x.dec ?? 0} />)}

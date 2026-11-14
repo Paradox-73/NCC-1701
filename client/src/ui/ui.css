@@ -243,6 +243,7 @@
   .st-grid { overflow: visible; grid-template-rows: none; margin: 6px 6px 0; padding: 6px; gap: 8px; border-radius: 14px 14px 0 0; }
   .st-grid > * { grid-column: 1 / -1 !important; grid-row: auto !important; }
   .st-grid > .monitor { height: var(--mh, auto); }
+  .monitor:not([data-state='live']) .monitor__screen { min-height: 140px; } /* a stacked monitor with only its overlay has no content height */
   .console-strip { min-height: 0; padding: 8px 8px max(8px, env(safe-area-inset-bottom)); gap: 8px; }
   .console-strip__grid, .jewel-row { display: none; }
   .console-strip__controls { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; max-width: none; width: 100%; }

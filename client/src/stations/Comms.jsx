@@ -106,7 +106,8 @@ function Hail({ src, target, onTarget }) {
 }
 
 const SEV = { critical: ['crit', 'RED'], warn: ['warn', 'YELLOW'], info: ['info', 'INFO'], refused: ['crit', 'REFUSED'], log: ['ok', 'LOG'] };
-const sender = (by, src) => (!by || by === 'log' ? shipCode(src) : by === 'alert system' ? 'ALERTS' : by.toUpperCase());
+// who a log line is from: the scenario's script and its orders, the alert system, or the officer who gave the order
+const sender = (by, src) => (!by ? shipCode(src) : by === 'log' || by === 'scenario' ? 'SCENARIO' : by === 'alert system' ? 'ALERTS' : by.toUpperCase().slice(0, 10));
 /** The ship's traffic, newest first: the log lines the server sends to its room (orders, hails, scenario messages) and its alerts. */
 function Log({ src }) {
   const now = Date.now();

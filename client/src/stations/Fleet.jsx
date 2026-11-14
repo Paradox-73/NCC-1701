@@ -5,6 +5,7 @@ import Chart from '../components/Chart.jsx';
 import VirtualList from '../components/VirtualList.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import { useSubscription, useTick } from '../lib/hooks.js';
+import { commandWords } from '../lib/commands.js';
 import { ship } from '../lib/ship.js';
 import { ackAlert, state } from '../lib/store.js';
 import { SHIPS, alertFlagOf, conditionOf, isOpen, linkOf, posOf, read, ringOf, shipCode, shipName, stardate, useCommand } from './parts/data.js';
@@ -177,11 +178,17 @@ function System() {
   );
 }
 
-/** The six episodes, from the scenario scripts; the timeline follows the server's `scenario` events, on every bridge. */
+/**
+ * The six episodes, from the scenario scripts. The timeline follows the server's `scenario` event, so every console, and
+ * one that signs in mid-scenario, shows the same clock and step, and the order a step is waiting for.
+ */
 function Scenarios({ cmd }) {
   const s = ship.scenario;
   const live = s?.state === 'running' || s?.state === 'awaiting';
   const t = s?.t ?? 0, len = s?.duration || 1;
+  const wait = live ? s.awaiting : null;
+  const label = !s ? 'No scenario has run since sign-in'
+    : `${s.title}: ${STATE_WORD[s.state] ?? s.state} · ${fmt(Math.min(t, len), 0)} of ${fmt(len, 0)} s${live ? ` · step ${s.step} of ${s.steps}` : ''}${wait ? ` · waiting for ${commandWords(wait.type, wait)} (${fmt(wait.secondsLeft, 0)} s)` : ''}`;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '10px 12px', gap: 10 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 8 }}>
@@ -199,9 +206,9 @@ function Scenarios({ cmd }) {
         })}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span className="st-label" style={{ minWidth: 150 }}>{s ? `${s.title}: ${STATE_WORD[s.state] ?? s.state} · ${fmt(t, 0)} of ${fmt(len, 0)} s` : 'No scenario has run since sign-in'}</span>
+        <span className="st-label" style={{ minWidth: 150, color: wait ? C.warn : undefined }} aria-live="polite">{label}</span>
         <div style={{ position: 'relative', flex: 1, height: 14, borderRadius: 3, background: '#ffffff0a' }} aria-hidden="true">
-          {s && <i style={{ position: 'absolute', inset: '0 auto 0 0', width: `${clamp(t / len) * 100}%`, background: C.accent, borderRadius: 3, opacity: live ? 0.6 : 0.3 }} />}
+          {s && <i style={{ position: 'absolute', inset: '0 auto 0 0', width: `${clamp(t / len) * 100}%`, background: wait ? C.warn : C.accent, borderRadius: 3, opacity: live ? 0.6 : 0.3 }} />}
           {s && MARKS[s.id]?.map((x) => <b key={x} style={{ position: 'absolute', top: -3, bottom: -3, left: `${clamp(x / len) * 100}%`, width: 2, background: x <= t ? C.ink : C.mute }} />)}
         </div>
       </div>

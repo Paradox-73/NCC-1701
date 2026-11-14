@@ -3,6 +3,7 @@ import Chart from '../components/Chart.jsx';
 import VirtualList from '../components/VirtualList.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import { useTick } from '../lib/hooks.js';
+import { play } from '../lib/sound.js';
 import { getRing } from '../lib/store.js';
 import { crewHubOf, crewLabel, deckOfCrew } from '@ncc/shared/schema.js';
 import { DECK_NAMES, canSee, levelOf, meta, monState, pad2, read, useCommand, useFeed, worst } from './parts/data.js';
@@ -131,8 +132,24 @@ function CrewGrid({ hub, base, sel, onSel }) {
   );
 }
 
+/** Plays the heartbeat cue at the patient's live heart rate while the bed shows them; silent with no reading. */
+function useHeartbeat(hub, n) {
+  useEffect(() => {
+    if (!n) return undefined;
+    let timer;
+    const beat = () => {
+      const hr = getRing(hub, BIO[DECK_OF(n) - 1])?.last?.(`hr_${pad3(n)}`);
+      if (hr) play('heartbeat');
+      timer = setTimeout(beat, 60000 / clamp(hr ?? 60, 20, 220));
+    };
+    beat();
+    return () => clearTimeout(timer);
+  }, [hub, n]);
+}
+
 /** The sickbay bed display: a vertical scale per vital with a pointer arrow, and a dot pulsing at the live heart rate. */
 function Biobed({ hub, n }) {
+  useHeartbeat(hub, n);
   if (!n) return <div className="st-blank"><b>NO PATIENT</b><span>Select a crew member on the grid or the watch list.</span></div>;
   const r = getRing(hub, BIO[DECK_OF(n) - 1]);
   const hr = r?.last?.(`hr_${pad3(n)}`);

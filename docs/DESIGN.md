@@ -230,6 +230,7 @@ Budget: 1.5 MB for all cues together after trimming. If a clip cannot be used, t
 | `lift` | Login and power-up | `turbolift/tos_turbolift.mp3` | 598 KB | 1.5 s | Rising filtered noise |
 | `warp` | Warp engage | `warp/tos_flyby_1.mp3` | 150 KB | whole | Noise with a rising low-pass |
 | `chirp` | Incoming subspace message | `communicator/tos_chirp_1.mp3` | 150 KB | whole | Two quick square blips |
+| `boom` | Scenario hull hit (the `boom` effect) | `explosions/tos_hullhit_1.mp3` | 150 KB | 1.5 s | Low noise burst with a falling sine |
 | `heartbeat` | Sickbay, selected crew member, at their live heart rate | `medicaldevices/tos_heartbeats_1.mp3` | 982 KB | one beat, about 0.4 s | Sine 900 to 500 Hz, 120 ms |
 | `reactor` | Engine cold restart | `other/tos_reactor_up_down.mp3` | 4.6 MB | 3 s | Rising sawtooth through a sweeping filter |
 | `ambience` | Optional bridge background loop, its own toggle, off by default | `background/tos_bridge_2.mp3` | 9.2 MB | a 20 s loop at 48 kbps | none |

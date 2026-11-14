@@ -5,6 +5,8 @@ import { useSyncExternalStore } from 'react';
 import { api } from './api.js';
 import { play } from './sound.js';
 
+// The cue an acknowledged command plays (DESIGN.md, Sound); every other command plays `ack`.
+const CUE = { 'comms.hail': 'hail', 'tactical.phasers': 'phaser', 'tactical.torpedo': 'torpedo', 'transporter.energize': 'transport', 'engineering.coldRestart': 'reactor' };
 const inflight = new Map(); // type -> number of requests in flight
 const listeners = new Set();
 const resultListeners = new Set();
@@ -27,7 +29,7 @@ export async function sendCommand(type, payload = {}, shipId = 1) {
   try {
     const res = await api(`/api/ships/${shipId}/command`, { method: 'POST', body: { type, ...payload } });
     out = { ok: true, rtt: Math.round(performance.now() - t0), at: res?.at ?? Date.now(), text: res?.text };
-    play('ack');
+    play(CUE[type] ?? 'ack');
   } catch (e) {
     out = { ok: false, error: e.message, at: Date.now() };
   } finally {

@@ -58,7 +58,9 @@ const CUE = { chirp: 'chirp', alarm: 'red', klaxon: 'yellow', warp: 'warp', boom
 onEvent('condition', (p) => { if (LEVELS.includes(p?.level)) pushed.set(Number(p.shipId ?? SHIP), { level: p.level, at: performance.now() }); });
 onEvent('log', (l) => {
   logLine(l, true);
-  if (l.sound && Number(l.shipId ?? SHIP) === SHIP) play(CUE[l.sound] ?? l.sound);
+  if (Number(l.shipId ?? SHIP) !== SHIP) return; // another ship's line is kept for its stations, quietly
+  if (l.sound) play(CUE[l.sound] ?? l.sound);
+  else if (l.by === 'log') play('intercom'); // a scenario script line (runner.js sends by: 'log')
 });
 onEvent('scenario', (s) => { ship.scenario = s; if (s?.state === 'ended' || s?.state === 'stopped') ship.scene = null; });
 onEvent('fx', (f) => {

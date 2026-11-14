@@ -14,7 +14,7 @@ const SETTLE_COMMANDS = new Set(['helm.warp', 'helm.impulse', 'helm.stop']);
  * `emit(shipId, event, payload)` sends to room ship:<id>, `detector` is told when an operating point changes.
  */
 export class World {
-  constructor({ sendSim, emit, now = Date.now, detector, scenarios, online = () => true, latest = () => null, log }) {
+  constructor({ sendSim, emit, now = Date.now, detector, scenarios, online = () => true, latest = () => null, log, resolveAlerts = async () => 0 }) {
     this.latest = latest;
     this.sendSim = sendSim;
     this._emit = emit;
@@ -22,6 +22,7 @@ export class World {
     this.detector = detector;
     this.online = online;
     this.log = log;
+    this.resolveAlerts = resolveAlerts;
     this.ships = new Map(SHIP_IDS.map((id) => [id, { condition: 'normal', lines: [], stardateOffset: 0 }]));
     this.runner = new ScenarioRunner(this, scenarios);
   }
@@ -59,6 +60,17 @@ export class World {
     if (s.lines.length > LOG_KEEP) s.lines.shift();
     this.emit(id, EVENTS.SHIP_LOG, line);
     return line;
+  }
+
+  /** A scenario starts or ends: closes the alerts its ships have open. The database write runs in the background. */
+  scenarioEdge(shipIds, reason) {
+    Promise.resolve(this.resolveAlerts(shipIds, reason)).catch((err) => this.log?.error({ err: err.message }, 'resolving alerts failed'));
+  }
+
+  /** Puts a ship's stardate back on the real clock; the bridges get a 'timewarp' that undoes the offset. */
+  resetStardate(id) {
+    const s = this.ship(id);
+    if (s.stardateOffset) this.fx(id, 'timewarp', { stardateDelta: -s.stardateOffset });
   }
 
   /** A visual cue for the dashboards. A 'timewarp' with `stardateDelta` moves the ship's stardate. */

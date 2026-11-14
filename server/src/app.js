@@ -58,6 +58,7 @@ export function createServer(overrides = {}) {
     detector,
     scenarios: SCENARIOS,
     log,
+    resolveAlerts: (ids, reason) => alerts.resolveForShips(ids, reason),
   });
   const writer = new Writer({
     getCollection: getTelemetry,

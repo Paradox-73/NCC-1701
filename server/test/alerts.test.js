@@ -95,3 +95,24 @@ test('metrics and the command channel are for Starfleet Command only, and the co
   assert.deepEqual(await got, { type: 'fault', args: { channel: 'chamberTemp' } });
   assert.equal((await api('/api/sim/1/command', cmd, { method: 'POST', body: JSON.stringify({ type: 'Bad Type!' }) })).status, 400);
 });
+
+test('ack-all acknowledges the open alerts the role may see and refuses a call without a token', async () => {
+  const before = await list(await token('captain', 'ncc-captain'), '?unacked=1');
+  assert.ok(before.length > 0);
+  assert.equal((await api('/api/alerts/ack-all', null, { method: 'POST' })).status, 401);
+  const r = await api('/api/alerts/ack-all', await token('captain', 'ncc-captain'), { method: 'POST' });
+  assert.deepEqual([r.status, r.body.acked], [200, before.length]);
+  assert.deepEqual(await list(await token('captain', 'ncc-captain'), '?unacked=1'), []);
+  assert.equal((await api('/api/alerts/ack-all', await token('captain', 'ncc-captain'), { method: 'POST' })).body.acked, 0);
+});
+
+test('resolveForShips closes open warn and critical alerts of a ship and keeps info alerts and other ships alone', async () => {
+  const mk = (sourceId, type, severity) => ({ sourceId, ts: Date.now(), type, group: 'shields', channel: 'shieldFore', value: 1, threshold: 2, severity, message: type });
+  await Alert.create([mk(1, 'rs-warn', 'warn'), mk(1, 'rs-crit', 'critical'), mk(1, 'rs-info', 'info'), mk(2, 'rs-other', 'critical')]);
+  const n = await server.alerts.resolveForShips([1], 'scenario test started');
+  assert.ok(n >= 2);
+  const by = Object.fromEntries((await Alert.find({ type: /^rs-/ }).lean()).map((a) => [a.type, a]));
+  for (const t of ['rs-warn', 'rs-crit']) assert.deepEqual([by[t].ack.by, by[t].resolved.reason], ['system', 'scenario test started']);
+  assert.equal(by['rs-info'].resolved, undefined);
+  assert.equal(by['rs-other'].resolved, undefined);
+});

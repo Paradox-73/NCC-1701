@@ -109,7 +109,10 @@ test('The Naked Time: crew 207 first, then the spread; ship alerts reach everyon
   const warp = b.ev('fx').find((e) => e.payload.name === 'timewarp').payload;
   assert.ok(Math.abs(warp.stardateDelta + 29.58) < 0.01);
   assert.ok(b.ev('log').some((e) => e.payload.text.includes('Time warp')));
-  assert.ok(b.world.state(1).stardateOffset < -29.5, 'the ship keeps the offset, so a late joiner sees the rolled-back stardate');
+  assert.equal(b.world.state(1).stardateOffset, 0, 'the offset is gone once the scenario ends');
+  const resets = b.ev('fx').filter((e) => e.payload.name === 'timewarp');
+  assert.ok(Math.abs(resets.reduce((n, e) => n + e.payload.stardateDelta, 0)) < 1e-9, 'the bridges get a second timewarp that undoes the first');
+  assert.deepEqual(b.resolved.map((r) => r.reason), ['scenario the-naked-time started', 'scenario the-naked-time ended'], 'open alerts are resolved when the scenario starts and when it ends');
   assert.deepEqual(b.ev('command:ack').filter((e) => e.payload.by === 'scenario').map((e) => e.payload.type), ['medical.inoculate', 'engineering.coldRestart']);
   settle(b);
   nominalAfter(b, 1, ['reactionRate', 'warpField', 'powerTotal', 'descentRate', 'orbitAlt', 'hullTemp', 'warpFactor']);

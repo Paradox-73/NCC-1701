@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { EVENTS, ROLES, SOURCES, canSeeGroup } from '@ncc/shared/schema.js';
+import { EVENTS, ROLES, SOURCES, canSeeGroup, shipOf } from '@ncc/shared/schema.js';
 import { Alert } from './models/index.js';
 
 const wire = (a) => ({
@@ -49,6 +49,28 @@ export function makeAlerts({ io, log, metrics }) {
       ).lean();
       if (a) room(a.group, a.sourceId).emit(EVENTS.ALERT_ACK, { id: String(a._id), by: user.username });
       return a;
+    },
+    /** Acknowledges every open alert the user's role may see and ack; returns how many. */
+    async ackAll(user) {
+      if (!ROLES[user.role]?.canAck) return 0;
+      const filter = { 'ack.by': { $exists: false }, group: { $in: [...ROLES[user.role].groups, null] }, ...sourceFilter(user.role) };
+      const docs = await Alert.find(filter, { _id: 1, group: 1, sourceId: 1 }).lean();
+      if (!docs.length) return 0;
+      await Alert.updateMany({ _id: { $in: docs.map((d) => d._id) }, 'ack.by': { $exists: false } }, { ack: { by: user.username, at: Date.now() } });
+      for (const a of docs) room(a.group, a.sourceId).emit(EVENTS.ALERT_ACK, { id: String(a._id), by: user.username });
+      return docs.length;
+    },
+    /** A scenario starts or ends: its ships' open warn and critical alerts are closed and acknowledged as the system, so the next run starts from a clean list. */
+    async resolveForShips(shipIds, reason) {
+      const sourceIds = SOURCES.filter((s) => shipIds.includes(shipOf(s.id))).map((s) => s.id);
+      const docs = await Alert.find({ sourceId: { $in: sourceIds }, severity: { $ne: 'info' }, 'resolved.at': { $exists: false } }, { _id: 1, group: 1, sourceId: 1, 'ack.by': 1 }).lean();
+      if (!docs.length) return 0;
+      const now = Date.now();
+      const ids = docs.map((d) => d._id);
+      await Alert.updateMany({ _id: { $in: ids }, 'ack.by': { $exists: false } }, { ack: { by: 'system', at: now, reason } });
+      await Alert.updateMany({ _id: { $in: ids } }, { resolved: { at: now, reason } });
+      for (const a of docs) if (!a.ack?.by) room(a.group, a.sourceId).emit(EVENTS.ALERT_ACK, { id: String(a._id), by: 'system' });
+      return docs.length;
     },
     /** The detector's open conditions live in memory, so alerts left open by a stopped server have nobody watching them: close them, and acknowledge them as the system so every client shows them as seen. */
     async closeStale() {

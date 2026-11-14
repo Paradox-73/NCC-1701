@@ -37,6 +37,7 @@ export class ScenarioRunner {
     const steps = sc.steps.map((s, i) => ({ s, i })).sort((a, b) => a.s.t - b.s.t || a.i - b.i).map((x) => x.s);
     this.cur = { sc, steps, i: 0, t: 0, last: this.world.now(), awaiting: null, by };
     this.lastProgressSec = -1;
+    this.world.scenarioEdge(sc.ships, `scenario ${sc.id} started`);
     this.#emit('running');
     return sc;
   }
@@ -113,7 +114,9 @@ export class ScenarioRunner {
   #finish(state, by) {
     const c = this.cur;
     this.cur = null;
+    this.world.scenarioEdge(c.sc.ships, `scenario ${c.sc.id} ${state}`);
     for (const ship of c.sc.ships) {
+      this.world.resetStardate(ship);
       this.world.sendSim(ship, { type: 'scn.release', args: { over: RELEASE_SEC } });
       this.world.setCondition(ship, 'normal', by);
       if (this.#offCruise(ship)) this.world.settle(ship, 30_000); // the ship goes back to warp 6: its statistics follow, but a scenario that never left cruise leaves them alone

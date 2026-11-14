@@ -4,7 +4,7 @@
 import { useSyncExternalStore } from 'react';
 
 const KEY = 'ncc.sound';
-const CUES = ['press', 'ack', 'hail', 'intercom', 'yellow', 'red', 'station', 'lift', 'warp', 'chirp', 'phaser', 'torpedo', 'boom', 'transport', 'reactor'];
+const CUES = ['press', 'ack', 'hail', 'intercom', 'yellow', 'red', 'station', 'lift', 'warp', 'chirp', 'phaser', 'torpedo', 'boom', 'transport', 'reactor', 'heartbeat'];
 const COOLDOWN = { press: 60, ack: 150, red: 4500, yellow: 2500, station: 300, lift: 1000 };
 
 let enabled = false;
@@ -121,6 +121,7 @@ const SYNTH = {
   boom: () => Math.max(noise(1.2, 700, 60, 0.6), tone('sine', 90, 35, 1.0, 0.5)),
   transport: () => Math.max(...[880, 887, 1320, 1331].map((f) => tone('sine', f, f * 1.5, 2.2, 0.08))),
   reactor: () => tone('sawtooth', 40, 220, 2.5, 0.2),
+  heartbeat: () => tone('sine', 900, 500, 0.12, 0.3),
 };
 
 /** Plays a cue when sound is on. `times` repeats it back to back (red alert plays twice, then silence). */

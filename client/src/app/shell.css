@@ -21,6 +21,10 @@
 .tab.active { color: var(--ink); }
 .tab::after { content: ''; position: absolute; left: 10px; right: 10px; bottom: -2px; height: 2px; background: var(--accent); transform: scaleX(0); transition: transform var(--t-toggle) var(--ease-in); z-index: 2; }
 .tab.active::after { transform: scaleX(1); }
+/* the station you are at is lit in its division's colour: a wash up from the railing, a glowing bar and a lit pill */
+.tab.active { color: #fff; background: linear-gradient(0deg, color-mix(in oklab, var(--div, var(--accent)) 26%, transparent), transparent 85%); text-shadow: 0 0 10px color-mix(in oklab, var(--div, var(--accent)) 60%, transparent); }
+.tab.active::after { left: 4px; right: 4px; height: 3px; bottom: -2px; background: var(--div, var(--accent)); box-shadow: 0 0 12px 1px var(--div, var(--accent)); }
+.tab.active .pill { height: 20px; box-shadow: 0 0 8px var(--div, var(--accent)); }
 .tab__lock { width: 13px; height: 13px; color: var(--mute); }
 .topbar__right { margin-left: auto; display: flex; align-items: center; gap: 14px; flex: none; }
 .stat { display: flex; flex-direction: column; gap: 3px; line-height: 1; }
@@ -87,6 +91,22 @@
 .lift-light { position: fixed; right: 0; bottom: 0; z-index: 70; width: 4px; height: 120px; pointer-events: none; opacity: 0;
   background: linear-gradient(0deg, transparent, var(--lit-amber) 50%, transparent); box-shadow: 0 0 16px var(--lit-amber);
   animation: lift-run var(--t-station) var(--ease-in); }
+/* turbolift doors: on every station change they stand shut over the new view for a beat, then part from the seam */
+.lift-doors { position: fixed; inset: calc(var(--topbar-h) + 2px) 0 0; z-index: 60; display: flex; pointer-events: none; }
+.lift-doors i { flex: 1; background: linear-gradient(180deg, #2a2d33, #16181c 45%, #0d0e11); animation: door-l 460ms 140ms cubic-bezier(0.6, 0, 0.2, 1) forwards; }
+.lift-doors i:first-child { box-shadow: inset -2px 0 0 var(--lit-amber), 6px 0 18px -6px var(--lit-amber); }
+.lift-doors i:last-child { box-shadow: inset 2px 0 0 var(--lit-amber); animation-name: door-r; }
+@keyframes door-l { to { transform: translateX(-101%); } }
+@keyframes door-r { to { transform: translateX(101%); } }
+/* then the station's screens come on one after another */
+.view--station .st-grid > * { animation: screen-in 380ms var(--ease-in) both; animation-delay: calc(var(--k, 0) * 45ms + 260ms); }
+.view--station .st-grid > :nth-child(2) { --k: 1; } .view--station .st-grid > :nth-child(3) { --k: 2; } .view--station .st-grid > :nth-child(4) { --k: 3; }
+.view--station .st-grid > :nth-child(5) { --k: 4; } .view--station .st-grid > :nth-child(6) { --k: 5; } .view--station .st-grid > :nth-child(n + 7) { --k: 6; }
+@keyframes screen-in { from { opacity: 0; transform: translateY(14px) scale(0.985); } }
+/* a panel whose subject changes (a new deck) slides its contents in */
+.swap-in { height: 100%; animation: swap-in 300ms var(--ease-in) both; }
+@keyframes swap-in { from { opacity: 0; transform: translateX(12px); } }
+@media (prefers-reduced-motion: reduce) { .lift-doors { display: none; } .view--station .st-grid > *, .swap-in { animation: none; } }
 @keyframes lift-run { 0% { opacity: 1; transform: translateY(0); } 85% { opacity: 1; } 100% { opacity: 0; transform: translateY(calc(-100dvh + 60px)); } }
 
 .station-msg { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--mute); padding: 48px 16px; text-align: center; }

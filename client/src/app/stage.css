@@ -62,3 +62,10 @@
   .stage { overflow-y: auto; }
   .stage__veil { background: linear-gradient(0deg, #020308 42%, #02030800 70%); }
 }
+
+/* On a laptop or wider, the ship holds on the left of the login (where the fly-by leaves it) and the console sits on
+   the right, over the dark side of the veil. Narrow and tall screens keep the console alone in the middle. */
+@media (min-aspect-ratio: 23/20) and (min-width: 900px) {
+  .stage[data-phase='identify'] .stage__ship { opacity: 1; transition: opacity 600ms var(--ease-in); }
+  .stage[data-phase='identify'] .identify { left: 71%; }
+}

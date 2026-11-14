@@ -269,7 +269,7 @@ export default function Engineering({ shipId = 1 }) {
           <DeckStack src={src} sel={deck} onSel={setDeck} />
         </Monitor>
         <Monitor title={`Deck ${pad2(deck)} · ${DECK_NAMES[deck - 1]}`} meta="history and live" state={st('lifesupport', 'gravity')} className="st-c7" style={{ '--mh': '620px' }}>
-          <DeckDetail src={src} deck={deck} />
+          <div key={deck} className="swap-in"><DeckDetail src={src} deck={deck} /></div>
         </Monitor>
     </Station>
   );

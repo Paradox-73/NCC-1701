@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { inField } from '../lib/keys.js';
 import { ship } from '../lib/ship.js';
 import { KeyCap, LitButton } from '../ui/index.js';
@@ -12,29 +13,31 @@ const STEPS = [
   { target: 'log', title: 'Captain’s log', text: 'Alerts, orders and scenario steps, newest first. A acknowledges the newest alert.' },
   { target: 'lift', title: 'Turbolift', text: 'Ctrl K takes you to any station; G then a letter jumps straight there. Press ? for every shortcut.' },
 ];
-const seen = () => { try { return localStorage.getItem(KEY) === '1'; } catch { return true; } };
 // a modal panel is open (turbolift, scenario picker, shortcut sheet) or a scenario is running: the tour keeps out of the way
 const busy = () => !!document.querySelector('[aria-modal="true"]') || ['running', 'awaiting'].includes(ship.scenario?.state);
 
 /**
- * The first-visit tour of the bridge: a spotlight on each part with a short caption. It waits for the visitor's first
- * click or key press on the bridge, never starts over a panel or a running scenario, and closes itself when one
- * opens. Remembered in the browser.
+ * The first-visit tour of the bridge: a spotlight on each part with a short caption. It starts as soon as the bridge
+ * has powered up, never over a panel or a running scenario (then it waits for the next click or key), and closes
+ * itself when one opens. Remembered in the browser.
  */
-export default function Tour() {
+export default function Tour({ steps = STEPS, storageKey = KEY, delay = 250 }) {
+  const seen = () => { try { return localStorage.getItem(storageKey) === '1'; } catch { return true; } };
   const [step, setStep] = useState(-1);
   const [box, setBox] = useState(null);
-  const done = () => { try { localStorage.setItem(KEY, '1'); } catch { /* private mode */ } setStep(-1); };
-  const s = STEPS[step];
+  const done = () => { try { localStorage.setItem(storageKey, '1'); } catch { /* private mode */ } setStep(-1); };
+  const s = steps[step];
 
   useEffect(() => {
     if (seen()) return undefined;
     let timer = 0;
-    // checked a moment after the press, once whatever it opened is on screen
-    const poke = () => { clearTimeout(timer); timer = setTimeout(() => { if (!busy()) { off(); setStep(0); } }, 400); };
+    const start = () => { if (!busy()) { off(); setStep(0); } };
+    // a press that found a panel open tries again a moment later, once whatever it opened is on screen
+    const poke = () => { clearTimeout(timer); timer = setTimeout(start, 400); };
     const off = () => { window.removeEventListener('pointerdown', poke, true); window.removeEventListener('keydown', poke, true); };
     window.addEventListener('pointerdown', poke, true);
     window.addEventListener('keydown', poke, true);
+    timer = setTimeout(start, delay); // straight after the bridge powers up, or the station's doors open
     return () => { off(); clearTimeout(timer); };
   }, []);
   useEffect(() => {
@@ -45,7 +48,7 @@ export default function Tour() {
 
   useLayoutEffect(() => {
     if (!s) return undefined;
-    const el = document.querySelector(`[data-tour="${s.target}"]`);
+    const el = document.querySelector(s.desk ? '.console-strip' : s.mon ? `section.monitor[aria-label="${s.mon}"]` : `[data-tour="${s.target}"]`);
     if (!el) { setBox(null); return undefined; }
     el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     const measure = () => { const r = el.getBoundingClientRect(); setBox({ x: r.left - 8, y: r.top - 8, w: r.width + 16, h: r.height + 16 }); };
@@ -60,7 +63,7 @@ export default function Tour() {
     const onKey = (e) => {
       if (inField(e.target) && !e.target.closest('.tour')) return; // keys typed into the turbolift or a form stay theirs
       if (e.key === 'Escape') done();
-      else if (e.key === 'ArrowRight' || e.key === 'Enter') setStep((n) => (n + 1 < STEPS.length ? n + 1 : (done(), -1)));
+      else if (e.key === 'ArrowRight' || e.key === 'Enter') setStep((n) => (n + 1 < steps.length ? n + 1 : (done(), -1)));
       else if (e.key === 'ArrowLeft') setStep((n) => Math.max(0, n - 1));
       else return;
       e.preventDefault();
@@ -76,20 +79,22 @@ export default function Tour() {
   const below = box ? vh - (box.y + box.h) > 200 || box.y < 220 : true;
   const top = box ? (below ? Math.min(vh - 210, box.y + box.h + 12) : Math.max(12, box.y - 12 - 190)) : vh / 2 - 90;
   const left = box ? Math.min(vw - cardW - 12, Math.max(12, box.x + box.w / 2 - cardW / 2)) : vw / 2 - cardW / 2;
-  return (
+  // portalled to the body: a station view's own transform would otherwise shift the fixed spotlight
+  return createPortal(
     <div className="tour" role="dialog" aria-modal="false" aria-labelledby="tour-title">
       {box && <div className="tour__spot" style={{ left: box.x, top: box.y, width: box.w, height: box.h }} />}
       <div className="tour__card" style={{ left, top, width: cardW }} key={step}>
-        <p className="tour__count mono">{step + 1} / {STEPS.length}</p>
+        <p className="tour__count mono">{step + 1} / {steps.length}</p>
         <h2 id="tour-title" className="tour__title">{s.title}</h2>
         <p className="tour__text">{s.text}</p>
         <div className="tour__actions">
           <button type="button" className="linkbtn" onClick={done}>Skip tour</button>
           {step > 0 && <LitButton color="white" size="sm" label="Back" onClick={() => setStep(step - 1)} />}
-          <LitButton color="blue" size="sm" label={step + 1 < STEPS.length ? 'Next' : 'Take the conn'} keyCap="↵" lit onClick={() => (step + 1 < STEPS.length ? setStep(step + 1) : done())} />
+          <LitButton color="blue" size="sm" label={step + 1 < steps.length ? 'Next' : steps === STEPS ? 'Take the conn' : 'Got it'} keyCap="↵" lit onClick={() => (step + 1 < steps.length ? setStep(step + 1) : done())} />
         </div>
         <p className="label tour__keys"><KeyCap>←</KeyCap> <KeyCap>→</KeyCap> to step, <KeyCap>Esc</KeyCap> to close</p>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

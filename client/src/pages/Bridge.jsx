@@ -333,7 +333,7 @@ export default function Bridge({ powered, viewer, onViewer, onGo, onLift, user }
     if (!boot || !powered) return undefined;
     try { sessionStorage.setItem(POWERED, '1'); } catch { /* private mode */ }
     const done = () => setBoot(false);
-    const t = setTimeout(done, 2200);
+    const t = setTimeout(done, 1500);
     window.addEventListener('keydown', done, { once: true });
     window.addEventListener('pointerdown', done, { once: true });
     return () => { clearTimeout(t); window.removeEventListener('keydown', done); window.removeEventListener('pointerdown', done); };
@@ -394,7 +394,7 @@ export default function Bridge({ powered, viewer, onViewer, onGo, onLift, user }
           </div>
         </div>
       )}
-      {powered && !boot && <Tour />}
+      {powered && <Tour delay={boot ? 900 : 250} />}
       {picker && <ScenarioPicker user={user} onClose={() => setPicker(false)} />}
     </div>
   );

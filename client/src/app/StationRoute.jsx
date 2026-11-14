@@ -3,6 +3,8 @@ import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../lib/auth.jsx';
 import { Delta, Icon, Jewel, LitButton } from '../ui/index.js';
 import { STATIONS, PAGES, canEnter, screenOf } from './stations.js';
+import Tour from './Tour.jsx';
+import { STATION_TOURS } from './tours.js';
 
 // one lazy component per station file (client/src/stations/<Name>.jsx)
 const SCREENS = Object.fromEntries([...STATIONS, ...PAGES].filter((s) => s.screen).map((s) => [s.id, lazy(screenOf(s.screen))]));
@@ -46,6 +48,7 @@ export default function StationRoute({ station, onBack }) {
     <Boundary>
       <Suspense fallback={<div className="station-msg"><Delta emblem="command" /><span className="display">Powering up {station.label}</span></div>}>
         <Screen key={shipId ?? 'own'} station={station} {...(shipId && { shipId })} />
+        {STATION_TOURS[station.id] && <Tour key={station.id} steps={STATION_TOURS[station.id]} storageKey={`ncc.toured.${station.id}`} delay={900} />}
       </Suspense>
     </Boundary>
   );

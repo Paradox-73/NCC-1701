@@ -243,13 +243,14 @@ function Chair({ user, condition, viewer, onViewer }) {
   );
 }
 
-function CaptainsLog() {
+function CaptainsLog({ onOpen }) {
   const alerts = state.alerts.filter((a) => a.sourceId === SHIP || a.sourceId == null).slice(0, 8)
     .map((a) => ({ id: a.id, ts: a.ts, text: a.message, sev: a.severity, acked: !!a.ack, fresh: a.arrivedAt && Date.now() - a.arrivedAt < 4000 }));
   const lines = shipLog.slice(0, 8).map((l) => ({ id: l.id, ts: l.ts, text: l.text, sev: l.kind === 'command' ? (l.ok ? 'cmd' : 'bad') : 'log', fresh: Date.now() - l.ts < 4000 }));
   const rows = [...alerts, ...lines].sort((a, b) => b.ts - a.ts).slice(0, 6);
   return (
-    <Monitor title="Captain's log" division="command" className="log" data-tour="log" meta={<span className="mono">SD {stardate().toFixed(1)}</span>}>
+    <Monitor title="Captain's log" division="command" className="log" data-tour="log"
+      meta={<><span className="mono">SD {stardate().toFixed(1)}</span><button type="button" className="linkbtn log__all" onClick={onOpen}>All alerts</button></>}>
       <ol className="log__list" aria-live="polite">
         {rows.map((r) => (
           <li key={r.id} className="log__row" data-sev={r.sev} data-fresh={r.fresh || undefined} data-acked={r.acked || undefined}>
@@ -358,7 +359,7 @@ export default function Bridge({ powered, aboard, viewer, onViewer, onGo, onLift
     viewscreen: <Viewscreen ov={ov} condition={condition} viewer={viewer} threeD={aboard} />,
     helm: <HelmConsole ov={ov} />,
     chair: <Chair user={user} condition={condition} viewer={viewer} onViewer={onViewer} />,
-    log: <CaptainsLog />,
+    log: <CaptainsLog onOpen={() => onGo(stationById.alerts)} />,
     lift: <Turbolift onLift={onLift} />,
     tiles: TILES.map((t, i) => <Tile key={t.id} tile={t} user={user} index={i + 1} onZoom={zoomTo} />),
   };

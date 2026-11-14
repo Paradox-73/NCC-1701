@@ -26,7 +26,7 @@ export default function Login({ leaving }) {
     try { await login(u, p); } catch (e) { setError(e.message); setBusy(null); }
   };
   return (
-    <section className="identify" data-leaving={leaving || undefined} aria-labelledby="identify-title" inert={leaving ? '' : undefined}>
+    <section className="identify" data-leaving={leaving || undefined} aria-labelledby="identify-title" inert={leaving || undefined}>
       <header className="identify__head">
         <Delta emblem="command" className="delta identify__delta" />
         <div>

@@ -117,6 +117,7 @@
 /* captain's log and the turbolift */
 .log { left: 1188px; top: 704px; width: 392px; height: 180px; }
 .log .monitor__screen { padding: 8px 10px; }
+.log__all { font: 500 11px var(--font-ui); }
 .log__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
 .log__row { display: flex; align-items: baseline; gap: 8px; min-width: 0; font-size: 12.5px; line-height: 1.55; color: var(--ink2); }
 .log__row[data-fresh] { animation: log-in 600ms var(--ease-in) both; }

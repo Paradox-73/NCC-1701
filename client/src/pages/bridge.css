@@ -194,7 +194,9 @@
 .scn__stop { height: 24px; padding: 0 10px; border: 1px solid var(--line2); border-radius: 12px; background: transparent; color: var(--ink2); font: 500 12px var(--font-ui); }
 .scn__stop:hover { color: var(--crit-ink); border-color: var(--crit); }
 .await { position: absolute; left: 50%; bottom: 20px; z-index: 3; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 10px;
-  border-radius: 12px; background: #050608d9; box-shadow: inset 0 0 0 1px var(--line2), 0 16px 40px #000c; animation: rise 320ms var(--ease-in); }
+  border-radius: 12px; background: #050608d9; box-shadow: inset 0 0 0 1px var(--line2), 0 16px 40px #000c; animation: await-in 320ms var(--ease-in); }
+/* rises into place without losing the centring: the shared `rise` would replace translateX(-50%) while it runs */
+@keyframes await-in { from { opacity: 0; transform: translate(-50%, 40px); } to { opacity: 1; transform: translate(-50%, 0); } }
 .lit.await__btn { min-width: 220px; animation: lit-blink 1s steps(1) infinite; }
 .lit.await__btn.is-pending { animation: lit-blink 500ms steps(1) infinite; }
 .await__wait { color: var(--ink2); font-size: 13px; padding: 0 6px; }

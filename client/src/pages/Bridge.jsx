@@ -98,18 +98,20 @@ function CommsScreen() {
   );
 }
 
-function FleetScreen() {
+// a ship the role may not see never reaches it in the overview: that is a restriction, not a lost link
+function FleetScreen({ user }) {
   return (
     <ul className="fleet">
       {FLEET.map((s) => {
         const o = state.overview.get(s.id);
         const status = !o ? 'off' : o.condition && o.condition !== 'normal' ? COND_STATUS[o.condition] : FLAG_STATUS(o.flags);
+        const cleared = user?.ships?.includes(s.id) ?? true;
         return (
           <li key={s.id}>
-            <Jewel status={status} size="lg" label={`${s.name}: ${STATUS_WORD[status]}`} />
+            <Jewel status={status} size="lg" label={`${s.name}: ${cleared ? STATUS_WORD[status] : 'restricted'}`} />
             <b className="mono">{s.code}</b>
             <span className="fleet__name">{s.name.replace('USS ', '')}</span>
-            <LevelChip level={status} off="No signal" />
+            <LevelChip level={status} off={cleared ? 'No signal' : 'Restricted'} />
           </li>
         );
       })}
@@ -141,7 +143,7 @@ function Tile({ tile, user, index, onZoom }) {
       onClick={() => onZoom(st, ref.current)} aria-label={`${tile.title}: open the ${st.label} station${enters ? '' : ' (restricted)'}`}>
       <Monitor title={tile.title} index={index} state={!sees ? 'restricted' : waiting ? 'awaiting' : 'live'} restricted={RESTRICTED_TEXT[tile.id]}
         meta={!enters && <Icon name="lock" className="tile__lock" title="Restricted station" />}>
-        <tile.Body />
+        <tile.Body user={user} />
       </Monitor>
     </button>
   );
@@ -224,7 +226,8 @@ function Chair({ user, condition, viewer, onViewer, onScenarios }) {
             onClick={() => (hailing ? close.send({}) : hail.send({ target: 'command' }))} />
           <LitButton color="amber" label="Shields" keyCap="⇧S" pressed={up} pending={shields.pending} disabled={!captain} title={tip} onClick={() => shields.send({ up: !up })} />
           <LitButton color="white" label={VIEW_WORD[viewer.mode]} keyCap="V" onClick={onViewer} title="Next viewscreen mode: forward, tactical, exterior" />
-          <LitButton color="green" label="Scenario" lit={!!running} disabled={!mayCommand(user, 'scenario.start')} title="Play an episode of the original series" onClick={onScenarios} />
+          <LitButton color="green" label="Scenario" lit={!!running} disabled={!mayCommand(user, 'scenario.start')}
+            title={mayCommand(user, 'scenario.start') ? 'Play an episode of the original series' : 'Captain or Starfleet Command'} onClick={onScenarios} />
         </ButtonRow>
       </div>
     </div>
@@ -321,7 +324,7 @@ export default function Bridge({ powered, viewer, onViewer, onGo, user }) {
     if (!boot || !powered) return undefined;
     try { sessionStorage.setItem(POWERED, '1'); } catch { /* private mode */ }
     const done = () => setBoot(false);
-    const t = setTimeout(done, 2200);
+    const t = setTimeout(done, 1500);
     const beeps = [0, 1, 2, 3].map((i) => setTimeout(() => play('press'), 260 + i * 120));
     window.addEventListener('keydown', done, { once: true });
     window.addEventListener('pointerdown', done, { once: true });
@@ -379,7 +382,7 @@ export default function Bridge({ powered, viewer, onViewer, onGo, user }) {
           </div>
         </div>
       )}
-      {powered && !boot && <Tour />}
+      {powered && <Tour delay={boot ? 900 : 250} />}
       {picker && <ScenarioPicker user={user} onClose={() => setPicker(false)} />}
     </div>
   );

@@ -100,6 +100,7 @@
   border-radius: 2px; background: var(--plate); box-shadow: 0 1px 0 #ffffff59; font: 400 11px/1 var(--font-mono); color: #aab2bc; white-space: nowrap;
 }
 .monitor__meta:empty { display: none; }
+.monitor__metatext { min-width: 0; overflow: hidden; text-overflow: ellipsis; } /* a narrow monitor ends its caption with … (full text on hover) */
 .monitor__bay {
   flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 8px; border-radius: 14px; background: var(--bay);
   box-shadow: inset 0 3px 4px -1px #00000070, inset 0 -1px 0 #ffffff21, 0 1px 0 #ffffff4d;

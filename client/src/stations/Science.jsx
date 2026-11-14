@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useTick } from '../lib/hooks.js';
-import { alertsFor, canSee, levelOf, meta, monState, read, useCommand, useFeed, worst } from './parts/data.js';
+import { ago, alertsFor, canSee, levelOf, meta, monState, read, useCommand, useFeed, worst } from './parts/data.js';
 import { useHistory } from './parts/history.js';
 import { BarGauge, Chip, ConsoleStrip, Headline, J, LampBar, LevelChip, LitButton, Monitor, Num, Readings, Station } from '../ui/index.js';
 import { C, clamp, fmt, levelColor, useCanvas } from './parts/ui.jsx';
@@ -233,7 +233,7 @@ function Anomalies({ src }) {
               <tr key={a.id} className={a.arrivedAt && now - a.arrivedAt < 1500 ? 'st-row new' : undefined}>
                 <td style={{ whiteSpace: 'normal' }}>{meta(a.channel)?.label ?? a.channel}</td>
                 <td className="n">{z ? `${z[2] === 'below' ? '−' : '+'}${z[1]}` : '≥ 4'}</td>
-                <td className="n">{fmt((now - a.ts) / 1000, 0)} s ago</td>
+                <td className="n">{ago(now - a.ts)}</td>
                 <td>{a.ack ? <Chip level="off">SEEN</Chip> : <Chip level="warn">YELLOW</Chip>}</td>
               </tr>
             );

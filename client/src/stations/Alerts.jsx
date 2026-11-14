@@ -4,13 +4,12 @@ import VirtualList from '../components/VirtualList.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import { useTick } from '../lib/hooks.js';
 import { ackAlert, ackAlerts, state } from '../lib/store.js';
-import { isOpen, meta, shipCode, stardate } from './parts/data.js';
+import { ago, isOpen, meta, shipCode, stardate } from './parts/data.js';
 import { Chip, DivisionPill, Headline, Monitor, Station, useKeys } from '../ui/index.js';
 import { C, fmt } from './parts/ui.jsx';
 
 const SEV = { critical: ['crit', 'RED'], warn: ['warn', 'YELLOW'], info: ['info', 'INFO'] };
 const FILTERS = [['open', 'Open'], ['red', 'Red'], ['yellow', 'Yellow'], ['all', 'All']];
-const ago = (ms) => (ms < 60000 ? `${Math.round(ms / 1000)} s ago` : ms < 3600000 ? `${Math.round(ms / 60000)} min ago` : `${Math.round(ms / 3600000)} h ago`);
 
 function AlertList({ shipId }) {
   useTick(500);

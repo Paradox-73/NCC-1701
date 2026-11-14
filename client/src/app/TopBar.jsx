@@ -87,7 +87,7 @@ export function TopBar({ user, condition, standDown, onLift, onKeys, onTour, onS
         {[...STATIONS, ...PAGES].map((st) => {
           const locked = !canEnter(user, st);
           return (
-            <NavLink key={st.id} to={st.path} className="tab" data-division={st.division} aria-label={locked ? `${st.label}, restricted: ${st.who}` : st.label}
+            <NavLink key={st.id} to={st.path} className="tab" data-division={st.division} data-locked={locked || undefined} aria-label={locked ? `${st.label}, restricted: ${st.who}` : st.label}
               title={locked ? undefined : st.key ? `${st.label} (G then ${st.key.toUpperCase()})` : st.label}
               {...(locked && { onMouseEnter: showHint(st), onFocus: showHint(st), onMouseLeave: hideHint, onBlur: hideHint })}>
               <DivisionPill division={st.division} />

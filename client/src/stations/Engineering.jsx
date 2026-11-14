@@ -87,7 +87,7 @@ function SlideLevers({ src }) {
         })}
       </div>
       <div className="levers__side">
-        <div className="levers__win"><span>Preset</span><b className="display" style={{ fontSize: 12, fontWeight: 400 }}>{preset ? preset.toUpperCase() : 'CUSTOM'}</b></div>
+        <div className="levers__win levers__win--preset"><span>Preset</span><b className="display" style={{ fontSize: 12, fontWeight: 400 }}>{preset ? preset.toUpperCase() : 'CUSTOM'}</b></div>
         <div className="levers__win levers__win--wide"><Readout src={src} k="powerTotal" label="Total output" unit="% rated" size="sm" sparkH={18} /></div>
         <div className="levers__win">
           <span>Battery</span>
@@ -264,7 +264,7 @@ export default function Engineering({ shipId = 1 }) {
       <Monitor title="Decks" status={decksLv ?? 'ok'} state={st('lifesupport', 'gravity')} className="st-c12" index={3}
         views={[
           { label: 'Decks', content: <DeckStack src={src} sel={deck} onSel={setDeck} /> },
-          { label: `Deck ${pad2(deck)}`, content: <DeckDetail src={src} deck={deck} /> },
+          { label: `Deck ${pad2(deck)}`, content: <div key={deck} className="swap-in"><DeckDetail src={src} deck={deck} /></div> },
         ]} />
     </Station>
   );

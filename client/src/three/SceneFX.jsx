@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Environment, Lightformer, Stars } from '@react-three/drei';
+import { Environment, Lightformer, OrbitControls, Stars } from '@react-three/drei';
 import { Bloom, EffectComposer, ToneMapping, Vignette } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
 import * as THREE from 'three';
@@ -111,11 +111,14 @@ const SETTLE_MS = 1100;
 const bezier = (out, p0, c1, c2, p3, u) => out.copy(p0).multiplyScalar((1 - u) ** 3)
   .addScaledVector(c1, 3 * (1 - u) ** 2 * u).addScaledVector(c2, 3 * (1 - u) * u * u).addScaledVector(p3, u ** 3);
 
+const IDLE_AFTER_MS = 3000; // the ship's idle turn comes back this long after the visitor lets go
+
 // mode: 'wait' (before the cold open starts), 'flyby' (the ship glides in and holds), 'login' (holds the hero
-// shot), 'board' (into the dome)
-function Rig({ mode }) {
+// shot, then the visitor may orbit and zoom it), 'board' (into the dome, from wherever the camera was left)
+function Rig({ mode, hold, onSteer }) {
   const { camera, scene, size } = useThree();
   const move = useRef(null);
+  const controls = useRef(null);
   const look = useRef(LOGIN_LOOK.clone());
   const offset = useRef({ x: 0, y: 0 });
   const wide = size.width / size.height > 1.15;
@@ -148,6 +151,7 @@ function Rig({ mode }) {
   const tmp = useMemo(() => ({ a: new THREE.Vector3(), b: new THREE.Vector3(), c: new THREE.Vector3(), up: new THREE.Vector3(0, 1, 0) }), []);
   useFrame(() => {
     const m = move.current;
+    if (controls.current) controls.current.enabled = !m; // the visitor steers only once the settle move is done
     const target = rest();
     if (!m) offset.current = mode === 'board' || mode === 'wait' ? offset.current : target;
     else {
@@ -180,11 +184,18 @@ function Rig({ mode }) {
     else camera.clearViewOffset();
     camera.updateProjectionMatrix();
   });
-  return null;
+  if (mode !== 'login') return null;
+  // Orbit around the hero shot's look point; the polar limits keep the camera off the poles and out from under the
+  // hull, so the boarding flight from wherever it was left never passes through the ship.
+  return (
+    <OrbitControls ref={controls} target={[LOGIN_LOOK.x, LOGIN_LOOK.y, LOGIN_LOOK.z]} enablePan={false} enableDamping dampingFactor={0.08}
+      rotateSpeed={0.6} zoomSpeed={0.7} minDistance={12} maxDistance={32} minPolarAngle={Math.PI * 0.12} maxPolarAngle={Math.PI * 0.62}
+      onStart={() => { hold.current = Infinity; onSteer(); }} onEnd={() => { hold.current = performance.now() + IDLE_AFTER_MS; }} />
+  );
 }
 
 // ---- the effects ---------------------------------------------------------------------------------------------
-export default function SceneFX({ rig }) {
+export default function SceneFX({ rig, hold, onSteer }) {
   return (
     <>
       <Environment resolution={256} frames={1}>
@@ -195,7 +206,7 @@ export default function SceneFX({ rig }) {
       </Environment>
       <Backdrop />
       <Stars radius={150} depth={90} count={4000} factor={2.4} saturation={0.35} fade speed={0.15} />
-      {rig && <Rig mode={rig} />}
+      {rig && <Rig mode={rig} hold={hold} onSteer={onSteer} />}
       <EffectComposer multisampling={4}>
         <Bloom mipmapBlur luminanceThreshold={0.82} luminanceSmoothing={0.18} intensity={1.15} radius={0.72} />
         <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />

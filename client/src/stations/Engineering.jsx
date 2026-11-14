@@ -12,7 +12,7 @@ const deckKeys = (d) => [`o2_${pad2(d)}`, `co2_${pad2(d)}`, `temp_${pad2(d)}`, `
 const PRESETS = { cruise: [55, 15, 10, 20], combat: [30, 35, 25, 10], emergency: [10, 40, 10, 40] };
 // validated with the dataviz checker on the void surface (CVD 8.0, so every segment also carries a direct label)
 const ALLOC = [['allocWarp', 'Warp', '#C9790E'], ['allocShields', 'Shields', '#3A8BDD'], ['allocWeapons', 'Weapons', '#C95BB5'], ['allocLife', 'Life support', '#2A9E74']];
-const XP = { label: 'IDLE', status: 'ENERGIZING', 'TRANSPORTING', 'FAULT'];
+const XP = ['IDLE', 'ENERGIZING', 'TRANSPORTING', 'FAULT'];
 
 /** Intermix column with plasma rising at the reaction rate, and conduits carrying it up to the two nacelles. */
 function Chamber({ src }) {

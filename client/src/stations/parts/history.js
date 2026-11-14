@@ -12,7 +12,7 @@ import { onConnection, onFrameRows, state, stats, whenSubscribed } from '../../l
 const MAX_POINTS = 8000; // above this the older half is thinned so a long live session stays light
 
 export function useHistory(sourceId, channel, rangeSec, enabled = true) {
-  const [meta, setMeta] = useState({ status: 'loading', live: 0, joinTs: null, count: 0, downsampled: false, error: null, filled: 0 });
+  const [meta, setMeta] = useState({ status: 'loading', live: 0, dropped: 0, joinTs: null, count: 0, downsampled: false, error: null, filled: 0 });
   const data = useRef({ xs: [], ys: [], seqs: [], ver: 0, joinSeq: 0 });
   const ch = CHANNEL_BY_KEY[channel];
   const group = ch?.group;
@@ -22,13 +22,14 @@ export function useHistory(sourceId, channel, rangeSec, enabled = true) {
   useEffect(() => {
     const d = { xs: [], ys: [], seqs: [], ver: 0, joinSeq: 0 };
     data.current = d;
-    setMeta({ status: on ? 'loading' : 'off', live: 0, joinTs: null, count: 0, downsampled: false, error: null, filled: 0 });
+    setMeta({ status: on ? 'loading' : 'off', live: 0, dropped: 0, joinTs: null, count: 0, downsampled: false, error: null, filled: 0 });
     if (!on || !subscribed) return undefined;
     const scale = ch.scale;
     let dead = false;
     let loaded = false;
     let lastSeq = 0;
     let live = 0;
+    let dropped = 0; // live samples already drawn from history (seq <= lastSeq): the overlap the merge removes
     let gap = null; // where the line stopped while the live connection was down
     let droppedWhileLoading = false;
     const joinedFirst = state.status === 'online'; // the room was confirmed before the fetch (see whenSubscribed)
@@ -36,7 +37,7 @@ export function useHistory(sourceId, channel, rangeSec, enabled = true) {
     const push = (seq, x, y) => { d.seqs.push(seq); d.xs.push(x); d.ys.push(y); };
 
     const append = (seq, ts, v) => {
-      if (seq <= lastSeq) return;
+      if (seq <= lastSeq) { dropped++; return; }
       lastSeq = seq;
       push(seq, ts / 1000, v);
       live++;
@@ -115,7 +116,7 @@ export function useHistory(sourceId, channel, rangeSec, enabled = true) {
         setMeta((m) => ({ ...m, status: 'ready', joinTs, count: res.samples.length, downsampled: !!res.downsampled }));
       })
       .catch((e) => !dead && setMeta((m) => ({ ...m, status: 'error', error: e.message })));
-    const tick = setInterval(() => setMeta((m) => (m.live === live ? m : { ...m, live })), 1000);
+    const tick = setInterval(() => setMeta((m) => (m.live === live && m.dropped === dropped ? m : { ...m, live, dropped })), 1000);
     return () => { dead = true; off(); offConn(); clearInterval(tick); };
   }, [sourceId, channel, rangeSec, group, subscribed, on]); // eslint-disable-line react-hooks/exhaustive-deps
 

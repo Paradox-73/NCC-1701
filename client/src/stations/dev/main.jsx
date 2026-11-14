@@ -1,23 +1,26 @@
-// TEMPORARY dev page (client/station-dev.html): renders one station without the shell.
+// TEMPORARY dev page (client/station-dev.html): renders one station without the shell. Kept out of src/stations/*.jsx so
+// the shell's import.meta.glob of station screens never picks it up.
 // ?s=engineering|helm|science|comms|sickbay|fleet|history|alerts  &as=captain|engineer|medical|science|comms|command
 // &c=normal|yellow|red sets the condition attribute the shell will own.
 import { lazy, StrictMode, Suspense, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { AuthProvider, useAuth } from '../lib/auth.jsx';
-import { SourcesProvider } from '../lib/context.jsx';
-import { disconnect, state } from '../lib/store.js';
-import { useTick } from '../lib/hooks.js';
-import '../index.css';
+import { AuthProvider, useAuth } from '../../lib/auth.jsx';
+import { SourcesProvider } from '../../lib/context.jsx';
+import { disconnect, state } from '../../lib/store.js';
+import { useTick } from '../../lib/hooks.js';
+import '../../index.css';
 
-const mods = import.meta.glob(['./*.jsx', '!./dev.jsx']);
+const mods = import.meta.glob('../*.jsx');
 const NAMES = ['helm', 'engineering', 'science', 'comms', 'sickbay', 'fleet', 'history', 'alerts'];
-const load = (n) => mods[`./${n[0].toUpperCase()}${n.slice(1)}.jsx`];
+const load = (n) => mods[`../${n[0].toUpperCase()}${n.slice(1)}.jsx`];
 const ACCOUNTS = { captain: 'ncc-captain', engineer: 'ncc-engineer', medical: 'ncc-medical', science: 'ncc-science', comms: 'ncc-comms', command: 'ncc-command' };
 const q = new URLSearchParams(location.search);
 const s = NAMES.includes(q.get('s')) ? q.get('s') : 'engineering';
 document.documentElement.dataset.condition = q.get('c') || 'normal';
-const Station = lazy(load(s === 'alerts' ? 'engineering' : s) ?? (async () => ({ default: () => <p style={{ color: '#fff' }}>Not built yet.</p> })));
-const Drawer = s === 'alerts' && load('alerts') ? lazy(load('alerts')) : null;
+// ?s=alerts shows the drawer over Engineering; ?s=alerts&page=1 shows the page the shell routes to /alerts
+const page = q.get('page') === '1';
+const Station = lazy(load(s === 'alerts' && !page ? 'engineering' : s) ?? (async () => ({ default: () => <p style={{ color: '#fff' }}>Not built yet.</p> })));
+const Drawer = s === 'alerts' && !page && load('alerts') ? lazy(load('alerts')) : null;
 const link = (patch) => `?${new URLSearchParams({ ...Object.fromEntries(q), ...patch })}`;
 
 function Bar() {

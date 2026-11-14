@@ -66,6 +66,19 @@ export function linkOf(src) {
   return state.overview.get(src)?.flags & 1 ? 'live' : 'lost';
 }
 
+/** 'normal', 'yellow' or 'red' from the widened overview row (the shell's store keeps it), or null before the server sends it. */
+export const conditionOf = (src) => state.overview.get(src)?.condition ?? null;
+/** Worst open alert from the overview flags: 'crit', 'warn' or null. */
+export const alertFlagOf = (src) => { const f = state.overview.get(src)?.flags ?? 0; return f & 4 ? 'crit' : f & 2 ? 'warn' : null; };
+/** { x, y, heading, warp } from the overview row when it carries them, else from the helm room's ring; null when unknown. */
+export function posOf(src) {
+  const o = state.overview.get(src);
+  if (o?.x != null) return { x: o.x, y: o.y, heading: o.heading, warp: o.warp };
+  const r = ringOf(src, 'posX');
+  if (!r?.len || Date.now() - r.lastTs > 5000) return null;
+  return { x: r.last('posX'), y: r.last('posY'), heading: r.last('heading'), warp: r.last('warpFactor') };
+}
+
 /** What a monitor fed by these groups should show: 'restricted', 'awaiting', 'nosignal' or 'live'. */
 export function monState(user, src, groups) {
   if (!groups.every((g) => canSee(user, g))) return 'restricted';
@@ -112,15 +125,18 @@ export function useCommand(shipId) {
     const list = user?.commands;
     return !list || list.some((c) => c === type || (c.endsWith('.*') && type.startsWith(c.slice(0, -1))));
   };
+  /** Resolves true when the server acknowledged the command. */
   const send = async (type, payload = {}, say = type) => {
-    if (!can(type)) { setLast({ ok: false, text: `${say}: not your station's order` }); return; }
+    if (!can(type)) { setLast({ ok: false, text: `${say}: not your station's order` }); return false; }
     setPending(type);
     const t0 = performance.now();
     try {
       await api(`/api/ships/${shipId}/command`, { method: 'POST', body: { type, ...payload } });
       setLast({ ok: true, text: `${say}, aye · ${Math.round(performance.now() - t0)} ms` });
+      return true;
     } catch (e) {
       setLast({ ok: false, text: `${say}: ${e.message}` });
+      return false;
     } finally {
       setPending(null);
     }

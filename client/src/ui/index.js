@@ -2,7 +2,7 @@
 //   import { Monitor, Readout, LitButton, Station, ConsoleStrip } from '../ui/index.js';
 import './ui.css';
 
-export { ButtonGrid, Chip, DivisionPill, Jewel, KeyCap, LevelChip, LitButton, STATUS_WORD, cx, useFlicker } from './controls.jsx';
+export { ButtonGrid, Chip, DivisionPill, JellybeanPlate, Jewel, KeyCap, LevelChip, LitButton, ReadoutWindows, STATUS_WORD, cx, useFlicker } from './controls.jsx';
 export { Monitor } from './Monitor.jsx';
 export { Num, Readout, Sparkline, decOf, fmt, useTween } from './Readout.jsx';
 export { ArcGauge, BarGauge, HBar, SweepScope } from './gauges.jsx';

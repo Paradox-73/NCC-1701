@@ -49,12 +49,13 @@ pull request ──▶ GitHub Actions ci.yml ──▶ tests (shared, server wit
              │                         └─▶ client build, server Docker build
              └─▶ Vercel preview deployment (a URL on the PR)
 
-merge to main ──▶ ci.yml again ──▶ checks pass ──▶ Render deploys the server (autoDeployTrigger: checksPass)
+merge to main ──▶ ci.yml again (tests, builds)
+              ├─▶ Render deploys the server
               └─▶ Vercel production deployment of the client
 ```
 
 - **CI** (`.github/workflows/ci.yml`): every pull request and push to main runs `npm test` against a MongoDB 8 service container, builds the client as Vercel does and builds `server/Dockerfile` as Render does. A broken build shows on the PR before it is merged.
-- **CD, server:** Render auto-deploys main only when every GitHub check on the commit passed, so a red CI run never reaches the hosted server.
+- **CD, server:** Render auto-deploys every push to main. To deploy only green commits, add `autoDeployTrigger: checksPass` to the service in `render.yaml`. Only do that once GitHub Actions runs for the repository: with no check results, Render never deploys. Actions is free on public repositories; a private one uses the account's monthly minutes.
 - **CD, client:** Vercel's GitHub integration deploys every push: previews for pull requests, production for main. It does not wait for CI by itself. Two ways to make it wait, if needed: turn on branch protection (below) so nothing red reaches main, or Vercel → Settings → Git → **Ignored Build Step** with a script that checks the commit status.
 - **Branch protection** (recommended, repo admin): GitHub → Settings → Branches → rule for `main` → require a pull request and the status checks `test` and `server-image`. Then main is always green, and both hosts only ever deploy green commits.
 - **Keep-alive** (`.github/workflows/keepalive.yml`): pings `/api/health` every 10 minutes once `SERVER_URL` is set.

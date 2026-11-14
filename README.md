@@ -143,7 +143,7 @@ Configuration is in `.env.example`. With `NODE_ENV=production` the server refuse
 
 `render.yaml` deploys the server with the simulator embedded (`SIM_EMBED=1`, lower rates for the free tier) to a free Render web service. `vercel.json` builds the client, with `VITE_API_URL` pointing at the server, and MongoDB runs on an Atlas M0 cluster.
 
-Step-by-step setup and the CI/CD pipeline (GitHub Actions tests every pull request, Render deploys main only after the checks pass, Vercel previews every pull request) are in [`docs/DEPLOY.md`](docs/DEPLOY.md).
+Step-by-step setup and the CI/CD pipeline (GitHub Actions tests every pull request and every push to main, Render and Vercel deploy main, Vercel previews every pull request) are in [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 ## What is new in this repository
 

@@ -82,7 +82,7 @@ function SlideLevers({ src }) {
           return (
             <div key={k} className="lever" role="meter" aria-label={`${l} ${fmt(pct, 0)}% of power`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={vals[i] == null ? undefined : Math.round(pct)}>
               <span className="lever__val"><Num value={pct} dec={0} /><span className="st-unit">%</span></span>
-              <div className="lever__slot"><i className="lever__knob" style={{ bottom: `${clamp(pct / 100) * 100}%` }} /></div>
+              <div className="lever__slot"><span className="lever__track" style={{ transform: `translateY(${(1 - clamp(pct / 100)) * 100}%)` }}><i className="lever__knob" /></span></div>
               <span className="lever__name"><i style={{ background: col }} aria-hidden="true" />{l}</span>
             </div>
           );

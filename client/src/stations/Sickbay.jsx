@@ -184,8 +184,7 @@ function Biobed({ hub, n }) {
           return (
             <div key={x.v} className="bed__col" data-level={lv ?? undefined}>
               <div className="bed__scale" role="meter" aria-label={`${x.label} ${fmt(v, x.dec ?? 0)} ${x.unit}`} aria-valuenow={v ?? undefined} aria-valuemin={x.lo} aria-valuemax={x.hi}>
-                <i className="bed__band" style={{ bottom: `${f * 100}%` }} />
-                <i className="bed__ptr" style={{ bottom: `${f * 100}%` }} />
+                <span className="bed__track" style={{ transform: `translateY(${(1 - f) * 100}%)` }}><i className="bed__band" /><i className="bed__ptr" /></span>
               </div>
               <span className="bed__name">{BED_NAME[x.v]}</span>
               <span className="bed__num">{fmt(v, x.dec ?? 0)}<span className="st-unit">{x.unit}</span></span>

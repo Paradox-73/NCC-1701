@@ -26,6 +26,7 @@ function Astrogator({ src, others }) {
   const ref = useCanvas((ctx, w, h, t) => {
     ctx.clearRect(0, 0, w, h);
     const R = Math.min(w, h) / 2 - 9, cx = w / 2, cy = h / 2;
+    if (R < 30) return; // too small to plot; a negative radius would throw and stop the shared frame loop
     // the dark ring the glass sits in, then the glass
     ctx.fillStyle = '#1c1f23'; ctx.beginPath(); ctx.arc(cx, cy, R + 8, 0, Math.PI * 2); ctx.fill();
     ctx.strokeStyle = '#ffffff59'; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(cx, cy, R + 8.5, 0, Math.PI * 2); ctx.stroke();
@@ -136,6 +137,7 @@ function TargetFan({ src }) {
   const ref = useCanvas((ctx, w, h, t) => {
     ctx.clearRect(0, 0, w, h);
     const R = Math.min(h - 18, (w / 2 - 8) / Math.sin(FAN * RAD)), cx = w / 2, cy = h - 6, r0 = R * 0.18;
+    if (R < 24) return; // too small to draw the fan
     const ang = (deg) => (deg - 90) * RAD; // 0 = straight ahead, up the screen
     const glow = ctx.createLinearGradient(0, cy - R, 0, cy);
     glow.addColorStop(0, '#ffd75e'); glow.addColorStop(1, '#f2a516');
@@ -179,7 +181,7 @@ function Targeting({ src }) {
       <div style={{ position: 'relative', flex: 1, minHeight: 90 }}>
         <TargetFan src={src} />
       </div>
-      <p className="st-label" style={{ margin: 0, color: C.ink2 }} aria-live="polite">
+      <p className="st-label" style={{ margin: 0, color: C.ink2 }}>
         {target ? <>Target <b className="mono" style={{ color: C.ink }}>{fmt(brg, 0).padStart(3, '0')}°</b> off the bow, <b className="mono" style={{ color: C.ink }}>{fmt(rng, 0)}</b> km{rng > FAN_KM ? ', beyond the scale' : ''} <LevelChip level={lv} warn="CLOSING" crit="COLLISION RANGE" /></> : 'No target. Sensors report no contact.'}
       </p>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>

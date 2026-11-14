@@ -32,7 +32,7 @@ function AlertList({ shipId }) {
   const newest = all.find((a) => !a.ack && user?.canAck);
   useKeys({ a: () => newest && ack(newest) });
   const now = Date.now();
-  const narrow = window.matchMedia?.('(max-width: 640px)').matches; // a phone gives each alert two lines of message
+  const narrow = !!window.matchMedia?.('(max-width: 640px)')?.matches; // a phone gives each alert two lines of message
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, padding: '10px 12px', borderBottom: '1px solid #ffffff0d' }}>

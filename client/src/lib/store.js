@@ -144,7 +144,8 @@ export async function ackAlerts(ids, onProgress, perSecond = 20) {
   let ok = 0, failed = 0;
   for (const id of ids) {
     const t0 = Date.now();
-    const r = await ackAlert(id);
+    let r = await ackAlert(id);
+    if (r?.error === 'rate limited') { await new Promise((res) => setTimeout(res, 1000)); r = await ackAlert(id); }
     if (r?.ok) ok++; else failed++;
     onProgress?.(ok + failed, ids.length);
     if (r?.error === 'offline') { failed = ids.length - ok; break; }

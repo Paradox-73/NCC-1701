@@ -25,12 +25,12 @@ const ou = (x, mu, theta, sigma, dt, z) => {
 };
 
 // Each ship's own start: position (su), heading, cruise warp, the shield level it settles at, and how far its warp factor
-// and heading wander (a sine of about 45 s, a different phase per ship). Ship 1 is the flagship and holds still.
+// and heading wander (a sine of about 25 s, a different phase per ship). Ship 1 is the flagship and holds still.
 const PROFILE = {
   1: { pos: [0, 0], heading: 90, warp: 6, shield: 100, warpDrift: 0, headingDrift: 0 },
-  2: { pos: [260, 170], heading: 35, warp: 7.2, shield: 97.5, warpDrift: 0.12, headingDrift: 2.5 },
-  3: { pos: [-310, 220], heading: 200, warp: 4.8, shield: 95, warpDrift: 0.1, headingDrift: 3 },
-  4: { pos: [180, -340], heading: 310, warp: 5.5, shield: 98, warpDrift: 0.15, headingDrift: 2 },
+  2: { pos: [260, 170], heading: 35, warp: 7.2, shield: 97.5, warpDrift: 0.25, headingDrift: 4 },
+  3: { pos: [-310, 220], heading: 200, warp: 4.8, shield: 95, warpDrift: 0.2, headingDrift: 5 },
+  4: { pos: [180, -340], heading: 310, warp: 5.5, shield: 98, warpDrift: 0.3, headingDrift: 3 },
 };
 
 export class Ship {
@@ -237,7 +237,7 @@ export class Ship {
     }
 
     // helm
-    const wander = Math.sin(this.t / 45 + this.sourceId * 2);
+    const wander = Math.sin(this.t / 4 + this.sourceId * 2);
     s.warp = lag(s.warp, o.warp > 0 ? o.warp + this.profile.warpDrift * wander : 0, 2, dt);
     if (o.warp === 0 && s.warp < 0.02) s.warp = 0;
     s.impulse = lag(s.impulse, o.impulse, 1, dt);

@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import { SOURCES } from '@ncc/shared/schema.js';
 import { Source, User } from './models/index.js';
 
-// PLACEHOLDER accounts, one per role in shared/registry.js. Replace with the real crew when the domain spec lands.
+// Demo accounts, one per role in shared/registry.js. The login screen has a button for each; written when the users collection is empty.
 export const USERS = [
   { username: 'captain', password: 'ncc-captain', role: 'captain' },
   { username: 'engineer', password: 'ncc-engineer', role: 'chief_engineer' },

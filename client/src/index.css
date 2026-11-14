@@ -5,3 +5,22 @@ main { max-width: 960px; margin: 0 auto; padding: 16px; }
 table { border-collapse: collapse; }
 td, th { padding: 2px 12px 2px 0; text-align: left; }
 .mono { font-family: ui-monospace, monospace; }
+
+/* Chart and list infrastructure (components/Chart.jsx, VirtualList.jsx) */
+.chart { position: relative; min-width: 0; }
+.chart-fill { height: 100%; display: flex; flex-direction: column; }
+.chart-fill .chart-host { flex: 1; min-height: 0; overflow: hidden; }
+.chart-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: 8px; }
+.chart-head h3 { margin: 0; font-size: 14px; }
+.chart-legend { margin-left: auto; display: flex; gap: 16px; font-size: 12px; white-space: nowrap; }
+.chart-legend span { display: flex; align-items: center; gap: 6px; }
+.chart-legend i { display: block; width: 12px; height: 2px; border-radius: 1px; }
+.chart-tip {
+  position: absolute; z-index: 5; pointer-events: none; min-width: 120px; display: none;
+  background: #1b1e22; border-radius: 6px; padding: 8px 10px; box-shadow: 0 8px 24px #00000066, 0 0 0 1px #ffffff14; font-size: 12px;
+}
+.chart-tip .t { color: #878e99; margin-bottom: 4px; }
+.chart-tip .r { display: flex; align-items: center; gap: 8px; line-height: 1.6; }
+.chart-tip .r i { width: 10px; height: 2px; border-radius: 1px; flex: none; }
+.chart-tip .r b { font-weight: 600; font-size: 15px; }
+.u-over { cursor: crosshair; }

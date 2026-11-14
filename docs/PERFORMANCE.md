@@ -28,6 +28,17 @@ Server internals at the end of each run (`/api/metrics`): the event-loop lag sta
 
 The `--dup 0.05 --reorder 0.05 --invalid 0.02` run sent 564 duplicates, 590 out-of-order samples and 257 malformed samples. The server counted exactly 564 duplicates and 257 invalid samples (`injectionCheck.match: true`). Both kinds are rejected at ingest, before storage or broadcast. Reordered samples that were still new were accepted (0 counted as stale). Every client stayed connected.
 
+## Hosted footprint
+
+The free hosted stack has to fit Render's 512 MB instance and Atlas M0's 512 MB of storage, so we measured what the deployed configuration costs. We ran the server in production mode with the simulator embedded, against a fresh MongoDB 8 database, for 5 minutes and scaled to an hour:
+
+| Simulator rates | Sources | Telemetry written | Kept under the 2 h TTL | Server + simulator memory |
+|---|---|---|---|---|
+| `SIM_PROFILE=hosted` (deployed) | Enterprise 20 Hz, three sister ships 5 Hz, Enterprise sickbay 1 Hz | about 34 MB an hour (about 17 MB an hour on disk after time-series compression) | about 70 MB | about 170 MB |
+| `SIM_HZ=5` on every source (rejected) | all 8 sources at 5 Hz, including four sickbay hubs of 1,720 values each | about 295 MB an hour | about 590 MB, over the Atlas cap | about 280 MB |
+
+The hosted profile uses each source's `hostedHz` from `shared/registry.js`.
+
 ## Reading the numbers
 
 - **End to end sits at about 100 ms on purpose.** A load-test sample is stamped with its slot time but produced by a 100 ms timer. The source batches for up to 50 ms and the server sends frames every 50 ms. So about 100 ms passes before the network sees the sample (see `loadtest/README.md`). What matters is that the figure barely moves with load: p99 goes from 176 ms at 100 clients to 186 ms at 600.

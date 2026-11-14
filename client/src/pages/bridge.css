@@ -85,6 +85,7 @@
 .helm__warp, .helm__nav, .helm__shield { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 0; }
 .helm__warp .arc { width: 150px; }
 .helm__warp .arc__num { font-size: 26px; }
+.helm__warp .arc__read { bottom: 8px; }
 .compass { width: 92px; height: 92px; }
 .compass__ring { fill: #050608; stroke: #ffffff1c; stroke-width: 1.5; }
 .compass__tick { stroke: var(--mute); stroke-width: 1; }

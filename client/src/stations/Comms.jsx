@@ -5,7 +5,7 @@ import { useTick } from '../lib/hooks.js';
 import { logOf } from '../lib/ship.js';
 import { play } from '../lib/sound.js';
 import { state } from '../lib/store.js';
-import { SHIPS, alertsFor, levelOf, linkOf, meta, monState, read, shipCode, shipName, stardate, useCommand, useFeed, worst } from './parts/data.js';
+import { SHIPS, alertsFor, levelOf, linkOf, meta, monState, read, shipCode, stardate, useCommand, useFeed, worst } from './parts/data.js';
 import { Chip, ConsoleStrip, J, Jewel, LitButton, Monitor, Num, Station, useKeys } from '../ui/index.js';
 import { C, Readout, clamp, fmt, useCanvas } from './parts/ui.jsx';
 

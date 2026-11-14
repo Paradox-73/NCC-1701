@@ -7,7 +7,7 @@ import { useAuth } from '../lib/auth.jsx';
 import { useSubscription, useTick } from '../lib/hooks.js';
 import { ship } from '../lib/ship.js';
 import { ackAlert, state } from '../lib/store.js';
-import { SHIPS, alertFlagOf, conditionOf, isOpen, levelOf, linkOf, posOf, read, ringOf, shipCode, shipName, stardate, useCommand } from './parts/data.js';
+import { SHIPS, alertFlagOf, conditionOf, isOpen, linkOf, posOf, read, ringOf, shipCode, shipName, stardate, useCommand } from './parts/data.js';
 import { Chip, ConsoleStrip, J, LevelChip, LitButton, Monitor, Num, Station } from '../ui/index.js';
 import { C, clamp, fmt, useCanvas } from './parts/ui.jsx';
 
@@ -57,7 +57,8 @@ function SectorMap({ ids }) {
       ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(hq[0], hq[1]); ctx.stroke();
     }
     ctx.setLineDash([]);
-    for (const sh of ships) {
+    const labels = []; // label slots taken so far: ships close together stack their labels instead of overprinting
+    for (const sh of [...ships].sort((a, b) => b.p.y - a.p.y)) {
       const [px, py] = P(sh.p.x, sh.p.y), col = sh.link === 'lost' ? C.mute : ringColor(sh.id);
       const r = ringOf(sh.id, 'posX');
       if (r?.len && r.cols.posY) {
@@ -81,10 +82,13 @@ function SectorMap({ ids }) {
         ctx.save(); ctx.translate(px, py); ctx.rotate(((sh.p.heading ?? 0) * Math.PI) / 180);
         ctx.fillStyle = C.ink; ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(6, 7); ctx.lineTo(0, 3); ctx.lineTo(-6, 7); ctx.closePath(); ctx.fill(); ctx.restore();
       }
+      let ly = py - 2;
+      for (const q of labels) if (Math.abs(q.x - px) < 96 && Math.abs(q.y - ly) < 28) ly = q.y + 28;
+      labels.push({ x: px, y: ly });
       ctx.font = '700 11px "Space Mono", monospace'; ctx.fillStyle = C.ink; ctx.textAlign = 'left';
-      ctx.fillText(shipCode(sh.id), px + 20, py - 2);
+      ctx.fillText(shipCode(sh.id), px + 20, ly);
       ctx.font = '400 10px "Space Mono", monospace'; ctx.fillStyle = sh.link === 'lost' ? C.critInk : C.ink2;
-      ctx.fillText(sh.link === 'lost' ? 'LINK LOST' : `warp ${fmt(sh.p.warp, 1)}`, px + 20, py + 11);
+      ctx.fillText(sh.link === 'lost' ? 'LINK LOST' : `warp ${fmt(sh.p.warp, 1)}`, px + 20, ly + 13);
     }
   }, [ids.join()], 50);
   return <canvas ref={ref} className="st-canvas" role="img" aria-label="Sector map of the task force" />;

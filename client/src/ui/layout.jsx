@@ -12,7 +12,7 @@ export function ConsoleStrip({ children, jewels = [], seed = 1, className }) {
   return (
     <div className={cx('console-strip', className)} role="group" aria-label="Console controls">
       <div className="console-strip__controls">{children}</div>
-      <ButtonGrid rows={3} cols={18} seed={seed} className="console-strip__grid" />
+      <ButtonGrid rows={3} cols={40} seed={seed} className="console-strip__grid" />
       {jewels.length > 0 && (
         <div className="jewel-row">
           {jewels.map((j) => (

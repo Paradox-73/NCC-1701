@@ -150,7 +150,7 @@ Below 1024 px the monitors stack in one column, the decorative grid hides, and t
 | `TopBar` | Wordmark, station tabs, condition lamp, stardate clock, live readings per second, sound toggle, user and role | Stardate comes from `DOMAIN.md`. Sticky. |
 | `StationTab` | Division pill and a Michroma label | Active tab: `accent` underline sitting on the railing line. A station the role may not use keeps its tab with a lock; it opens to restricted monitors, and the server refuses the data anyway. |
 | `ConditionLamp` | NORMAL, YELLOW ALERT or RED ALERT as a lamp and a word | The captain can click it to change condition. |
-| `Monitor` | A rounded screen in a bezel with a title strip | Slots: chart, readout, scope, list. States: power-on, live, no signal, restricted. No signal shows a low-resolution static pattern and the words NO SIGNAL. Restricted shows a lock and "Medical records: CMO and captain only". |
+| `Monitor` | A rounded screen in a bezel with a title strip | Slots: chart, readout, scope, list. States: power-on, live, awaiting telemetry (no reading yet, the words blink slowly), no signal, restricted. No signal shows a low-resolution static pattern and the words NO SIGNAL. Restricted shows a lock and "Medical records: CMO and captain only". One component in `client/src/ui` for the bridge and every station. |
 | `Readout` | Label, big number, unit, change arrow, 60 s sparkline with the normal band | The number ticks to its new value. Colour appears only past a limit. |
 | `LitButton` | A real control, a translucent lit rectangle with a Michroma label and a key cap | A real `<button>` with `aria-pressed` where it toggles. States: dim, lit, blinking while the server has not yet acknowledged the command, pressed. Colour from the lit-button table. |
 | `ButtonGrid` | Decorative rows of jellybeans that light up in random patterns | `aria-hidden`. Pattern seeded per grid. CSS animations only, no JavaScript per frame. |
@@ -158,7 +158,7 @@ Below 1024 px the monitors stack in one column, the decorative grid hides, and t
 | `SweepScope` | Round sensor scope with a rotating sweep and contact blips that fade | Canvas. One turn every 4 s. A cloaked contact shows as a faint, broken blip. |
 | `BarGauge` | Vertical segmented bar with the normal band and limit ticks | Nacelle output, shield quadrants, deck oxygen. |
 | `ArcGauge` | A 240° arc with a needle | Warp factor 0-9 with integer ticks; reactor output. The needle eases to each new value. |
-| `ShieldRing` | Top-down silhouette of the ship with four arcs: fore, aft, port, starboard | Each arc coloured by strength; a hit makes the arc flare white for 300 ms. |
+| `ShieldRing` | Top-down silhouette of the ship with four arcs: fore, aft, port, starboard | Each arc coloured by strength; a hit makes the arc flare white for 300 ms. The hit comes from the scenario's `hit` fx event (`PROTOCOL.md`), not from a falling reading. |
 | `DeckStack` | Side view of the ship cut into deck bands | Each band coloured by its life-support status. Click a deck for oxygen, carbon dioxide, temperature, pressure and gravity. |
 | `CrewGrid` | 430 small cells grouped by deck, coloured by biosign deviation | Canvas. Medical and captain only. Hover or tap shows the crew member. |
 | `BiobedPanel` | Vertical scales with moving pointer arrows for heart rate, respiration, temperature, blood pressure and neural activity | Echoes the sickbay bed displays of the show. A dot pulses at the live heart rate. |
@@ -167,9 +167,9 @@ Below 1024 px the monitors stack in one column, the decorative grid hides, and t
 | `CaptainsLog` | Feed of alerts, commands and scenario steps, each as a log line with a stardate | Newest first, filter by severity, acknowledge button. |
 | `AlertBars` | The condition bars at the viewport edges | See Condition modes. |
 | `FleetMap` | 2D sector plot of the task force with headings, short trails and a condition ring per ship | Canvas, in the shared animation loop. |
-| `ShipCard` | One ship of the task force: registry, name, condition, warp, weakest shield, open alerts, link state | Click opens that ship's bridge. |
+| `ShipCard` | One ship of the task force: registry, name, condition, warp, weakest shield, open alerts, link state | Condition from the ship's overview row. Click opens that ship: the Enterprise's bridge, or another ship's helm (`/helm?ship=N`; every station takes `?ship=N`). |
 | `Turbolift` | Station change, and the station picker on `Ctrl+K` | The transition is in Motion. |
-| `ScenarioConsole` | Picks a TOS episode scenario, starts and stops it, shows its timeline with step markers | Captain and admin only. |
+| `ScenarioConsole` | Picks a TOS episode scenario, starts and stops it, shows its timeline with step markers | Captain and admin only. The list and the step times come from `shared/scenarios`, the progress from the `scenario` event, so every console shows the same run. |
 | `KeyCap` | A small key label on a button | Space Mono 10 px in a 1 px `line` box. |
 
 ## Motion
@@ -357,7 +357,7 @@ The 3D ship turns slowly behind an "Identify" console: one lit button per demo a
 
 ## At the helm: keyboard
 
-Shortcuts are ignored while the focus is in a text field. Commands go to the server, which validates them, rate-limits them, checks the role, and passes them to the simulator; the button blinks until the acknowledgement comes back. `?` opens this table in the app.
+Shortcuts are ignored while the focus is in a text field or a dialog, and a held key repeats nothing. A station's own keys (helm keys on Helm, `H` on Communications, `A` on Alerts) take the key first; the shell's global handler skips a key a station took, so no key sends a command twice. `G` jumps and `Ctrl`+`K` always navigate. Commands go to the server, which validates them, rate-limits them, checks the role, and passes them to the simulator; the button blinks until the acknowledgement comes back. `?` opens this table in the app.
 
 | Key | Action | Who |
 |---|---|---|

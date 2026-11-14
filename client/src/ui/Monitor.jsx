@@ -22,8 +22,8 @@ export function Monitor({ title, division, status, meta, state = 'live', restric
         <header className="monitor__title">
           {division && <DivisionPill division={division} />}
           {title && <h2>{title}</h2>}
-          <span className="monitor__meta">
-            {meta}
+          <span className="monitor__meta" title={typeof meta === 'string' ? meta : undefined}>
+            {typeof meta === 'string' ? <span className="monitor__metatext">{meta}</span> : meta}
             {status && <Jewel status={state === 'live' ? status : 'off'} label={`${title ?? 'System'}: ${state === 'live' ? STATUS_WORD[status] : (word ?? 'off').toLowerCase()}`} />}
           </span>
         </header>

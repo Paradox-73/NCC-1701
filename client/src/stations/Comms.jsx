@@ -33,7 +33,7 @@ function Waterfall({ src }) {
     <div style={{ position: 'absolute', inset: 0 }}>
       <canvas ref={ref} className="st-canvas" role="img" aria-label={`Subspace waterfall: ${open} open channel${open === 1 ? '' : 's'}, newest at the top`} />
       {CARRIER_SLOTS.slice(0, open).map((x, i) => <span key={i} style={{ position: 'absolute', top: 6, left: `${x * 100}%`, transform: 'translateX(-50%)', font: '400 10px var(--font-mono)', color: C.ink2, textShadow: '0 1px 2px #000' }}>CH {i + 1}</span>)}
-      <span style={{ position: 'absolute', left: 8, bottom: 6, font: '400 10px var(--font-mono)', color: C.mute }}>newest on top · older below</span>
+      <span style={{ position: 'absolute', left: 14, bottom: 12, padding: '2px 6px', borderRadius: 3, background: '#000a', font: '400 10px var(--font-mono)', color: C.ink2 }}>newest on top · older below</span>
     </div>
   );
 }

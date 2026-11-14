@@ -89,7 +89,7 @@ function SlideLevers({ src }) {
         })}
       </div>
       <div className="levers__side">
-        <div className="levers__win"><span>Preset</span><b className="display" style={{ fontSize: 12, fontWeight: 400 }}>{preset ? preset.toUpperCase() : 'CUSTOM'}</b></div>
+        <div className="levers__win levers__win--preset"><span>Preset</span><b className="display" style={{ fontSize: 12, fontWeight: 400 }}>{preset ? preset.toUpperCase() : 'CUSTOM'}</b></div>
         <div className="levers__win levers__win--wide"><Readout src={src} k="powerTotal" label="Total output" unit="% rated" size="sm" sparkH={18} /></div>
         <div className="levers__win">
           <span>Battery</span>
@@ -249,7 +249,7 @@ export default function Engineering({ shipId = 1 }) {
             </div>
           </div>
         </Monitor>
-        <Monitor title="Power allocation" meta="slide levers · warp · shields · weapons · life support" state={st('power')} className="st-c8 monitor--housing monitor--levers" style={{ '--mh': '230px' }}>
+        <Monitor title="Power allocation" meta="share of reactor output" state={st('power')} className="st-c8 monitor--housing monitor--levers" style={{ '--mh': '250px' }}>
           <SlideLevers src={src} />
         </Monitor>
         <Monitor title="Transporter" meta="room 1" state={st('transporter')} className="st-c4" style={{ '--mh': '160px' }}>

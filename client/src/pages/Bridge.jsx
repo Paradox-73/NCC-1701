@@ -241,7 +241,8 @@ function Chair({ user, condition, viewer, onViewer, onScenarios }) {
           onClick={() => (hailing ? close.send({}) : hail.send({ target: 'command' }))} />
         <LitButton color="amber" label="Shields" keyCap="⇧S" size="sm" pressed={up} pending={shields.pending} disabled={!captain} title={tip} onClick={() => shields.send({ up: !up })} />
         <LitButton color="white" label={VIEW_WORD[viewer.mode]} keyCap="V" size="sm" onClick={onViewer} title="Next viewscreen mode: forward, tactical, exterior" />
-        <LitButton color="green" label="Scenario" size="sm" lit={!!running} disabled={!mayCommand(user, 'scenario.start')} title="Play an episode of the original series"
+        <LitButton color="green" label="Scenario" size="sm" lit={!!running} disabled={!mayCommand(user, 'scenario.start')}
+          title={mayCommand(user, 'scenario.start') ? 'Play an episode of the original series' : 'Captain or Starfleet Command'}
           onClick={onScenarios} />
       </div>
     </div>

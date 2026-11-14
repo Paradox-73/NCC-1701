@@ -9,6 +9,8 @@ import { useSubscription } from '../../lib/hooks.js';
 import { backfill, getRing, state } from '../../lib/store.js';
 
 export const meta = (key) => CHANNEL_BY_KEY[key];
+/** "12 s ago", "5 min ago", "3 h ago" for a duration in ms. */
+export const ago = (ms) => (ms < 60000 ? `${Math.round(ms / 1000)} s ago` : ms < 3600000 ? `${Math.round(ms / 60000)} min ago` : `${Math.round(ms / 3600000)} h ago`);
 export const hasGroup = (g) => !!GROUP_CHANNELS[g];
 export const canSee = (user, g) => !!user?.groups?.includes(g);
 

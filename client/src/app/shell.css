@@ -137,14 +137,19 @@
 .toast[data-tone='bad']::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 10px; border-radius: 50%; background: var(--crit); }
 
 /* ---- narrow screens ------------------------------------------------------------- */
+/* every tab stays visible down to the phone menu: a restricted tab is dimmed (its lock shows only on wide screens),
+   long labels give way to short ones, then the wordmark text, the stardate and the user's name make room */
+.tab[data-locked] { color: var(--mute); }
+.tab[data-locked] .pill { opacity: 0.45; }
 .tab__short { display: none; }
-@media (max-width: 1540px) { .tab__long { display: none; } .tab__short { display: inline; } .tab { padding: 0 10px; } }
+@media (max-width: 1700px) { .tab__long, .tab__lock { display: none; } .tab__short { display: inline; } .tab { padding: 0 10px; } }
+@media (max-width: 1500px) { .wordmark span { display: none; } .stat--date { display: none; } }
+@media (max-width: 1300px) { .user__who { display: none; } .tab { padding: 0 8px; gap: 6px; } .topbar__right { gap: 10px; } }
+@media (max-width: 1120px) { .stat--rate { display: none; } .tab { padding: 0 6px; } .topbar { gap: 10px; } }
 /* the condition word shrinks with the tabs, so a long "Yellow alert" never pushes the last tab out of view */
 .cond__short { display: none; }
 @media (max-width: 1540px) { .cond__long { display: none; } .cond__short { display: inline; } }
-@media (max-width: 1280px) { .stat--date { display: none; } }
-@media (max-width: 1100px) { .tab__short { display: none; } .tab { padding: 0 9px; } }
-@media (max-width: 900px) {
+@media (max-width: 1023px) {
   .tabs { display: none; }
   .tabs-menu { display: inline-flex; }
   .stat--rate, .user__who, .iconbtn .keycap { display: none; }

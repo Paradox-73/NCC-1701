@@ -90,6 +90,7 @@
 .monitor__title { display: flex; align-items: center; gap: 8px; min-height: 28px; padding: 2px 6px 0; min-width: 0; }
 .monitor__title h2 { margin: 0; flex: 0 0 auto; max-width: 100%; font: 400 10.5px/1.2 var(--font-display); letter-spacing: 0.12em; text-transform: uppercase; color: #dfe3e8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .monitor__meta { margin-left: auto; flex: 0 100 auto; min-width: 0; display: flex; align-items: center; gap: 8px; overflow: hidden; font: 400 11px/1 var(--font-mono); color: #a3abb5; white-space: nowrap; }
+.monitor__metatext { min-width: 0; overflow: hidden; text-overflow: ellipsis; } /* a narrow monitor ends its caption with … (full text on hover) */
 .monitor__screen {
   position: relative; flex: 1; min-height: 0; border-radius: 12px; background: #030405; overflow: hidden;
   box-shadow: 0 0 0 3px var(--bezel), 0 0 0 4px #00000099, 0 2px 6px 3px #00000066, inset 0 0 30px #000, inset 0 0 0 1px #ffffff0d;
@@ -271,7 +272,8 @@
   background: #020203; box-shadow: 0 0 0 1px #000, 0 0 0 2px #ffffff14;
 }
 .cs-status__word { font-size: 9.5px; }
-.cs-readouts { display: flex; gap: 6px; margin: 0; flex: none; }
+/* readouts that do not fit wrap onto a hidden second row, so a narrow screen drops whole windows instead of slicing one */
+.cs-readouts { display: flex; flex-wrap: wrap; gap: 6px; height: 36px; padding: 2px; margin: 0; flex: 0 1 auto; min-width: 0; overflow: hidden; }
 .cs-readout { display: flex; flex-direction: column; justify-content: center; gap: 3px; height: 32px; padding: 0 8px; border-radius: 2px; background: #020203; box-shadow: 0 0 0 1px #000, 0 0 0 2px #ffffff14; }
 .cs-readout dt { font: 400 8.5px/1 var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; color: #a3abb5; white-space: nowrap; }
 .cs-readout dd { margin: 0; font: 700 13px/1 var(--font-mono); color: #ffd27a; white-space: nowrap; }

@@ -1,0 +1,16 @@
+{
+  "name": "ncc1701",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": ["shared", "server", "client", "simulator", "loadtest"],
+  "scripts": {
+    "dev:server": "npm run dev -w server",
+    "dev:client": "npm run dev -w client",
+    "test": "npm test -w server",
+    "build:client": "npm run build -w client",
+    "sim": "npm start -w simulator --",
+    "loadtest": "npm start -w loadtest --",
+    "loadtest:smoke": "npm start -w loadtest -- --preset smoke"
+  }
+}

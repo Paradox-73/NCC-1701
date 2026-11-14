@@ -9,6 +9,7 @@ import { onConnection, onEvent, state } from './store.js';
 
 export const LEVELS = ['normal', 'yellow', 'red'];
 const SHIP = 1;
+export const SHIP_ID = SHIP; // the ship this bridge belongs to (the log, scenario and condition here are its)
 const pushed = new Map(); // shipId -> { level, at }: the latest condition event
 const PUSH_MS = 1500; // an event beats the overview this long, so an overview sent before the change cannot undo it
 export const ship = {

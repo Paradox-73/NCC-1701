@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import VirtualList from '../components/VirtualList.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import { useTick } from '../lib/hooks.js';
+import { SHIP_ID, shipLog } from '../lib/ship.js';
 import { state } from '../lib/store.js';
 import { SHIPS, alertsFor, levelOf, linkOf, meta, monState, read, shipCode, shipName, stardate, useCommand, useFeed, worst } from './parts/data.js';
 import { C, Chip, ConsoleStrip, J, LitButton, Monitor, Num, Readout, Station, clamp, fmt, useCanvas, useKeys } from './parts/ui.jsx';
@@ -102,12 +103,17 @@ function Hail({ src, target, onTarget }) {
   );
 }
 
-const SEV = { critical: ['crit', 'RED'], warn: ['warn', 'YELLOW'], info: ['info', 'INFO'] };
+const SEV = { critical: ['crit', 'RED'], warn: ['warn', 'YELLOW'], info: ['info', 'INFO'], log: ['info', 'LOG'], failed: ['crit', 'FAILED'] };
+// the ship's log from the server (command acknowledgements such as an answered hail, scenario lines), the alerts,
+// and what only this console did (intercom), newest first
 function Log({ src, local }) {
-  const items = [...local, ...alertsFor(src).slice(0, 300).map((a) => ({ id: a.id, ts: a.ts, sev: a.severity, from: shipCode(a.sourceId), text: a.message, fresh: a.arrivedAt && Date.now() - a.arrivedAt < 1500 }))].sort((a, b) => b.ts - a.ts);
+  const lines = src === SHIP_ID
+    ? shipLog.slice(0, 200).map((l) => ({ id: `s${l.id}`, ts: l.ts, sev: l.kind === 'command' ? 'failed' : 'log', from: l.by === 'scenario' || l.by === 'log' ? 'SCENARIO' : (l.by ?? shipCode(src)).toUpperCase().slice(0, 10), text: l.text, fresh: l.fresh && Date.now() - l.ts < 1500 }))
+    : [];
+  const items = [...local, ...lines, ...alertsFor(src).slice(0, 300).map((a) => ({ id: a.id, ts: a.ts, sev: a.severity, from: shipCode(a.sourceId), text: a.message, fresh: a.arrivedAt && Date.now() - a.arrivedAt < 1500 }))].sort((a, b) => b.ts - a.ts);
   return (
     <VirtualList items={items} rowHeight={36} label="Message log" className="st-list" style={{ height: '100%' }}
-      empty={<div className="st-blank"><b>NO TRAFFIC</b><span>Hails you send and alerts for this ship appear here.</span></div>}
+      empty={<div className="st-blank"><b>NO TRAFFIC</b><span>Hails, the ship's log and alerts for this ship appear here.</span></div>}
       renderRow={(m) => {
         const [lv, word] = SEV[m.sev] ?? ['ok', 'SENT'];
         return (
@@ -137,7 +143,8 @@ export default function Comms({ shipId = 1 }) {
   const tgt = TARGETS.find((x) => x.id === target);
   const hail = async (priority) => {
     const say = `${priority ? 'Priority one message to' : 'Hailing'} ${priority ? 'Starfleet Command' : tgt.name}`;
-    if (await cmd.send('comms.hail', { target: priority ? 'command' : target }, say)) note(say);
+    // an accepted hail comes back from the server as a ship's log line, so it isn't added here as well
+    if ((await cmd.send('comms.hail', { target: priority ? 'command' : target }, say)) && src !== SHIP_ID) note(say);
   };
   const close = async () => { if (await cmd.send('comms.close', {}, 'Close channel')) note('Channel closed'); };
   const hailing = read(src, 'hailing') >= 0.5;

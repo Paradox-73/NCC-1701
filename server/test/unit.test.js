@@ -34,6 +34,21 @@ test('default CORS origins allow the dashboard on both localhost and 127.0.0.1',
   }
 });
 
+test('link-loss limit is 1.5 s by default and LINK_LOSS_MS sets it (3000 on the hosted server)', () => {
+  const saved = process.env.LINK_LOSS_MS;
+  try {
+    delete process.env.LINK_LOSS_MS;
+    assert.equal(loadConfig().linkLossMs, 1500);
+    process.env.LINK_LOSS_MS = '3000';
+    assert.equal(loadConfig().linkLossMs, 3000);
+    process.env.LINK_LOSS_MS = 'not a number';
+    assert.equal(loadConfig().linkLossMs, 1500);
+  } finally {
+    if (saved === undefined) delete process.env.LINK_LOSS_MS;
+    else process.env.LINK_LOSS_MS = saved;
+  }
+});
+
 test('dedup window: new, duplicate, late inside window, stale outside', () => {
   const w = new SeqWindow(16);
   assert.equal(w.check(1), OK);

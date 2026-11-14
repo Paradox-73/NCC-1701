@@ -4,7 +4,7 @@ import { useAuth } from '../lib/auth.jsx';
 import { useTick } from '../lib/hooks.js';
 import { levelOf, meta, monState, read, useCommand, useFeed, worst } from './parts/data.js';
 import { useHistory, useHistoryData } from './parts/history.js';
-import { ArcGauge, BarGauge, C, Chip, ConsoleStrip, HBar, LevelChip, LitButton, Monitor, Num, Readout, clamp, decOf, fmt, useCanvas } from './parts/ui.jsx';
+import { ArcGauge, Station, BarGauge, C, Chip, ConsoleStrip, HBar, LevelChip, LitButton, Monitor, Num, Readout, Val, clamp, decOf, fmt, useCanvas } from './parts/ui.jsx';
 
 // DOMAIN.md deck names (our choice; the show never gave a full deck plan) and the hull profile each band draws
 const DECKS = ['Bridge', "Officers' quarters", 'Crew quarters', 'Laboratories', 'Sickbay', 'Recreation', 'Transporter rooms', 'Shuttle hangar', 'Cargo and food stores', 'Life support plant', 'Main engineering', 'Impulse and auxiliary control'];
@@ -192,9 +192,18 @@ export default function Engineering({ shipId = 1 }) {
   const warpLv = sys(['reactionRate', 'intermixDev', 'dilithiumEff', 'dilithiumTemp', 'chamberTemp', 'nacelleDelta', 'warpField']);
   const jewel = (lv, state) => (state !== 'live' ? 'off' : lv || 'ok');
 
+  const desk = (
+    <ConsoleStrip seed={11} cmd={cmd} jewels={[['WARP', jewel(warpLv, st('warp'))], ['IMPULSE', jewel(sys(['impulseReactor', 'impulseTemp']), st('impulse'))], ['POWER', jewel(sys(['powerTotal', 'battery']), st('power'))], ['DECKS', jewel(decksLv, st('lifesupport'))], ['TRANSPORT', jewel(xp === 3 ? 'crit' : sys(['xpEnergy', 'xpLock', 'xpPattern']), st('transporter'))]]}>
+      <LitButton c="amber" label="Cruise" onClick={() => preset('cruise')} lit={presetOn('cruise')} pending={cmd.pending === 'engineering.allocate'} />
+      <LitButton c="red" label="Combat" onClick={() => preset('combat')} lit={presetOn('combat')} pending={cmd.pending === 'engineering.allocate'} />
+      <LitButton c="yellow" label="Emergency power" onClick={() => preset('emergency')} lit={presetOn('emergency')} pending={cmd.pending === 'engineering.allocate'} />
+      <LitButton c="green" label="Energize" onClick={() => cmd.send('transporter.energize', {}, 'Energize')} lit={xp === 1 || xp === 2} pending={cmd.pending === 'transporter.energize'} />
+      <LitButton c="red" label="Cold restart" onClick={() => cmd.send('engineering.coldRestart', {}, 'Cold restart')} pending={cmd.pending === 'engineering.coldRestart'} title="Only when a scenario asks for it" />
+    </ConsoleStrip>
+  );
+
   return (
-    <div className="st-station" data-station="engineering">
-      <div className="st-grid" style={{ '--rows': 'minmax(250px, 3fr) minmax(112px, 1.15fr) minmax(250px, 3.1fr)' }}>
+    <Station name="Engineering" division="ops" ship={src} rows="minmax(250px, 3fr) minmax(112px, 1.15fr) minmax(250px, 3.1fr)" desk={desk}>
         <Monitor title="Reaction chamber" meta="matter / antimatter" state={st('warp')} className="st-c4" style={{ '--mh': '300px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(110px, 44%) 1fr', height: '100%' }}>
             <div style={{ position: 'relative' }}><Chamber src={src} /></div>
@@ -202,13 +211,13 @@ export default function Engineering({ shipId = 1 }) {
               <Readout src={src} k="reactionRate" label="Reaction rate" unit="% rated" />
               <Readout src={src} k="chamberTemp" label="Chamber temperature" />
               <dl className="st-kv">
-                <dt>Intermix deviation</dt><dd><Num v={read(src, 'intermixDev')} dec={2} className="" level={levelOf('intermixDev', read(src, 'intermixDev'))} /><span className="st-unit">%</span></dd>
-                <dt>Warp field</dt><dd><Num v={read(src, 'warpField')} dec={1} className="" level={levelOf('warpField', read(src, 'warpField'))} /><span className="st-unit">%</span></dd>
+                <dt>Intermix deviation</dt><dd><Val src={src} k="intermixDev" dec={2} /></dd>
+                <dt>Warp field</dt><dd><Val src={src} k="warpField" dec={1} /></dd>
               </dl>
             </div>
           </div>
         </Monitor>
-        <Monitor title="Dilithium" meta="crystal articulation" state={st('warp')} className="st-c4" style={{ '--mh': '300px' }}>
+        <Monitor title="Dilithium" meta="crystal articulation" state={st('warp')} className="st-c4">
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px 16px 12px', gap: 6 }}>
             <span className="st-label">Crystal efficiency</span>
             <div style={{ maxWidth: 210, width: '100%', margin: '0 auto', flex: '1 1 auto', minHeight: 0 }}>
@@ -217,7 +226,7 @@ export default function Engineering({ shipId = 1 }) {
             <Readout src={src} k="dilithiumTemp" label="Crystal chamber temperature" />
           </div>
         </Monitor>
-        <Monitor title="Nacelles" meta="warp and impulse" state={st('warp', 'impulse')} className="st-c4" style={{ '--mh': '300px' }}>
+        <Monitor title="Nacelles" meta="warp and impulse" state={st('warp', 'impulse')} className="st-c4" style={{ '--mh': '280px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'auto auto minmax(0, 1fr)', gap: 18, height: '100%', padding: 14 }}>
             <BarGauge v={read(src, 'nacellePort')} k="nacellePort" label="Port" min={0} max={130} h="auto" segs={20} dec={0} />
             <BarGauge v={read(src, 'nacelleStbd')} k="nacelleStbd" label="Stbd" min={0} max={130} h="auto" segs={20} dec={0} />
@@ -228,36 +237,28 @@ export default function Engineering({ shipId = 1 }) {
             </div>
           </div>
         </Monitor>
-        <Monitor title="Power allocation" meta="warp · shields · weapons · life support" state={st('power')} className="st-c8" style={{ '--mh': '150px' }}>
+        <Monitor title="Power allocation" meta="warp · shields · weapons · life support" state={st('power')} className="st-c8">
           <div className="st-pad" style={{ height: '100%' }}><PowerBar src={src} /></div>
         </Monitor>
-        <Monitor title="Transporter" meta="room 1" state={st('transporter')} className="st-c4" style={{ '--mh': '150px' }}>
+        <Monitor title="Transporter" meta="room 1" state={st('transporter')} className="st-c4" style={{ '--mh': '160px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', height: '100%' }}>
             <div style={{ position: 'relative' }}><Pads src={src} /></div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '10px 12px', justifyContent: 'center' }}>
               <Chip level={xp === 3 ? 'crit' : xp ? 'info' : 'off'}>{XP[xp] ?? 'IDLE'}</Chip>
               <dl className="st-kv" style={{ fontSize: 12 }}>
-                <dt>Energy</dt><dd style={{ fontSize: 13 }}><Num v={read(src, 'xpEnergy')} dec={1} className="" level={levelOf('xpEnergy', read(src, 'xpEnergy'))} /><span className="st-unit">MW</span></dd>
-                <dt>Lock</dt><dd style={{ fontSize: 13 }}><Num v={read(src, 'xpLock')} dec={0} className="" level={levelOf('xpLock', read(src, 'xpLock'))} /><span className="st-unit">%</span></dd>
-                <dt>Pattern</dt><dd style={{ fontSize: 13 }}><Num v={read(src, 'xpPattern')} dec={1} className="" level={levelOf('xpPattern', read(src, 'xpPattern'))} /><span className="st-unit">%</span></dd>
+                <dt>Energy</dt><dd style={{ fontSize: 13 }}><Val src={src} k="xpEnergy" dec={1} /></dd>
+                <dt>Lock</dt><dd style={{ fontSize: 13 }}><Val src={src} k="xpLock" dec={0} /></dd>
+                <dt>Pattern</dt><dd style={{ fontSize: 13 }}><Val src={src} k="xpPattern" dec={1} /></dd>
               </dl>
             </div>
           </div>
         </Monitor>
-        <Monitor title="Deck stack" meta="life support · gravity" state={st('lifesupport', 'gravity')} className="st-c5" style={{ '--mh': '340px' }}>
+        <Monitor title="Deck stack" meta="life support · gravity" state={st('lifesupport', 'gravity')} className="st-c5">
           <DeckStack src={src} sel={deck} onSel={setDeck} />
         </Monitor>
-        <Monitor title={`Deck ${pad2(deck)} · ${DECKS[deck - 1]}`} meta="history and live" state={st('lifesupport', 'gravity')} className="st-c7" style={{ '--mh': '420px' }}>
+        <Monitor title={`Deck ${pad2(deck)} · ${DECKS[deck - 1]}`} meta="history and live" state={st('lifesupport', 'gravity')} className="st-c7" style={{ '--mh': '470px' }}>
           <DeckDetail src={src} deck={deck} />
         </Monitor>
-      </div>
-      <ConsoleStrip seed={11} cmd={cmd} jewels={[['WARP', jewel(warpLv, st('warp'))], ['IMPULSE', jewel(sys(['impulseReactor', 'impulseTemp']), st('impulse'))], ['POWER', jewel(sys(['powerTotal', 'battery']), st('power'))], ['DECKS', jewel(decksLv, st('lifesupport'))], ['TRANSPORT', jewel(xp === 3 ? 'crit' : sys(['xpEnergy', 'xpLock', 'xpPattern']), st('transporter'))]]}>
-        <LitButton c="amber" label="Cruise" onClick={() => preset('cruise')} lit={presetOn('cruise')} pending={cmd.pending === 'engineering.allocate'} />
-        <LitButton c="red" label="Combat" onClick={() => preset('combat')} lit={presetOn('combat')} pending={cmd.pending === 'engineering.allocate'} />
-        <LitButton c="yellow" label="Emergency power" onClick={() => preset('emergency')} lit={presetOn('emergency')} pending={cmd.pending === 'engineering.allocate'} />
-        <LitButton c="green" label="Energize" onClick={() => cmd.send('transporter.energize', {}, 'Energize')} lit={xp === 1 || xp === 2} pending={cmd.pending === 'transporter.energize'} />
-        <LitButton c="red" label="Cold restart" onClick={() => cmd.send('engineering.coldRestart', {}, 'Cold restart')} pending={cmd.pending === 'engineering.coldRestart'} title="Only when a scenario asks for it" />
-      </ConsoleStrip>
-    </div>
+    </Station>
   );
 }

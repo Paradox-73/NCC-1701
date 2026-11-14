@@ -5,7 +5,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { reducedMotion } from '../../lib/chartTheme.js';
 import { onFrame } from '../../lib/raf.js';
-import { eachRecent, levelOf, limitsOf, meta, read, readAgo, ringOf } from './data.js';
+import { eachRecent, levelOf, limitsOf, meta, read, readAgo, ringOf, shipCode, shipName } from './data.js';
 import './stations.css';
 
 // canvas colours: the same values as the CSS tokens in stations.css
@@ -115,7 +115,7 @@ export function Chip({ level, children }) {
   return <span className="st-chip" data-level={level}>{children}</span>;
 }
 /** The status word that always goes with a status colour. */
-export function LevelChip({ level, warn = 'WARNING', crit = 'CRITICAL' }) {
+export function LevelChip({ level, warn = 'YELLOW', crit = 'RED' }) {
   return level ? <Chip level={level}>{level === 'crit' ? crit : warn}</Chip> : null;
 }
 
@@ -125,6 +125,20 @@ function Arrow({ dir }) {
     <svg className="st-trend" width="10" height="10" viewBox="0 0 10 10" aria-label={dir > 0 ? 'rising' : 'falling'} role="img">
       <path d={dir > 0 ? 'M5 1 L9 8 H1 Z' : 'M5 9 L9 2 H1 Z'} fill="currentColor" />
     </svg>
+  );
+}
+
+/** A value with its unit, coloured past a limit and then always followed by the level's word. */
+export function Val({ src, k, v, dec, unit }) {
+  const m = meta(k);
+  const x = v !== undefined ? v : read(src, k);
+  const level = levelOf(k, x);
+  return (
+    <>
+      <Num v={x} dec={dec ?? decOf(k)} className="" level={level} />
+      {(unit ?? m?.unit) ? <span className="st-unit">{unit ?? m.unit}</span> : null}
+      {level && <> <LevelChip level={level} /></>}
+    </>
   );
 }
 
@@ -138,11 +152,12 @@ export function Readout({ src, k, label, unit, dec, size = '', spark = true, ms 
   const dir = v == null || ago == null || Math.abs(v - ago) <= span ? 0 : Math.sign(v - ago);
   return (
     <div className="st-ro" data-level={level || undefined}>
-      <div className="st-ro-top"><span className="st-label" title={m?.label}>{label ?? m?.label ?? k}</span><LevelChip level={level} /></div>
+      <div className="st-ro-top"><span className="st-label" title={m?.label}>{label ?? m?.label ?? k}</span></div>
       <div className={`st-ro-val ${level ? 'st-flash' : ''}`} key={level ?? 'ok'}>
         <Num v={v} dec={dec ?? decOf(k)} className={`st-num ${size}`} />
         {(unit ?? m?.unit) ? <span className="st-unit">{unit ?? m.unit}</span> : null}
         <Arrow dir={dir} />
+        {level && <span style={{ marginLeft: 'auto', alignSelf: 'center' }}><LevelChip level={level} /></span>}
       </div>
       {spark && <Spark src={src} k={k} ms={ms} h={sparkH} />}
     </div>
@@ -226,8 +241,8 @@ const arcPath = (cx, cy, r, a0, a1) => {
   const [x0, y0] = polar(cx, cy, r, a0), [x1, y1] = polar(cx, cy, r, a1);
   return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`;
 };
-/** 240° arc with a needle that eases to each value; warn and critical zones from the channel's limits. */
-export function ArcGauge({ v, k, min, max, ticks = [], label, unit, dec, numClass = 'st-num st-xl', tickDec = 0 }) {
+/** 240° arc with a needle that eases to each value; warn and critical zones from the channel's limits. `below` puts the number under the arc. */
+export function ArcGauge({ v, k, min, max, ticks = [], label, unit, dec, numClass = 'st-num st-xl', tickDec = 0, below = false }) {
   const m = meta(k);
   const lo = min ?? m?.min ?? 0, hi = max ?? m?.max ?? 100;
   const level = levelOf(k, v);
@@ -244,7 +259,7 @@ export function ArcGauge({ v, k, min, max, ticks = [], label, unit, dec, numClas
   if (lim?.low) zones.push([lim.low.warn, lim.low.critical, C.warn], [lo, lim.low.critical, C.crit]);
   return (
     <div style={{ position: 'relative', width: '100%' }} data-level={level || undefined}>
-      <svg className="st-arc" viewBox="0 0 200 168" role="img" aria-label={`${label ?? m?.label}: ${v == null ? 'no reading' : fmt(v, dec ?? decOf(k))} ${unit ?? m?.unit ?? ''}`}>
+      <svg className="st-arc" viewBox={below ? '0 0 200 150' : '0 0 200 168'} role="img" aria-label={`${label ?? m?.label}: ${v == null ? 'no reading' : fmt(v, dec ?? decOf(k))} ${unit ?? m?.unit ?? ''}`}>
         <path d={arcPath(cx, cy, R, -120, 120)} fill="none" stroke="#ffffff12" strokeWidth="10" strokeLinecap="round" />
         <path ref={fill} d={arcPath(cx, cy, R, -120, 120)} fill="none" stroke={levelColor(level) ?? C.chart1} strokeOpacity="0.85" strokeWidth="10" strokeLinecap="round" strokeDasharray={`${L} ${L}`} strokeDashoffset={L} />
         {zones.map(([a, b, col]) => {
@@ -266,7 +281,7 @@ export function ArcGauge({ v, k, min, max, ticks = [], label, unit, dec, numClas
         </g>
         <circle cx={cx} cy={cy} r="7" fill={C.raised} stroke={C.bulkhead} />
       </svg>
-      <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, textAlign: 'center' }}>
+      <div style={below ? { textAlign: 'center', marginTop: -6 } : { position: 'absolute', left: 0, right: 0, bottom: 0, textAlign: 'center' }}>
         <Num v={v} dec={dec ?? decOf(k)} className={numClass} level={level} />
         {(unit ?? m?.unit) ? <span className="st-unit">{unit ?? m.unit}</span> : null}
       </div>
@@ -283,9 +298,8 @@ export function LitButton({ c = 'amber', label, keyCap, onClick, lit, pending, d
   return (
     <button type="button" className="st-lit" data-c={c} data-lit={lit ? 'true' : undefined} data-pending={pending ? 'true' : undefined}
       aria-pressed={pressed} onClick={onClick} disabled={disabled} title={title} aria-keyshortcuts={keyCap || undefined}>
-      <span className="lens" aria-hidden="true" />
+      <span className="top"><span className="lens" aria-hidden="true" />{keyCap && <kbd className="key">{keyCap}</kbd>}</span>
       <span className="lab">{label}</span>
-      {keyCap && <kbd className="key">{keyCap}</kbd>}
     </button>
   );
 }
@@ -303,7 +317,7 @@ export function ButtonGrid({ seed = 1, n = 42 }) {
   }, [seed, n]);
   return (
     <div className="st-beans" aria-hidden="true">
-      {beans.map((b, i) => <i key={i} className="st-bean" style={{ '--bc': `var(--lit-${b.c})`, '--bd': `var(--lit-${b.c}-dim)`, '--t': `${b.t.toFixed(2)}s`, '--dl': `${b.d.toFixed(2)}s` }} />)}
+      {beans.map((b, i) => <i key={i} className="st-bean" style={{ '--bc': `var(--lit-${b.c})`, '--bd': `var(--lit-${b.c}-dim)`, '--t': `${b.t.toFixed(2)}s`, '--dl': `${b.d.toFixed(2)}s`, '--on': `${Math.floor(i / 3) * 40}ms` }} />)}
     </div>
   );
 }
@@ -318,6 +332,25 @@ export function ConsoleStrip({ children, seed, jewels = [], cmd }) {
         <div className="st-jewels">{jewels.map(([label, s]) => <span key={label}><Jewel s={s} label={label} />{label}</span>)}</div>
         <div className={`st-cmdlog ${cmd?.last && !cmd.last.ok ? 'bad' : ''}`} role="status" aria-live="polite">{cmd?.last?.text ?? ''}</div>
       </div>
+    </div>
+  );
+}
+
+/**
+ * The console frame every station uses: placard (division pill, station name, ship), the recessed bank of monitors
+ * laid out on a 12-column grid with `rows` as its row template, and the desk (`desk`, a ConsoleStrip) along the bottom.
+ */
+export function Station({ name, division, ship, rows, end, desk, children }) {
+  return (
+    <div className="st-station" data-station={name.toLowerCase()}>
+      <header className="st-plate">
+        <i className="st-pill" data-div={division} aria-hidden="true" />
+        <h1>{name}</h1>
+        {ship != null && <span className="st-ship">{shipCode(ship)} · {shipName(ship)}</span>}
+        {end && <span className="st-plate-end">{end}</span>}
+      </header>
+      <div className="st-grid" style={rows ? { '--rows': rows } : undefined}>{children}</div>
+      {desk}
     </div>
   );
 }

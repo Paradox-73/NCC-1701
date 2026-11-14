@@ -39,15 +39,19 @@ export function read(src, key) {
   const r = ringOf(src, key);
   return r?.len && r.cols[key] ? r.last(key) : undefined;
 }
-/** Calls fn(ts, value) for the samples of the last `ms` milliseconds, oldest first, without copying the ring. */
-export function eachRecent(r, key, ms, fn, step = 1) {
-  const col = r?.cols[key];
-  if (!col || !r.len) return 0;
+/** Calls fn(slot) for the ring slots of the last `ms` milliseconds, oldest first, without copying the ring. */
+export function eachSlot(r, ms, fn, step = 1) {
+  if (!r?.len) return 0;
   const end = r.lastTs;
   let n = 0;
   while (n < r.len && end - r.ts[(r.head - 1 - n + r.cap * 2) % r.cap] <= ms) n++;
-  for (let i = 0; i < n; i += step) { const idx = (r.head - n + i + r.cap * 2) % r.cap; fn(r.ts[idx], col[idx]); }
+  for (let i = 0; i < n; i += step) fn((r.head - n + i + r.cap * 2) % r.cap);
   return n;
+}
+/** Calls fn(ts, value) for one channel over the last `ms` milliseconds. */
+export function eachRecent(r, key, ms, fn, step = 1) {
+  const col = r?.cols[key];
+  return col ? eachSlot(r, ms, (i) => fn(r.ts[i], col[i]), step) : 0;
 }
 /** Value `ms` ago (the oldest sample inside that span), for change arrows. */
 export function readAgo(src, key, ms) {

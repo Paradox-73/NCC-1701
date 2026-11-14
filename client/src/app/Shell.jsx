@@ -149,7 +149,7 @@ export default function Shell({ powered, aboard }) {
       <i key={lift} className="lift-light" aria-hidden="true" />
       <div key={location.pathname} className={`view ${location.pathname === '/bridge' ? 'view--bridge' : 'view--station'}`}>
         <Routes location={location}>
-          <Route path="/bridge" element={<Bridge powered={powered} viewer={viewer} onViewer={nextView} onGo={go} onLift={() => setOverlay('lift')} user={user} />} />
+          <Route path="/bridge" element={<Bridge powered={powered} viewer={viewer} onViewer={nextView} onGo={go} user={user} />} />
           {[...STATIONS.slice(1), ...PAGES].map((st) => (
             <Route key={st.id} path={`${st.path}/*`} element={<StationRoute station={st} onBack={back} />} />
           ))}

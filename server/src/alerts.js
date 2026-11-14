@@ -31,12 +31,15 @@ export function makeAlerts({ io, log, metrics }) {
   const room = (group, sourceId) => io.of('/live').to(alertRoom(group)).except(denyRoom(sourceId));
   let pending = [];
   let timer = null;
+  let saving = Promise.resolve(); // every insert still in flight: an ack that comes 1 ms after the timer fired waits for it too
   const flush = () => {
     clearTimeout(timer);
     timer = null;
     const docs = pending;
     pending = [];
-    return docs.length ? Alert.insertMany(docs, { ordered: false }).catch((err) => log.error({ err: err.message }, 'alert save failed')) : Promise.resolve();
+    const insert = docs.length ? Alert.insertMany(docs, { ordered: false }).catch((err) => log.error({ err: err.message }, 'alert save failed')) : null;
+    if (insert) saving = Promise.all([saving, insert]);
+    return saving;
   };
   return {
     flush,

@@ -403,6 +403,9 @@ export class Ship {
     for (const [key, f] of this.faults) out[key] += (f.target - out[key]) * Math.min(1, (ts - f.at) / (f.rampSec * 1000));
     for (const c of CH) out[c.key] = clamp(out[c.key], c.min, c.max);
 
+    // a ship that reaches the edge of the sector turns back toward the centre instead of sticking to the clamp
+    if (Math.abs(s.posX) >= 4900 || Math.abs(s.posY) >= 4900) this.order.heading = (((Math.atan2(-s.posX, -s.posY) * 180) / Math.PI) + 360) % 360;
+
     // position follows the speed and heading the bridge sees
     const rad = (out.heading * Math.PI) / 180;
     const run = (out.speed / 400) * dt;

@@ -116,3 +116,16 @@ test('resolveForShips closes open warn and critical alerts of a ship and keeps i
   assert.equal(by['rs-info'].resolved, undefined);
   assert.equal(by['rs-other'].resolved, undefined);
 });
+
+test('the admin command route refuses non-numeric fault numbers and args that are not plain values', async () => {
+  const cmd = await token('command', 'ncc-command');
+  const post = (body) => api('/api/sim/1/command', cmd, { method: 'POST', body: JSON.stringify(body) });
+  assert.equal((await post({ type: 'fault', args: { channel: 'speed', target: 100, rampSec: 'x' } })).status, 400);
+  assert.equal((await post({ type: 'fault', args: { channel: 'speed', target: { a: 1 } } })).status, 400);
+});
+
+test('an alert raised and an ack-all in the same instant: the alert is already saved when ack-all looks', async () => {
+  server.alerts.raise({ sourceId: 1, ts: Date.now(), type: 'burst', group: 'shields', channel: 'shieldAft', value: 1, threshold: 2, severity: 'warn', message: 'burst' });
+  assert.ok((await api('/api/alerts/ack-all', await token('captain', 'ncc-captain'), { method: 'POST' })).body.acked >= 1);
+  assert.equal((await Alert.findOne({ type: 'burst' }).lean()).ack.by, 'captain');
+});

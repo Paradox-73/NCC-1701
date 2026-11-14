@@ -143,8 +143,13 @@ export class World {
     return { shipId: id, condition: s.condition, scenario: this.runner.status(), log: s.lines.slice(), stardateOffset: s.stardateOffset };
   }
 
+  /** Runs from a timer, so a failed step (a ship that dropped off mid-scenario) is logged and the scenario goes on; an exception here would end the process. */
   tick() {
-    this.runner.tick(this.now());
+    try {
+      this.runner.tick(this.now());
+    } catch (err) {
+      this.log?.error({ err: err.message }, 'scenario step failed');
+    }
   }
 }
 

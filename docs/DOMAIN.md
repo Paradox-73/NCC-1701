@@ -266,7 +266,7 @@ for (let n = 1; n <= 430; n++)
       min: x.min, max: x.max, scale: x.scale, group: `bio-d${pad(DECK_OF(n), 2)}` });
 ```
 
-Per-crew alerts go only to `alerts:bio-dNN`, which only the chief medical officer and the captain join. Everyone else sees the effect through `crewWatch` and `crewCritical`. The dashboard folds many crew alerts on one deck into one log row ("23 crew on watch, deck 7").
+Per-crew alerts go only to `alerts:bio-dNN`, which only the chief medical officer and the captain join. Everyone else sees the effect through `crewWatch` and `crewCritical`.
 
 ## 5. Alerts
 

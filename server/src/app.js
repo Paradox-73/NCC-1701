@@ -121,6 +121,7 @@ export function createServer(overrides = {}) {
       timers.forEach(clearInterval);
       broadcaster.stop();
       await new Promise((resolve) => io.close(resolve));
+      await alerts.flush();
       await writer.stop();
       await ingest.save();
       metrics.stop();

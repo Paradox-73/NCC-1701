@@ -216,7 +216,7 @@ History queries (`GET /api/telemetry`) read the time series for one source and w
 ```mermaid
 flowchart LR
   B["Browser"] -- "HTTPS: static app" --> V["Vercel<br/>client/dist"]
-  B -- "HTTPS + WSS<br/>VITE_API_URL" --> R["Render free web service<br/>server + embedded simulator<br/>(SIM_EMBED=1, SIM_HZ=5)"]
+  B -- "HTTPS + WSS<br/>VITE_API_URL" --> R["Render free web service<br/>server + embedded simulator<br/>(SIM_EMBED=1, SIM_PROFILE=hosted)"]
   R -- "MONGO_URI" --> A[("MongoDB Atlas M0")]
 ```
 

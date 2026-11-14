@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Chart from '../components/Chart.jsx';
 import VirtualList from '../components/VirtualList.jsx';
 import { useAuth } from '../lib/auth.jsx';
@@ -6,7 +6,7 @@ import { useTick } from '../lib/hooks.js';
 import { play } from '../lib/sound.js';
 import { getRing } from '../lib/store.js';
 import { crewHubOf, crewLabel, deckOfCrew } from '@ncc/shared/schema.js';
-import { DECK_NAMES, canSee, levelOf, meta, monState, pad2, read, useCommand, useFeed, worst } from './parts/data.js';
+import { DECK_NAMES, canSee, eachRecent, levelOf, meta, monState, pad2, read, ringOf, useCommand, useFeed, worst } from './parts/data.js';
 import { useHistory, useHistoryData } from './parts/history.js';
 import { Chip, ConsoleStrip, J, LevelChip, LitButton, Monitor, Num, Station } from '../ui/index.js';
 import { C, calmRange, clamp, fmt, useCanvas } from './parts/ui.jsx';
@@ -199,7 +199,19 @@ function Biobed({ hub, n }) {
 
 function Trend({ hub, k, label, unit, dec }) {
   const { data, meta: hm } = useHistory(hub, k, 600, !!meta(k));
-  const getData = useHistoryData(data, [hub, k]);
+  const fromHistory = useHistoryData(data, [hub, k]);
+  // while the ten minutes of stored readings load, draw the minutes the live ring already holds (useFeed backfills it)
+  const fromRing = useMemo(() => {
+    let at = 0;
+    return () => {
+      if (performance.now() - at < 500) return null;
+      at = performance.now();
+      const xs = [], ys = [];
+      eachRecent(ringOf(hub, k), k, 600000, (t, v) => { xs.push(t / 1000); ys.push(v); });
+      return xs.length ? [xs, xs.map(() => null), ys] : null;
+    };
+  }, [hub, k]);
+  const getData = hm.status === 'loading' ? fromRing : fromHistory;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
       <Chart key={k} fill x="time" title={`${label} (${unit})`} legend={false} sync="crew" unit={unit} getData={getData} yRange={calmRange(k)} wait="Loading history"

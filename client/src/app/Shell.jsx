@@ -3,7 +3,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-
 import { useAuth } from '../lib/auth.jsx';
 import { commandWords, mayCommand, onCommandResult, sendCommand } from '../lib/commands.js';
 import { useTick } from '../lib/hooks.js';
-import { conditionOf } from '../lib/ship.js';
+import { conditionOf, loadShip } from '../lib/ship.js';
 import { play, toggleSound } from '../lib/sound.js';
 import { ackAlert, getRing, state } from '../lib/store.js';
 import Bridge from '../pages/Bridge.jsx';
@@ -28,6 +28,8 @@ export default function Shell({ powered, aboard }) {
   const [viewer, setViewer] = useState({ mode: 'forward', zoom: 1 });
   const [standDown, setStandDown] = useState(false);
   const [lift, setLift] = useState(0); // bumps on every station change: replays the turbolift light
+
+  useEffect(() => { loadShip(); }, []); // condition, scenario and the last log lines for a bridge that joins late
 
   // ---- condition: the server's, reflected on <html> so every surface follows it --------------------
   const condition = conditionOf(1);

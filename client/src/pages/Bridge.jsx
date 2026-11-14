@@ -3,11 +3,12 @@ import { CHANNEL_BY_KEY, GROUPS, GROUP_CHANNELS, SOURCES } from '@ncc/shared/sch
 import { stationById, canEnter } from '../app/stations.js';
 import { useSubscription, useTick } from '../lib/hooks.js';
 import { bandOf, levelOf, worst } from '../lib/limits.js';
-import { conditionOf, shipLog, stardate } from '../lib/ship.js';
+import { conditionOf, ship, shipLog, stardate } from '../lib/ship.js';
 import { backfill, getRing, state } from '../lib/store.js';
 import ViewscreenView from '../three/ViewscreenView.jsx';
 import { ArcGauge, ButtonGrid, DivisionPill, Icon, Jewel, KeyCap, LitButton, Monitor, Num, Readout, SweepScope, mayCommand, useCommand } from '../ui/index.js';
 import Tour from '../app/Tour.jsx';
+import { ScenarioPicker, ScenarioStrip, Ticker } from './Scenario.jsx';
 import './bridge.css';
 
 const SHIP = 1;
@@ -215,7 +216,7 @@ function HelmConsole({ ov }) {
   );
 }
 
-function Chair({ user, condition, viewer, onViewer }) {
+function Chair({ user, condition, viewer, onViewer, onScenarios }) {
   const cond = useCommand('ship.condition');
   const shields = useCommand('tactical.shields');
   const hail = useCommand('comms.hail');
@@ -225,6 +226,7 @@ function Chair({ user, condition, viewer, onViewer }) {
   const hailing = last('comms', 'hailing') > 0;
   const up = last('shields', 'shieldsUp') > 0;
   const tip = captain ? undefined : 'The captain gives this order';
+  const running = ship.scenario && (ship.scenario.state === 'running' || ship.scenario.state === 'awaiting');
   return (
     <div className="chair" data-tour="chair">
       <div className="chair__arm chair__arm--l" role="group" aria-label="Condition">
@@ -238,6 +240,8 @@ function Chair({ user, condition, viewer, onViewer }) {
           onClick={() => (hailing ? close.send({}) : hail.send({ target: 'command' }))} />
         <LitButton color="amber" label="Shields" keyCap="⇧S" size="sm" pressed={up} pending={shields.pending} disabled={!captain} title={tip} onClick={() => shields.send({ up: !up })} />
         <LitButton color="white" label={viewer.mode === 'tactical' ? 'Tactical' : 'Forward'} keyCap="V" size="sm" onClick={onViewer} title="Next viewscreen mode" />
+        <LitButton color="green" label="Scenario" size="sm" lit={!!running} disabled={!mayCommand(user, 'scenario.start')} title="Play an episode of the original series"
+          onClick={onScenarios} />
       </div>
     </div>
   );
@@ -275,7 +279,7 @@ function Turbolift({ onLift }) {
   );
 }
 
-function Viewscreen({ ov, condition, viewer, threeD }) {
+function Viewscreen({ ov, condition, viewer, threeD, user }) {
   const prevShield = useRef(null);
   const [hit, setHit] = useState(false);
   const shield = ov?.shield;
@@ -285,18 +289,20 @@ function Viewscreen({ ov, condition, viewer, threeD }) {
     if (p != null && shield != null && shield < p - 2) { setHit(true); const t = setTimeout(() => setHit(false), 450); return () => clearTimeout(t); }
     return undefined;
   }, [shield]);
-  const orbit = last('helm', 'orbitAlt') > 0;
+  const orbit = last('helm', 'orbitAlt') > 0 || !!ship.scene;
   const mode = viewer.mode === 'tactical' ? 'tactical' : orbit ? 'orbit' : 'space';
+  const timewarp = performance.now() < ship.warpFx;
   return (
     <figure className="viewscreen" data-tour="viewscreen">
       <div className="viewscreen__glass" style={{ '--zoom': viewer.zoom }}>
         <div className="viewscreen__zoom">
-          <ViewscreenView mode3d={threeD ? 'auto' : '2d'} warp={ov?.warp ?? 0} mode={mode} alert={CONDITION_ALERT[condition]} hit={hit} />
+          <ViewscreenView mode3d={threeD ? 'auto' : '2d'} warp={timewarp ? 9 : ov?.warp ?? 0} mode={mode} scene={ship.scene} alert={CONDITION_ALERT[condition]} hit={hit} />
         </div>
+        <ScenarioStrip user={user} />
       </div>
       <figcaption className="viewscreen__caption">
-        <span className="display">Main viewer · {viewer.mode === 'tactical' ? 'Tactical' : orbit ? 'Standard orbit' : 'Forward'} · ×{viewer.zoom}</span>
-        <span className="mono">{ov?.warp != null ? (ov.warp >= 0.5 ? `Warp ${ov.warp.toFixed(1)}` : 'Impulse') : 'Awaiting telemetry'}</span>
+        <Ticker />
+        <span className="viewscreen__mode mono">{viewer.mode === 'tactical' ? 'TACTICAL' : orbit ? 'ORBIT' : 'FORWARD'} ×{viewer.zoom} · {ov?.warp != null ? (ov.warp >= 0.5 ? `WARP ${ov.warp.toFixed(1)}` : 'IMPULSE') : 'NO SIGNAL'}</span>
       </figcaption>
     </figure>
   );
@@ -340,6 +346,8 @@ export default function Bridge({ powered, aboard, viewer, onViewer, onGo, onLift
     return () => { clearTimeout(t); window.removeEventListener('keydown', done); window.removeEventListener('pointerdown', done); };
   }, [boot, powered]);
 
+  const [picker, setPicker] = useState(false);
+
   // clicking a station zooms the bridge into it, then the turbolift takes over
   const [zoom, setZoom] = useState(null);
   const enterFrom = useRef(lastZoom);
@@ -356,9 +364,9 @@ export default function Bridge({ powered, aboard, viewer, onViewer, onGo, onLift
   };
 
   const parts = {
-    viewscreen: <Viewscreen ov={ov} condition={condition} viewer={viewer} threeD={aboard} />,
+    viewscreen: <Viewscreen ov={ov} condition={condition} viewer={viewer} threeD={aboard} user={user} />,
     helm: <HelmConsole ov={ov} />,
-    chair: <Chair user={user} condition={condition} viewer={viewer} onViewer={onViewer} />,
+    chair: <Chair user={user} condition={condition} viewer={viewer} onViewer={onViewer} onScenarios={() => setPicker(true)} />,
     log: <CaptainsLog onOpen={() => onGo(stationById.alerts)} />,
     lift: <Turbolift onLift={onLift} />,
     tiles: TILES.map((t, i) => <Tile key={t.id} tile={t} user={user} index={i + 1} onZoom={zoomTo} />),
@@ -394,6 +402,7 @@ export default function Bridge({ powered, aboard, viewer, onViewer, onGo, onLift
         </div>
       )}
       {powered && !boot && <Tour />}
+      {picker && <ScenarioPicker user={user} onClose={() => setPicker(false)} />}
     </div>
   );
 }

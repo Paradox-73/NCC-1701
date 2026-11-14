@@ -11,6 +11,7 @@ import { connectDb, disconnectDb, ensureAlertsTtl, ensureTelemetry } from './db.
 import { setupIngest } from './ingest/namespace.js';
 import { Writer } from './ingest/writer.js';
 import { Broadcaster } from './live/broadcaster.js';
+import { setupLive } from './live/namespace.js';
 import { makeLogger } from './logger.js';
 import { Metrics } from './metrics.js';
 import { authRoutes } from './routes/auth.js';
@@ -49,6 +50,7 @@ export function createServer(overrides = {}) {
   });
   const broadcaster = new Broadcaster({ io, config, metrics, states, detector });
   const ingest = setupIngest({ io, config, metrics, writer, states, detector, broadcaster, log });
+  setupLive({ io, config, metrics, alerts, log });
   const nsp = io.of('/live');
   metrics.gauges = () => ({
     sourcesConnected: ingest.sockets.size,

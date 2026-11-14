@@ -195,7 +195,7 @@ function HelmConsole({ ov }) {
       <div className="helm__body">
         <div className="helm__warp">
           <ArcGauge value={warp ?? 0} min={0} max={9} label="Warp factor" status={levelOf('warpFactor', warp)}>
-            <text x="100" y="128" className="arc__value">{warp == null ? '—' : warp.toFixed(1)}</text>
+            <text x="100" y="162" className="arc__value">{warp == null ? '—' : warp.toFixed(1)}</text>
           </ArcGauge>
           <span className="label">Warp factor</span>
         </div>

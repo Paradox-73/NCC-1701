@@ -103,7 +103,7 @@ function findDome(scene) {
 
 const LOGIN_POS = new THREE.Vector3(11.4, 3.7, 12.2);
 const LOGIN_LOOK = new THREE.Vector3(0, 0.15, 0);
-const FLY_FROM = new THREE.Vector3(0.8, 0.4, 150); // far ahead of the bow: the ship a speck, head-on
+const FLY_FROM = new THREE.Vector3(0.8, 0.4, 120); // far ahead of the bow: the ship a speck, head-on
 const FLY_C1 = new THREE.Vector3(2, 0.9, 64);
 const FLY_C2 = new THREE.Vector3(19, 3, 30);
 const SETTLE_MS = 1100;
@@ -120,8 +120,8 @@ function Rig({ mode }) {
   const offset = useRef({ x: 0, y: 0 });
   const wide = size.width / size.height > 1.15;
   // where the ship rests on screen: left of the console on wide screens, above it on phones
-  const rest = () => (wide ? { x: size.width * 0.15, y: size.height * 0.02 } : { x: 0, y: size.height * 0.2 });
-  const restFov = wide ? 32 : 50;
+  const rest = () => (wide ? { x: size.width * 0.15, y: size.height * 0.02 } : { x: 0, y: size.height * 0.24 });
+  const restFov = wide ? 32 : 70; // a tall phone screen needs a wide lens to fit the ship across
 
   useEffect(() => {
     const base = { t0: performance.now(), from: camera.position.clone(), fromLook: look.current.clone(), fov0: camera.fov, off0: { ...offset.current } };
@@ -153,7 +153,7 @@ function Rig({ mode }) {
     else {
       const t = Math.min(1, (performance.now() - m.t0) / m.ms);
       if (m.kind === 'flyby' || m.kind === 'settle') {
-        const u = easeInOut(t); // the glide starts and ends gently, holding as the theme starts
+        const u = m.kind === 'flyby' ? t * t * (3 - 2 * t) : easeInOut(t); // the glide starts and ends gently, holding as the theme starts
         if (m.kind === 'flyby') bezier(camera.position, m.from, FLY_C1, FLY_C2, LOGIN_POS, u);
         else camera.position.copy(m.from).lerp(LOGIN_POS, u);
         look.current.copy(m.fromLook).lerp(LOGIN_LOOK, m.kind === 'flyby' ? smooth(0.1, 0.9, t) : u);

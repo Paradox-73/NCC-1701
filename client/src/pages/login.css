@@ -34,7 +34,7 @@
 .identify__grid { opacity: 0.85; }
 
 @media (max-width: 760px) {
-  .identify { position: relative; top: auto; right: auto; transform: none; margin: 46vh auto 24px; width: calc(100vw - 24px); padding: 18px 16px 14px; gap: 14px; }
+  .identify { position: relative; top: auto; right: auto; transform: none; margin: 42vh auto 24px; width: calc(100vw - 24px); padding: 18px 16px 14px; gap: 14px; }
   @keyframes identify-in { from { opacity: 0; transform: translateY(30px); } }
   @keyframes identify-out { to { opacity: 0; transform: translateY(40px); } }
   .identify__title { font-size: 18px; }

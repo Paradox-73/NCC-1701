@@ -402,7 +402,7 @@ export function Starship({ warp = 0, shields, damage, alert = 'green', spin = tr
 export default function StarshipCanvas({ className, style, rig, ...ship }) {
   return (
     <div className={className} style={{ position: 'relative', width: '100%', height: '100%', ...style }}>
-      <Canvas dpr={[1, 1.5]} camera={{ position: [10, 5, 10], fov: 40 }} gl={{ antialias: true, powerPreference: 'low-power' }}>
+      <Canvas dpr={[1, 1.5]} resize={{ offsetSize: true }} camera={{ position: [10, 5, 10], fov: 40 }} gl={{ antialias: true, powerPreference: 'low-power' }}>
         <color attach="background" args={['#04060c']} />
         <Stars radius={80} depth={40} count={1500} factor={3} fade speed={0.4} />
         <Starship {...ship} />

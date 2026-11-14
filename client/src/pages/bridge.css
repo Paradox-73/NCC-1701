@@ -83,7 +83,7 @@
 .helm__body { flex: 1; display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center; gap: 12px; min-height: 0; }
 .helm__warp, .helm__nav, .helm__shield { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 0; }
 .helm__warp .arc { width: 150px; height: 110px; }
-.arc__value { font: 700 30px var(--font-mono); fill: var(--ink); text-anchor: middle; }
+.arc__value { font: 700 28px var(--font-mono); fill: var(--ink); text-anchor: middle; }
 .compass { width: 92px; height: 92px; }
 .compass__ring { fill: #050608; stroke: #ffffff1c; stroke-width: 1.5; }
 .compass__tick { stroke: var(--mute); stroke-width: 1; }
@@ -103,15 +103,16 @@
 .helm__lamps i { width: 12px; height: 7px; }
 
 /* the captain's chair, seen from behind, with its arm panels */
-.chair { left: 440px; top: 652px; width: 720px; height: 236px; }
-.chair__seat { position: absolute; left: 290px; top: 0; width: 140px; height: 236px; }
-.chair__seat i { position: absolute; left: 50%; bottom: 0; width: 64px; height: 70px; margin-left: -32px; border-radius: 10px 10px 4px 4px; background: linear-gradient(180deg, #2a2d33, #121418); }
-.chair__back { position: absolute; left: 0; top: 18px; width: 140px; height: 150px; border-radius: 64px 64px 26px 26px; background: radial-gradient(120% 90% at 50% 15%, #3a3d44, #17191d 70%); box-shadow: inset 0 2px 0 #ffffff22, inset 0 -10px 20px #0008, 0 20px 30px -10px #000; }
+.chair { left: 520px; top: 640px; width: 560px; height: 250px; display: flex; justify-content: center; align-items: flex-start; gap: 14px; }
+.chair > * { position: relative; }
+.chair__seat { flex: none; width: 140px; height: 250px; }
+.chair__seat i { position: absolute; left: 50%; bottom: 0; width: 64px; height: 78px; margin-left: -32px; border-radius: 10px 10px 4px 4px; background: linear-gradient(180deg, #2a2d33, #121418); }
+.chair__back { position: absolute; left: 0; top: 14px; width: 140px; height: 160px; border-radius: 64px 64px 26px 26px; background: radial-gradient(120% 90% at 50% 15%, #3a3d44, #17191d 70%); box-shadow: inset 0 2px 0 #ffffff22, inset 0 -10px 20px #0008, 0 20px 30px -10px #000; }
 .chair__back::after { content: ''; position: absolute; left: 22px; right: 22px; top: 22px; bottom: 30px; border-radius: 50px 50px 18px 18px; background: linear-gradient(180deg, #4a2c1e, #2b1a12); box-shadow: inset 0 0 0 2px #0006; }
-.chair__arm { position: absolute; top: 74px; display: grid; grid-template-columns: repeat(3, auto); gap: 6px; padding: 12px; border-radius: 12px; background: linear-gradient(180deg, #1c1f24, #0c0d10); box-shadow: inset 0 1px 0 #ffffff1a, inset 0 0 0 1px var(--line), 0 18px 30px -12px #000; }
-.chair__arm--l { right: 446px; border-top-right-radius: 4px; }
-.chair__arm--r { left: 446px; border-top-left-radius: 4px; }
-.chair__arm .lit { min-width: 92px; }
+.chair__arm { margin-top: 74px; display: grid; gap: 6px; width: 178px; padding: 10px; border-radius: 12px; background: linear-gradient(180deg, #1c1f24, #0c0d10); box-shadow: inset 0 1px 0 #ffffff1a, inset 0 0 0 1px var(--line), 0 18px 30px -12px #000; }
+.chair__arm--l { border-top-right-radius: 4px; }
+.chair__arm--r { border-top-left-radius: 4px; }
+.chair__arm .lit { justify-content: space-between; width: 100%; }
 
 /* captain's log and the turbolift */
 .log { left: 1188px; top: 704px; width: 392px; height: 180px; }
@@ -132,8 +133,10 @@
 .chip--crit { background: var(--crit-fill); color: #fff; }
 
 .liftdoor { left: 30px; top: 704px; width: 250px; height: 180px; padding: 0; border: 0; background: none; color: var(--ink); display: flex; flex-direction: column; gap: 8px; }
-.liftdoor__doors { flex: 1; display: flex; gap: 3px; padding: 10px; border-radius: 16px 16px 6px 6px; background: #0b0c0f; box-shadow: inset 0 0 0 1px var(--line2), 0 18px 30px -12px #000; }
-.liftdoor__doors i { flex: 1; border-radius: 8px 8px 2px 2px; background: linear-gradient(180deg, #b23a1d, #7c2410); box-shadow: inset 0 1px 0 #ffffff33, inset 0 -20px 30px #0005; transition: transform 380ms var(--ease-in); }
+.liftdoor__doors { position: relative; flex: 1; display: flex; gap: 2px; padding: 16px 12px 0; border-radius: 18px 18px 4px 4px; overflow: hidden; background: #0b0c0f; box-shadow: inset 0 0 0 1px var(--line2), 0 18px 30px -12px #000; }
+.liftdoor__doors::before { content: ''; position: absolute; left: 30%; right: 30%; top: 6px; height: 4px; border-radius: 2px; background: var(--lit-amber); box-shadow: 0 0 10px var(--lit-amber); opacity: 0.85; }
+.liftdoor__doors i { flex: 1; border-radius: 6px 6px 0 0; background: linear-gradient(90deg, #5c1a0d, #8f2b14 40%, #6e2010), linear-gradient(180deg, #ffffff14, transparent 30%); background-blend-mode: screen; box-shadow: inset 0 1px 0 #ffffff26, inset 0 -30px 40px #0007; transition: transform 380ms var(--ease-in); }
+.liftdoor__doors i:last-child { background: linear-gradient(270deg, #5c1a0d, #8f2b14 40%, #6e2010), linear-gradient(180deg, #ffffff14, transparent 30%); }
 .liftdoor:hover .liftdoor__doors i:first-child { transform: translateX(-10px); }
 .liftdoor:hover .liftdoor__doors i:last-child { transform: translateX(10px); }
 .liftdoor:focus-visible { outline: none; }
@@ -167,11 +170,10 @@
 .bridge--list .helm__warp .arc { width: 100%; max-width: 120px; height: auto; }
 .bridge--list .compass { width: 72px; height: 72px; }
 .bridge--list .helm__shield-num { font-size: 30px; }
-.bridge--list .chair { height: auto; display: grid; grid-template-columns: 1fr; gap: 8px; }
+.bridge--list .chair { height: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .bridge--list .chair__seat { display: none; }
-.bridge--list .chair__arm { position: static; grid-template-columns: repeat(3, 1fr); padding: 8px; border-radius: 12px; }
-.bridge--list .chair__arm .lit { min-width: 0; padding: 0 6px; font-size: 9.5px; }
-.bridge--list .chair__arm .keycap { display: none; }
+.bridge--list .chair__arm { width: auto; margin: 0; padding: 8px; border-radius: 12px; }
+.bridge--list .chair__arm .lit { padding: 0 10px; }
 .bridge--list .log { height: auto; }
 .bridge--list .log .monitor__screen { min-height: 120px; }
 .bridge--list .liftdoor { height: 120px; }

@@ -81,8 +81,9 @@ function ColdOpen({ intro, onStart, onDone }) {
     setT(0);
     const a = await intro.start();
     onStart();
-    const clock = () => (a && !a.paused ? a.currentTime * 1000 : performance.now() - t0);
-    const id = setInterval(() => setT(clock()), 100);
+    // the audio's own clock keeps the lines on the narration; the wall clock covers a refused or stalled play
+    const clock = () => Math.max(a && !a.paused && a.currentTime > 0.05 ? a.currentTime * 1000 : 0, performance.now() - t0 - 250);
+    const id = setInterval(() => setT((prev) => Math.max(prev ?? 0, clock())), 100);
     return () => clearInterval(id);
   };
   const stop = useRef(null);

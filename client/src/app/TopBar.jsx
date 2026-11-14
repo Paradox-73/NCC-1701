@@ -47,9 +47,10 @@ export function TopBar({ user, condition, standDown, onLift, onSignOut }) {
         {STATIONS.map((st) => {
           const locked = !canEnter(user, st);
           return (
-            <NavLink key={st.id} to={st.path} className="tab" data-division={st.division} title={locked ? `${st.label}: ${st.who}` : `${st.label} (G then ${st.key.toUpperCase()})`}>
+            <NavLink key={st.id} to={st.path} className="tab" data-division={st.division} aria-label={locked ? `${st.label}, restricted` : st.label} title={locked ? `${st.label}: ${st.who}` : `${st.label} (G then ${st.key.toUpperCase()})`}>
               <DivisionPill division={st.division} />
-              <span>{st.label}</span>
+              <span className="tab__long">{st.label}</span>
+              <span className="tab__short">{st.short}</span>
               {locked && <Icon name="lock" className="tab__lock" title="Restricted" />}
             </NavLink>
           );

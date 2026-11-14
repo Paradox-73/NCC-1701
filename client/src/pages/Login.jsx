@@ -13,7 +13,7 @@ const POSITIONS = [
   { username: 'command', password: 'ncc-command', label: 'Starfleet Command', emblem: 'fleet', color: 'white', post: 'Task force · all four ships' },
 ];
 
-/** "State your position": the login console over the ship. leaving: signed in, the console powers down. */
+/** "State your position": the login console. leaving: signed in, the console powers down. */
 export default function Login({ leaving }) {
   const { login, notice } = useAuth();
   const [busy, setBusy] = useState(null);
@@ -23,7 +23,8 @@ export default function Login({ leaving }) {
   const signIn = async (u, p) => {
     setBusy(u);
     setError(null);
-    try { await login(u, p); } catch (e) { setError(e.message); setBusy(null); }
+    // 429: the server's login limit (10 failed sign-ins a minute per address) blocks every sign-in until the minute is up
+    try { await login(u, p); } catch (e) { setError(e.status === 429 ? 'Too many wrong sign-ins from this network. Try again in 60 s.' : e.message); setBusy(null); }
   };
   return (
     <section className="identify" data-leaving={leaving || undefined} aria-labelledby="identify-title" inert={leaving || undefined}>

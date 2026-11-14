@@ -35,6 +35,6 @@ export async function api(path, { method = 'GET', body, query, signal, token = t
   }
   if (res.status === 401 && path !== '/api/auth/login') onUnauthorized();
   const data = await res.json().catch(() => null);
-  if (!res.ok) throw new Error(data?.error || data?.message || `Request failed (${res.status})`);
+  if (!res.ok) throw Object.assign(new Error(data?.error || data?.message || `Request failed (${res.status})`), { status: res.status });
   return data;
 }

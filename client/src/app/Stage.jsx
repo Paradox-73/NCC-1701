@@ -1,18 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { reducedMotion } from '../lib/chartTheme.js';
 import { stardate } from '../lib/ship.js';
-import { play, setSound, soundChosen, soundOn, toggleSound, useSound } from '../lib/sound.js';
+import { duckMusic, play, soundOn, toggleSound, useSound } from '../lib/sound.js';
 import Login from '../pages/Login.jsx';
 import StarshipView, { hasWebGL } from '../three/StarshipView.jsx';
 import { FLIGHT_MS, NARRATION_AT, THEME_AT } from '../three/rig.js';
-import { Delta, Icon, LitButton } from '../ui/index.js';
+import { Delta, Icon, KeyCap, LitButton } from '../ui/index.js';
 import './stage.css';
 
-const OPENED = 'ncc.opened';
 const FADE_MS = 800;
-const flag = (k) => { try { return sessionStorage.getItem(k) === '1'; } catch { return false; } };
-const setFlag = (k) => { try { sessionStorage.setItem(k, '1'); } catch { /* private mode */ } };
-export const coldOpenSeen = () => flag(OPENED);
 const NO_SHIELDS = { fore: 0, aft: 0, port: 0, starboard: 0 }; // no bubble around the hero shot
 
 // Our own narration after the one famous opener (the show's monologue is heard, not quoted).
@@ -43,7 +39,8 @@ function Typed({ text, on }) {
 }
 
 // The original-series opening (client/public/audio/intro.mp3): narration, then the theme. It follows the global
-// sound switch live, and fades out when the user skips or picks a position.
+// sound switch live, and fades out when the user skips or picks a position. The background music ducks out while
+// it plays and comes back when it stops.
 function useIntro() {
   const audio = useRef(null);
   const sound = useSound();
@@ -53,7 +50,11 @@ function useIntro() {
     const a = new Audio(`${import.meta.env.BASE_URL}audio/intro.mp3`);
     a.muted = !soundOn();
     audio.current = a;
-    return a.play().then(() => a, () => null); // a refused play leaves the cold open running on its own clock
+    duckMusic('intro', 0);
+    const back = () => duckMusic('intro', 1, 1.5);
+    a.addEventListener('pause', back);
+    a.addEventListener('ended', back);
+    return a.play().then(() => a, () => { back(); return null; }); // a refused play leaves the cold open running on its own clock
   };
   const fadeOut = useCallback((ms = 1200) => {
     const a = audio.current;
@@ -68,74 +69,93 @@ function useIntro() {
   return { audio, start, fadeOut };
 }
 
-/** Engage: the click that unlocks sound. Then the narration types in step with the audio until the theme starts. */
+/** Engage: the click that unlocks sound. Then the narration types in step with the audio, and the login comes on the beat drop. */
 function ColdOpen({ intro, onStart, onDone }) {
-  const [t, setT] = useState(null); // ms into the intro; null before Engage
+  const [shown, setShown] = useState(null); // narration lines on screen; null before Engage
   const lines = useRef(LINES.map((l) => (typeof l === 'function' ? l() : l))).current;
-  const sound = useSound();
   const skip = useCallback(() => { intro.fadeOut(900); onDone(); }, [intro, onDone]);
 
   const alive = useRef(true);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []); // set again on remount (StrictMode runs effects twice)
   const engage = async () => {
-    if (!soundChosen()) setSound(true); // the Engage click is the gesture browsers need; a chosen mute stays muted
-    const t0 = performance.now();
-    setT(0);
+    setShown(0);
     const a = await intro.start();
     if (!alive.current) return undefined; // skipped while the audio was starting
     onStart();
-    // the audio's own clock keeps the lines on the narration; the wall clock covers a refused or stalled play
-    const clock = () => Math.max(a && !a.paused && a.currentTime > 0.05 ? a.currentTime * 1000 : 0, performance.now() - t0 - 250);
-    const id = setInterval(() => setT((prev) => Math.max(prev ?? 0, clock())), 100);
-    return () => clearInterval(id);
+    const t0 = performance.now();
+    // The audio's own clock times the lines and the drop; the wall clock takes over with no audio, or one stalled
+    // over a second. Read every frame, so the login lands within a frame of the drop.
+    const clock = () => Math.max(a ? a.currentTime * 1000 : 0, performance.now() - t0 - (a ? 1000 : 0));
+    let id = requestAnimationFrame(function tick() {
+      const ms = clock();
+      if (ms >= THEME_AT) { onDone(); return; }
+      setShown(NARRATION_AT.filter((at) => ms >= at).length);
+      id = requestAnimationFrame(tick);
+    });
+    return () => cancelAnimationFrame(id);
   };
   const stop = useRef(null);
   useEffect(() => () => stop.current?.(), []);
-  useEffect(() => { if (t != null && t >= THEME_AT) { stop.current?.(); onDone(); } }, [t, onDone]);
   useEffect(() => {
-    if (t == null) return undefined;
-    const onKey = (e) => { if (!['Shift', 'Control', 'Alt', 'Meta', 'Tab', 'm', 'M'].includes(e.key)) skip(); };
+    if (shown == null) return undefined;
+    const onKey = (e) => { if (!e.repeat && !['Shift', 'Control', 'Alt', 'Meta', 'Tab', 'm', 'M'].includes(e.key)) skip(); }; // a held Enter from the gate is not a skip
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [t == null, skip]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [shown == null, skip]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  if (t == null) {
+  const onEngage = async () => { stop.current = await engage(); };
+  if (shown == null) {
     return (
       <div className="gate">
         <div className="gate__panel">
           <Delta emblem="command" className="delta gate__delta" />
           <p className="gate__ship">U.S.S. Enterprise · NCC-1701</p>
           <h1 className="gate__title">Bridge</h1>
-          <LitButton color="amber" size="lg" className="gate__engage" label="Engage" keyCap="Enter" autoFocus
-            onClick={async () => { stop.current = await engage(); }} />
-          <p className="label gate__note">Plays the original-series opening with sound. <button type="button" className="linkbtn" onClick={toggleSound}>{sound ? 'Mute' : 'Sound is off: turn on'}</button></p>
+          <LitButton color="amber" size="lg" className="gate__engage" label="Engage" aria-keyshortcuts="Enter" autoFocus onClick={onEngage} />
+          <KeyCap>Enter</KeyCap>
+          <p className="label gate__note">Plays the original-series opening with sound.</p>
+          <div className="gate__more">
+            <SoundToggle />
+            <button type="button" className="stage-pill" onClick={skip}>Skip intro <KeyCap>Esc</KeyCap></button>
+          </div>
         </div>
-        <button type="button" className="coldopen__skip" onClick={skip}>Skip intro <kbd className="keycap">Esc</kbd></button>
-        <EscToSkip onSkip={skip} />
+        <GateKeys onEngage={onEngage} onSkip={skip} />
       </div>
     );
   }
   return (
     <div className="coldopen" onPointerDown={skip}>
       <div className="narration" aria-live="polite">
-        {lines.map((l, i) => <Typed key={i} text={l} on={t >= NARRATION_AT[i]} />)}
+        {lines.map((l, i) => <Typed key={i} text={l} on={i < shown} />)}
       </div>
-      <div className="coldopen__bar" onPointerDown={(e) => e.stopPropagation()}>
-        <button type="button" className="iconbtn" onClick={toggleSound} aria-pressed={sound} title={sound ? 'Mute (M)' : 'Sound on (M)'}>
-          <Icon name={sound ? 'soundOn' : 'soundOff'} title={sound ? 'Sound on' : 'Sound off'} />
-        </button>
-        <button type="button" className="coldopen__skip" onClick={skip}>Skip <kbd className="keycap">any key</kbd></button>
+      <div className="stage__bar" onPointerDown={(e) => e.stopPropagation()}>
+        <SoundToggle />
+        <button type="button" className="stage-pill" onClick={skip}>Skip <KeyCap>any key</KeyCap></button>
       </div>
     </div>
   );
 }
 
-function EscToSkip({ onSkip }) {
+/** The speaker switch, with its state in words: sound is on unless the user mutes it. */
+function SoundToggle() {
+  const sound = useSound();
+  return (
+    <button type="button" className="stage-pill stage-pill--sound" onClick={toggleSound} aria-pressed={sound} aria-keyshortcuts="M" title="Sound on or off (M)">
+      <Icon name={sound ? 'soundOn' : 'soundOff'} />{sound ? 'Sound on' : 'Sound off'}
+    </button>
+  );
+}
+
+// Enter engages from anywhere on the gate (a focused button keeps its own Enter); Esc skips to the login.
+function GateKeys({ onEngage, onSkip }) {
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onSkip(); };
+    const onKey = (e) => {
+      if (e.key === 'Escape') onSkip();
+      else if (e.key === 'Enter' && !e.repeat && !e.target.closest?.('button, a, input')) onEngage();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onSkip]);
+  }, [onEngage, onSkip]);
   return null;
 }
 
@@ -148,9 +168,8 @@ export default function Stage({ phase, onOpened, onBoarded, onFaded }) {
   const [gliding, setGliding] = useState(false);
   const skip = useRef(() => {});
   const intro = useIntro();
-  const opened = useCallback(() => { setFlag(OPENED); onOpened(); }, [onOpened]);
   useEffect(() => {
-    const onM = (e) => { if ((e.key === 'm' || e.key === 'M') && phase === 'coldopen' && !e.target.closest?.('input')) toggleSound(); };
+    const onM = (e) => { if ((e.key === 'm' || e.key === 'M') && (phase === 'coldopen' || phase === 'identify') && !e.target.closest?.('input')) toggleSound(); };
     window.addEventListener('keydown', onM);
     return () => window.removeEventListener('keydown', onM);
   }, [phase]);
@@ -180,11 +199,12 @@ export default function Stage({ phase, onOpened, onBoarded, onFaded }) {
   return (
     <div className="stage" data-phase={phase} data-gliding={gliding || undefined} onClick={phase === 'boarding' ? () => skip.current() : undefined}>
       <div className="stage__ship" aria-hidden="true">
-        <StarshipView rig={rig} spin={phase === 'identify'} warp={2} alert="green" shields={NO_SHIELDS} />
+        <StarshipView rig={rig} visible={rig !== 'wait'} spin={false} warp={2} alert="green" shields={NO_SHIELDS} />
       </div>
       <div className="stage__veil" aria-hidden="true" />
-      {phase === 'coldopen' && <ColdOpen intro={intro} onStart={() => setGliding(true)} onDone={opened} />}
+      {phase === 'coldopen' && <ColdOpen intro={intro} onStart={() => setGliding(true)} onDone={onOpened} />}
       {(phase === 'identify' || phase === 'boarding') && <Login leaving={phase === 'boarding'} />}
+      {phase === 'identify' && <div className="stage__bar"><SoundToggle /></div>}
       {(phase === 'boarding' || phase === 'fade') && flying && <div className="stage__flash" aria-hidden="true" />}
       {phase === 'boarding' && flying && <p className="stage__skip label">Boarding the bridge · click or Esc to skip</p>}
     </div>

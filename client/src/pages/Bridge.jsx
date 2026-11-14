@@ -215,6 +215,8 @@ function HelmConsole({ ov }) {
   );
 }
 
+const VIEW_WORD = { forward: 'Forward', tactical: 'Tactical', exterior: 'Exterior' };
+
 function Chair({ user, condition, viewer, onViewer, onScenarios }) {
   const cond = useCommand('ship.condition');
   const shields = useCommand('tactical.shields');
@@ -238,7 +240,7 @@ function Chair({ user, condition, viewer, onViewer, onScenarios }) {
         <LitButton color="blue" label="Hail" keyCap="H" size="sm" lit={hailing} pending={hail.pending || close.pending} disabled={!canHail} title={canHail ? undefined : 'Captain or communications officer'}
           onClick={() => (hailing ? close.send({}) : hail.send({ target: 'command' }))} />
         <LitButton color="amber" label="Shields" keyCap="⇧S" size="sm" pressed={up} pending={shields.pending} disabled={!captain} title={tip} onClick={() => shields.send({ up: !up })} />
-        <LitButton color="white" label={viewer.mode === 'tactical' ? 'Tactical' : 'Forward'} keyCap="V" size="sm" onClick={onViewer} title="Next viewscreen mode" />
+        <LitButton color="white" label={VIEW_WORD[viewer.mode]} keyCap="V" size="sm" onClick={onViewer} title="Next viewscreen mode: forward, tactical, exterior" />
         <LitButton color="green" label="Scenario" size="sm" lit={!!running} disabled={!mayCommand(user, 'scenario.start')} title="Play an episode of the original series"
           onClick={onScenarios} />
       </div>
@@ -290,7 +292,7 @@ function Viewscreen({ ov, viewer, user }) {
       </div>
       <figcaption className="viewscreen__caption">
         <Ticker />
-        <span className="viewscreen__mode mono">{viewer.mode === 'tactical' ? 'TACTICAL' : orbit ? 'ORBIT' : 'FORWARD'} ×{viewer.zoom} · {ov?.warp != null ? (ov.warp >= 0.5 ? `WARP ${ov.warp.toFixed(1)}` : 'IMPULSE') : 'NO SIGNAL'}</span>
+        <span className="viewscreen__mode mono">{viewer.mode === 'forward' && orbit ? 'ORBIT' : VIEW_WORD[viewer.mode].toUpperCase()} ×{viewer.zoom} · {ov?.warp != null ? (ov.warp >= 0.5 ? `WARP ${ov.warp.toFixed(1)}` : 'IMPULSE') : 'NO SIGNAL'}</span>
       </figcaption>
     </figure>
   );

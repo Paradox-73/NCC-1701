@@ -31,7 +31,7 @@ You need Docker (with Compose) and free ports 5173 (the app) and 4000 (the serve
 docker compose up --build
 ```
 
-1. Open **http://localhost:5173**. The cold open plays (press Esc to skip).
+1. Open **http://localhost:5173** and press **Engage**: the original-series opening plays with sound and the login comes in on the theme's beat drop (Esc skips to the login). Signing out brings you back to Engage.
 2. **State your position**: pick a role. Each one signs in with password `ncc-<name>`:
 
    | User | Role | Sees |

@@ -195,7 +195,7 @@ Two tiers of animation:
 | Yellow alert | Bars slide in over 240 ms and stay; console grids shift to amber and yellow. |
 | Red alert | Bars pulse at 1 Hz; surfaces tint red; console grids blink red in step; the viewscreen frame turns red; RED ALERT in the top bar. |
 | Stand down | Bars slide out; CONDITION NORMAL shows for 1 s in `ready`. |
-| Login | The ship turns slowly on the viewscreen behind the "Identify" console with one lit button per demo role. |
+| Login | The "State your position" console alone in the dark, one lit button per demo role; no ship behind it. On sign-in the console powers down and the scene fades back for the flight into the bridge dome. |
 
 Flash safety: nothing flashes faster than twice a second. WCAG 2.3.1 sets the limit at three flashes per second. The red alert pulse is a smooth 1 Hz ramp on edge bars and a light tint, not a full-screen strobe.
 
@@ -203,7 +203,9 @@ Reduced motion, from `prefers-reduced-motion: reduce` or the Help toggle (`data-
 
 ## Sound
 
-Muted by default. The speaker button in the top bar, or `M`, turns sound on; that click is the user gesture browsers require before audio can play. Sound runs on the Web Audio API: one `AudioContext` created on first unmute, every clip fetched and decoded into an `AudioBuffer` at that moment, one master gain at -12 dB, at most 4 voices at once, and a cooldown per cue so a 50 Hz stream never machine-guns beeps. The choice is remembered in the browser.
+On by default. The speaker button (top bar, Engage gate, cold open) or `M` mutes it; a mute lasts for the tab session only, so a forgotten mute never silences a later visit. Browsers start audio only after a user gesture, so the first click, tap or key press anywhere creates the one `AudioContext` and fetches and decodes every clip into an `AudioBuffer`. Sound runs on the Web Audio API: one master gain at -12 dB, at most 4 voices at once, and a cooldown per cue so a 50 Hz stream never machine-guns beeps. Muting suspends the `AudioContext`.
+
+Music: the original-series theme (`client/public/audio/theme.mp3`, the end-credits theme cut to 29.9 s) loops under the whole app, from the gate to every station, at about -27 LUFS, below the cues. It starts with the first gesture, lives in `lib/sound.js` rather than in a page, so route changes and signing in or out never restart it, and loops 5.5 to 29.141 s, one turn of the melody, with an equal-power 0.5 s crossfade. It ducks out while the opening (`intro.mp3`, which has its own music) plays and to a third under the red-alert klaxon.
 
 The team lead approved original-series sound effects with credits (see Assets and credits). The clips below are from the TrekCore audio archive; sizes are the downloaded files, before trimming. Trim each to the length given, mono, 64 kbps:
 
@@ -354,7 +356,7 @@ The admin sees crew health only as counts per ship, never individual biosigns.
 
 ### Login (`/login`)
 
-The 3D ship turns slowly behind an "Identify" console: one lit button per demo account, coloured by division, plus a username and password form.
+A "State your position" console, centred, with nothing behind it: one lit button per demo account, coloured by division, plus a username and password form. The ship belongs to the cold open and the boarding flight.
 
 ## At the helm: keyboard
 
@@ -374,7 +376,7 @@ Shortcuts are ignored while the focus is in a text field or a dialog, and a held
 | `Y` | Yellow alert | Captain |
 | `N` | Stand down to normal | Captain |
 | `H` | Open or close hailing frequencies | Captain, communications officer |
-| `V` | Next viewscreen mode: forward, aft, tactical, magnify | Everyone, local view only |
+| `V` | Next viewscreen mode: forward, tactical, exterior (the ship and its shields); a sensor contact switches to tactical by itself | Everyone, local view only |
 | `+` `-` | Magnification ×1, ×2, ×4, ×8 | Everyone |
 | `G` then `B` `H` `E` `S` `C` `M` `F` | Go to Bridge, Helm, Engineering, Science, Comms, Medical, Fleet | Everyone; restricted monitors stay restricted |
 | `Ctrl`+`K` | Turbolift: station picker | Everyone |

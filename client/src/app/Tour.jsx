@@ -1,10 +1,11 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
 import { inField } from '../lib/keys.js';
+import { ship } from '../lib/ship.js';
 import { KeyCap, LitButton } from '../ui/index.js';
 
 const KEY = 'ncc.toured';
 const STEPS = [
-  { target: 'viewscreen', title: 'Main viewer', text: 'The live view outside the ship. V switches between forward and tactical; + and − magnify.' },
+  { target: 'viewscreen', title: 'Main viewer', text: 'The live view outside the ship. V cycles forward, tactical and exterior; + and − magnify.' },
   { target: 'tile-engineering', title: 'Stations around the rail', text: 'Each station shows one live reading. Click a station to go to its console. A lock means your role cannot enter it.' },
   { target: 'helm', title: 'Helm and navigation', text: 'Warp factor, heading and the weakest shield, straight from the ship’s telemetry.' },
   { target: 'chair', title: 'The captain’s chair', text: 'Condition and orders. The captain presses R for red alert, Y for yellow alert and N to stand down.' },
@@ -12,13 +13,35 @@ const STEPS = [
   { target: 'lift', title: 'Turbolift', text: 'Ctrl K takes you to any station; G then a letter jumps straight there. Press ? for every shortcut.' },
 ];
 const seen = () => { try { return localStorage.getItem(KEY) === '1'; } catch { return true; } };
+// a modal panel is open (turbolift, scenario picker, shortcut sheet) or a scenario is running: the tour keeps out of the way
+const busy = () => !!document.querySelector('[aria-modal="true"]') || ['running', 'awaiting'].includes(ship.scenario?.state);
 
-/** The first-visit tour of the bridge: a spotlight on each part with a short caption. Remembered in the browser. */
+/**
+ * The first-visit tour of the bridge: a spotlight on each part with a short caption. It waits for the visitor's first
+ * click or key press on the bridge, never starts over a panel or a running scenario, and closes itself when one
+ * opens. Remembered in the browser.
+ */
 export default function Tour() {
-  const [step, setStep] = useState(() => (seen() ? -1 : 0));
+  const [step, setStep] = useState(-1);
   const [box, setBox] = useState(null);
   const done = () => { try { localStorage.setItem(KEY, '1'); } catch { /* private mode */ } setStep(-1); };
   const s = STEPS[step];
+
+  useEffect(() => {
+    if (seen()) return undefined;
+    let timer = 0;
+    // checked a moment after the press, once whatever it opened is on screen
+    const poke = () => { clearTimeout(timer); timer = setTimeout(() => { if (!busy()) { off(); setStep(0); } }, 400); };
+    const off = () => { window.removeEventListener('pointerdown', poke, true); window.removeEventListener('keydown', poke, true); };
+    window.addEventListener('pointerdown', poke, true);
+    window.addEventListener('keydown', poke, true);
+    return () => { off(); clearTimeout(timer); };
+  }, []);
+  useEffect(() => {
+    if (!s) return undefined;
+    const id = setInterval(() => { if (busy()) done(); }, 300);
+    return () => clearInterval(id);
+  }, [step]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useLayoutEffect(() => {
     if (!s) return undefined;

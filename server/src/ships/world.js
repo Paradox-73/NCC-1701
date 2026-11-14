@@ -5,6 +5,12 @@ import { ScenarioRunner } from './runner.js';
 
 const LOG_KEEP = 60;
 const SETTLE_COMMANDS = new Set(['helm.warp', 'helm.impulse', 'helm.stop']);
+// the simulator's weapons (simulator/src/physics.js): a phaser shot takes 40 % of a bank and the banks cool for 1 s
+const PHASER_SHOT = 40;
+const PHASER_COOLDOWN_MS = 1000;
+// long enough for a sample after the last shot or energize to arrive (ships send at 20 Hz or slower on the hosted
+// profile), so a second order is judged on the tube and transporter state that shot left behind
+const RELOAD_READ_MS = 400;
 
 /**
  * The server's picture of each ship that telemetry does not carry: its condition (normal, yellow, red), its log, the
@@ -23,7 +29,7 @@ export class World {
     this.online = online;
     this.log = log;
     this.resolveAlerts = resolveAlerts;
-    this.ships = new Map(SHIP_IDS.map((id) => [id, { condition: 'normal', lines: [], stardateOffset: 0 }]));
+    this.ships = new Map(SHIP_IDS.map((id) => [id, { condition: 'normal', lines: [], stardateOffset: 0, fired: {} }]));
     this.runner = new ScenarioRunner(this, scenarios);
   }
 
@@ -95,6 +101,10 @@ export class World {
     const at = this.now();
     let text = ackText(cmd);
     if (SCENARIO_ONLY.has(cmd.type) && !fromScenario && !this.runner.waitingFor(shipId, cmd)) throw new HttpError(409, `${cmd.type} is only available while a scenario waits for it`);
+    // An order the ship cannot carry out is answered the way the crew would ("Phasers not charged, Captain"), never logged
+    // as done: the telemetry would not move, and the log would say it had.
+    const cannot = fromScenario ? null : this.#cannot(shipId, cmd, at);
+    if (cannot) throw new HttpError(409, cannot);
 
     if (cmd.type === 'scenario.start') {
       text = `Scenario: ${this.runner.start(cmd.id, actor.username).title}`;
@@ -109,6 +119,7 @@ export class World {
       if (!relayed) throw new HttpError(409, `source ${target} is not connected`);
       if (cmd.type === 'sim.fault' && cmd.fault === 'clear') this.detector?.reset(target);
     }
+    if (cmd.type === 'tactical.phasers' || cmd.type === 'tactical.torpedo' || cmd.type === 'transporter.energize') this.ship(shipId).fired[cmd.type] = at;
     this.emit(shipId, EVENTS.COMMAND_ACK, { shipId, type: cmd.type, args: argsOf(cmd), by: actor.username, role: actor.role, ok: true, at, text });
     this.logLine(shipId, text, { by: actor.username });
     if (!fromScenario) this.runner.notify(shipId, cmd);
@@ -116,6 +127,29 @@ export class World {
   }
 
   /** An alert came out of the detector: a critical one in the hull, shields, life support, warp core or crew raises a ship at normal to yellow. */
+  /**
+   * Why the ship cannot carry out a weapons or transporter order right now, or null. Reads the latest telemetry the
+   * simulator sent, plus the time of the last such order: a repeat inside the simulator's own cooldown (or before a
+   * sample showing the last shot has arrived) would be dropped by the ship, so it is refused here with the reason.
+   */
+  #cannot(shipId, cmd, at) {
+    const since = at - (this.ship(shipId).fired[cmd.type] ?? -Infinity);
+    const v = this.latest(shipId);
+    if (cmd.type === 'tactical.phasers') {
+      if (since < PHASER_COOLDOWN_MS) return 'Phasers recharging';
+      const bank = cmd.bank ?? 'fore';
+      const charge = v?.[bank === 'aft' ? 'phaserAft' : 'phaserFore'];
+      if (charge != null && charge < PHASER_SHOT) return `Phasers not charged: ${bank} bank at ${Math.round(charge)} %`;
+    } else if (cmd.type === 'tactical.torpedo') {
+      if (since < RELOAD_READ_MS) return 'Torpedo tube reloading';
+      if (v?.torpedoes != null && v.torpedoes < 1) return 'Torpedo magazine empty';
+      if (v?.tubesLoaded != null && v.tubesLoaded < 1) return 'No torpedo loaded: tubes reloading';
+    } else if (cmd.type === 'transporter.energize') {
+      if (since < RELOAD_READ_MS || (v?.xpState ?? 0) > 0) return 'Transporter already in a cycle';
+    }
+    return null;
+  }
+
   /** True when a helm command changes the warp or impulse level enough to move the statistics of the warp core: a repeat of the current order does not. */
   #movesOperatingPoint(shipId, cmd) {
     if (!SETTLE_COMMANDS.has(cmd.type)) return false;

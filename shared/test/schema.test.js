@@ -32,3 +32,7 @@ test('every channel belongs to a declared group and role access follows groups',
   assert.ok(canSeeGroup('communications_officer', null));
   assert.ok(!canSeeGroup('nobody', 'warp'));
 });
+
+test('every channel has a nominal value inside its range, which the simulator and tests start from', () => {
+  for (const c of CHANNELS) assert.ok(c.nominal >= c.min && c.nominal <= c.max, c.key);
+});

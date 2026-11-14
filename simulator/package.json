@@ -1,0 +1,17 @@
+{
+  "name": "@ncc/simulator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@ncc/shared": "*",
+    "socket.io-client": "^4.8.1",
+    "socket.io-msgpack-parser": "^3.0.2"
+  },
+  "exports": {
+    "./sender.js": "./src/sender.js"
+  }
+}

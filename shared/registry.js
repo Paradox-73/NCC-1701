@@ -22,29 +22,30 @@ export const GROUP_DEFS = [
 
 /**
  * Channel order is the order of values in a packed sample. A value travels as an integer: real value * scale, rounded.
- * min and max are in real units and bound what the server accepts.
+ * min and max are in real units and bound what the server accepts. `nominal` is the calm running value; the simulator
+ * and the tests start from it.
  */
 export const CHANNELS = [
-  { key: 'warpFactor', label: 'Warp factor', unit: '', min: 0, max: 9.99, scale: 100, group: 'warp' },
-  { key: 'plasmaTemp', label: 'Plasma temperature', unit: 'MK', min: 0, max: 100, scale: 10, group: 'warp' },
-  { key: 'antimatterFlow', label: 'Antimatter flow', unit: 'mg/s', min: 0, max: 500, scale: 10, group: 'warp' },
-  { key: 'corePower', label: 'Core power', unit: '%', min: 0, max: 130, scale: 10, group: 'warp' },
-  { key: 'shieldFore', label: 'Shield fore', unit: '%', min: 0, max: 100, scale: 10, group: 'shields' },
-  { key: 'shieldAft', label: 'Shield aft', unit: '%', min: 0, max: 100, scale: 10, group: 'shields' },
-  { key: 'shieldPort', label: 'Shield port', unit: '%', min: 0, max: 100, scale: 10, group: 'shields' },
-  { key: 'shieldStbd', label: 'Shield starboard', unit: '%', min: 0, max: 100, scale: 10, group: 'shields' },
-  { key: 'o2Level', label: 'Oxygen', unit: '%', min: 0, max: 30, scale: 100, group: 'lifesupport' },
-  { key: 'co2Level', label: 'Carbon dioxide', unit: 'ppm', min: 0, max: 5000, scale: 1, group: 'lifesupport' },
-  { key: 'cabinTemp', label: 'Cabin temperature', unit: '°C', min: 0, max: 50, scale: 10, group: 'lifesupport' },
-  { key: 'cabinPressure', label: 'Cabin pressure', unit: 'kPa', min: 0, max: 150, scale: 10, group: 'lifesupport' },
-  { key: 'posX', label: 'Position X', unit: 'Mkm', min: -1e6, max: 1e6, scale: 1, group: 'navigation' },
-  { key: 'posY', label: 'Position Y', unit: 'Mkm', min: -1e6, max: 1e6, scale: 1, group: 'navigation' },
-  { key: 'posZ', label: 'Position Z', unit: 'Mkm', min: -1e6, max: 1e6, scale: 1, group: 'navigation' },
-  { key: 'speed', label: 'Speed', unit: 'km/s', min: 0, max: 300000, scale: 1, group: 'navigation' },
-  { key: 'heading', label: 'Heading', unit: '°', min: 0, max: 360, scale: 10, group: 'navigation' },
-  { key: 'crewAboard', label: 'Crew aboard', unit: '', min: 0, max: 1000, scale: 1, group: 'crew' },
-  { key: 'heartRate', label: 'Mean heart rate', unit: 'bpm', min: 0, max: 250, scale: 1, group: 'crew' },
-  { key: 'stressIndex', label: 'Stress index', unit: '%', min: 0, max: 100, scale: 10, group: 'crew' },
+  { key: 'warpFactor', label: 'Warp factor', unit: '', min: 0, max: 9.99, scale: 100, nominal: 6, group: 'warp' },
+  { key: 'plasmaTemp', label: 'Plasma temperature', unit: 'MK', min: 0, max: 100, scale: 10, nominal: 45, group: 'warp' },
+  { key: 'antimatterFlow', label: 'Antimatter flow', unit: 'mg/s', min: 0, max: 500, scale: 10, nominal: 220, group: 'warp' },
+  { key: 'corePower', label: 'Core power', unit: '%', min: 0, max: 130, scale: 10, nominal: 85, group: 'warp' },
+  { key: 'shieldFore', label: 'Shield fore', unit: '%', min: 0, max: 100, scale: 10, nominal: 92, group: 'shields' },
+  { key: 'shieldAft', label: 'Shield aft', unit: '%', min: 0, max: 100, scale: 10, nominal: 92, group: 'shields' },
+  { key: 'shieldPort', label: 'Shield port', unit: '%', min: 0, max: 100, scale: 10, nominal: 92, group: 'shields' },
+  { key: 'shieldStbd', label: 'Shield starboard', unit: '%', min: 0, max: 100, scale: 10, nominal: 92, group: 'shields' },
+  { key: 'o2Level', label: 'Oxygen', unit: '%', min: 0, max: 30, scale: 100, nominal: 21, group: 'lifesupport' },
+  { key: 'co2Level', label: 'Carbon dioxide', unit: 'ppm', min: 0, max: 5000, scale: 1, nominal: 600, group: 'lifesupport' },
+  { key: 'cabinTemp', label: 'Cabin temperature', unit: '°C', min: 0, max: 50, scale: 10, nominal: 22, group: 'lifesupport' },
+  { key: 'cabinPressure', label: 'Cabin pressure', unit: 'kPa', min: 0, max: 150, scale: 10, nominal: 101, group: 'lifesupport' },
+  { key: 'posX', label: 'Position X', unit: 'Mkm', min: -1e6, max: 1e6, scale: 1, nominal: 120000, group: 'navigation' },
+  { key: 'posY', label: 'Position Y', unit: 'Mkm', min: -1e6, max: 1e6, scale: 1, nominal: -45000, group: 'navigation' },
+  { key: 'posZ', label: 'Position Z', unit: 'Mkm', min: -1e6, max: 1e6, scale: 1, nominal: 8000, group: 'navigation' },
+  { key: 'speed', label: 'Speed', unit: 'km/s', min: 0, max: 300000, scale: 1, nominal: 120000, group: 'navigation' },
+  { key: 'heading', label: 'Heading', unit: '°', min: 0, max: 360, scale: 10, nominal: 90, group: 'navigation' },
+  { key: 'crewAboard', label: 'Crew aboard', unit: '', min: 0, max: 1000, scale: 1, nominal: 430, group: 'crew' },
+  { key: 'heartRate', label: 'Mean heart rate', unit: 'bpm', min: 0, max: 250, scale: 1, nominal: 72, group: 'crew' },
+  { key: 'stressIndex', label: 'Stress index', unit: '%', min: 0, max: 100, scale: 10, nominal: 20, group: 'crew' },
 ];
 
 /**

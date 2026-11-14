@@ -50,7 +50,7 @@ const TEXT = {
   'transporter.energize': () => 'Energizing',
   'medical.inoculate': (c) => `Inoculating ${where(c.deck)}`,
   'medical.quarantine': (c) => `Deck ${c.deck} quarantined`,
-  'science.scan': (c) => `${c.mode[0].toUpperCase()}${c.mode.slice(1)} scan under way`,
+  'science.scan': (c) => ({ long: 'Long-range sensors', short: 'Short-range sensors', focus: 'Sensors focused on the contact' })[c.mode], // as Spock reports it: long and short set the sensor range, focus doubles the return for 10 s
   'security.ventGas': (c) => `Venting anaesthetic gas, deck ${c.deck}`,
   'sim.fault': (c) => `Fault injection: ${c.fault}`,
 };

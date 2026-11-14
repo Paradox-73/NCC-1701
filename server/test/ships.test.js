@@ -164,3 +164,40 @@ test('the overview carries Starfleet Command a row per ship with flags (online p
   assert.deepEqual(o.sources.find((r) => r[0] === 2), [2, 3, 0, 750, 415, 123, -45, 2700]);
   assert.ok(o.sources.every((r) => r.length === 8 && r[0] < 5), 'ships only');
 });
+
+test('an order the ship cannot carry out is refused with the reason, never logged as done: phasers uncharged or cooling, no torpedo, transporter busy', async () => {
+  const ship = await sim(1);
+  let seq = Math.round(Date.now() / 20) + 1_000_000;
+  const state = async (v) => {
+    await ship.send([packSample(seq++, Date.now(), { ...Object.fromEntries(channelsOf(1).map((c) => [c.key, c.nominal])), ...v }, 1)]);
+    await sleep(60);
+  };
+  const order = async (body) => { const r = await command('captain', 1, body); return [r.status, r.body.text ?? r.body.error]; };
+
+  await state({ phaserFore: 23, phaserAft: 100 });
+  assert.deepEqual(await order({ type: 'tactical.phasers', bank: 'fore' }), [409, 'Phasers not charged: fore bank at 23 %']);
+  assert.deepEqual(await order({ type: 'tactical.phasers', bank: 'aft' }), [200, 'Phasers fired, aft bank']);
+  assert.deepEqual(await order({ type: 'tactical.phasers', bank: 'aft' }), [409, 'Phasers recharging']);
+  await sleep(1000);
+  await state({ phaserAft: 60 });
+  assert.deepEqual(await order({ type: 'tactical.phasers', bank: 'aft' }), [200, 'Phasers fired, aft bank']);
+
+  await state({ torpedoes: 5, tubesLoaded: 0 });
+  assert.deepEqual(await order({ type: 'tactical.torpedo' }), [409, 'No torpedo loaded: tubes reloading']);
+  await state({ torpedoes: 0, tubesLoaded: 0 });
+  assert.deepEqual(await order({ type: 'tactical.torpedo' }), [409, 'Torpedo magazine empty']);
+  await state({ torpedoes: 5, tubesLoaded: 2 });
+  assert.deepEqual(await order({ type: 'tactical.torpedo' }), [200, 'Photon torpedo away']);
+  assert.deepEqual(await order({ type: 'tactical.torpedo' }), [409, 'Torpedo tube reloading']);
+
+  await state({ xpState: 2 });
+  assert.deepEqual(await order({ type: 'transporter.energize' }), [409, 'Transporter already in a cycle']);
+  await state({ xpState: 0 });
+  assert.deepEqual(await order({ type: 'transporter.energize' }), [200, 'Energizing']);
+
+  await sleep(100);
+  const relayed = ship.cmds.map((c) => c.type);
+  assert.deepEqual(relayed.filter((t) => t.startsWith('tactical') || t.startsWith('transporter')), ['tactical.phasers', 'tactical.phasers', 'tactical.torpedo', 'transporter.energize'], 'only the orders carried out reach the ship');
+  const log = (await api('/api/ships/1/state', await token('captain'))).body.log.map((l) => l.text);
+  assert.ok(!log.includes('Phasers recharging') && log.filter((t) => t === 'Phasers fired, aft bank').length >= 2);
+});

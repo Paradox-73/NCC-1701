@@ -1,4 +1,4 @@
-# NCC-1701 Bridge design system
+# Subspace design system
 
 How the app looks, moves and sounds. Every builder follows this file. The telemetry model is in `DOMAIN.md`; the sources behind both are in `RESEARCH.md`.
 
@@ -476,7 +476,7 @@ Avoid models marked NoDerivs, such as the very large ZEOCMF models: we must comp
 
 Adapted from the disclaimer the franchise's own fan-production guidelines require (https://www.startrek.com/fan-films):
 
-> NCC-1701 Bridge is a non-commercial fan project made for a student hackathon. Star Trek and all related marks, logos and characters are owned by CBS Studios Inc. This project is not endorsed by, sponsored by, or affiliated with CBS, Paramount Pictures or any Star Trek franchise. Third-party assets are listed with their authors and licences under Credits.
+> Subspace is a non-commercial fan project made for a student hackathon. Star Trek and all related marks, logos and characters are owned by CBS Studios Inc. This project is not endorsed by, sponsored by, or affiliated with CBS, Paramount Pictures or any Star Trek franchise. Third-party assets are listed with their authors and licences under Credits.
 
 ## What to cut if time runs short
 

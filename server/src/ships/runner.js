@@ -5,15 +5,15 @@ import { COMMAND_SCHEMA } from './commands.js';
 const SCENARIO_ACTOR = { username: 'scenario', role: 'scenario' };
 const RELEASE_SEC = 10;
 // verb -> the simulator command it becomes (the simulator's handlers are in simulator/src/commands.js)
-const SIM_VERBS = { set: 'scn.set', ramp: 'scn.ramp', noise: 'scn.noise', hit: 'scn.hit', contact: 'scn.contact', crew: 'scn.crew', fault: 'scn.fault', snap: 'scn.snap' };
+const SIM_VERBS = { set: 'scn.set', ramp: 'scn.ramp', noise: 'scn.noise', rogue: 'scn.rogue', hit: 'scn.hit', contact: 'scn.contact', crew: 'scn.crew', fault: 'scn.fault', snap: 'scn.snap', release: 'scn.release' };
 
 const asList = (v) => (Array.isArray(v) ? v : [v]);
 
 /**
  * Runs one scenario at a time. A scenario is a script from shared/scenarios: steps with a time `t` in seconds and
- * verbs (docs/DOMAIN.md section 8). The clock runs in real time. `await` holds the steps after it until the named
- * command arrives from a dashboard or its timeout passes, when the runner sends the command itself, so every
- * scenario also finishes unattended. When a scenario ends, the simulator lets every channel it touched drift back to
+ * verbs (docs/DOMAIN.md section 8). The clock runs in real time. `await` stops the clock until the named command
+ * arrives from a dashboard or its timeout passes, when the runner sends the command itself, so every scenario also
+ * finishes unattended. When a scenario ends, the simulator lets every channel it touched drift back to
  * normal over RELEASE_SEC seconds.
  */
 export class ScenarioRunner {
@@ -35,7 +35,7 @@ export class ScenarioRunner {
     if (this.cur) throw new HttpError(409, `scenario ${this.cur.sc.id} is already running`);
     for (const ship of sc.ships) if (!this.world.online(ship)) throw new HttpError(409, `ship ${ship} is not connected`);
     const steps = sc.steps.map((s, i) => ({ s, i })).sort((a, b) => a.s.t - b.s.t || a.i - b.i).map((x) => x.s);
-    this.cur = { sc, steps, i: 0, t: 0, at: this.world.now(), awaiting: null, by };
+    this.cur = { sc, steps, i: 0, t: 0, last: this.world.now(), awaiting: null, by };
     this.lastProgressSec = -1;
     this.#emit('running');
     return sc;
@@ -64,7 +64,8 @@ export class ScenarioRunner {
   tick(now) {
     const c = this.cur;
     if (!c) return;
-    c.t = (now - c.at) / 1000;
+    if (!c.awaiting) c.t += (now - c.last) / 1000; // the clock stands still while a step waits for the bridge
+    c.last = now;
     if (c.awaiting && now >= c.awaiting.deadline) {
       const { shipId, issue } = c.awaiting;
       c.awaiting = null;
@@ -93,7 +94,7 @@ export class ScenarioRunner {
       sim('scn.snap', step.snap);
     }
     if (step.cmd) w.execute(ship, step.cmd, SCENARIO_ACTOR);
-    for (const verb of ['set', 'ramp', 'noise', 'hit', 'contact', 'crew', 'fault']) {
+    for (const verb of ['set', 'ramp', 'noise', 'hit', 'contact', 'crew', 'fault', 'rogue', 'release']) {
       for (const { source, ...args } of asList(step[verb] ?? [])) w.sendSim(source ?? ship, { type: SIM_VERBS[verb], args });
     }
     if (step.fx) w.fx(ship, step.fx.name, step.fx);

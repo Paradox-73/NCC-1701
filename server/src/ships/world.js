@@ -14,7 +14,8 @@ const SETTLE_COMMANDS = new Set(['helm.warp', 'helm.impulse', 'helm.stop']);
  * `emit(shipId, event, payload)` sends to room ship:<id>, `detector` is told when an operating point changes.
  */
 export class World {
-  constructor({ sendSim, emit, now = Date.now, detector, scenarios, online = () => true, log }) {
+  constructor({ sendSim, emit, now = Date.now, detector, scenarios, online = () => true, latest = () => null, log }) {
+    this.latest = latest;
     this.sendSim = sendSim;
     this._emit = emit;
     this.now = now;
@@ -91,7 +92,7 @@ export class World {
       this.setCondition(shipId, cmd.level, actor.username);
     } else {
       const target = cmd.type === 'sim.fault' ? (cmd.sourceId ?? shipId) : shipId;
-      if (SETTLE_COMMANDS.has(cmd.type)) this.settle(shipId, 20_000);
+      if (this.#movesOperatingPoint(shipId, cmd)) this.settle(shipId, 20_000);
       const relayed = cmd.type === 'sim.fault' ? this.sendSim(target, { type: cmd.fault === 'mute' ? 'mute' : cmd.fault === 'clear' ? 'clear' : `fault.${cmd.fault}`, args: { seconds: cmd.seconds ?? 5 } }) : this.sendSim(target, { type: cmd.type, args: argsOf(cmd) });
       if (!relayed) throw new HttpError(409, `source ${target} is not connected`);
       if (cmd.type === 'sim.fault' && cmd.fault === 'clear') this.detector?.reset(target);
@@ -103,6 +104,16 @@ export class World {
   }
 
   /** An alert came out of the detector: a critical one in the hull, shields, life support, warp core or crew raises a ship at normal to yellow. */
+  /** True when a helm command changes the warp or impulse level enough to move the statistics of the warp core: a repeat of the current order does not. */
+  #movesOperatingPoint(shipId, cmd) {
+    if (!SETTLE_COMMANDS.has(cmd.type)) return false;
+    const v = this.latest(shipId);
+    if (!v) return true;
+    if (cmd.type === 'helm.warp') return Math.abs(cmd.factor - v.warpFactor) > 0.3;
+    if (cmd.type === 'helm.impulse') return Math.abs(cmd.percent - v.impulse) > 5;
+    return v.warpFactor > 0.3 || v.impulse > 5;
+  }
+
   onAlert(a) {
     if (a.severity !== 'critical' || !SOURCE_BY_ID[a.sourceId] || !ESCALATING_GROUPS.includes(a.group)) return;
     const id = shipOf(a.sourceId);

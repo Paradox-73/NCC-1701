@@ -54,6 +54,7 @@ export function createServer(overrides = {}) {
     sendSim: (id, cmd) => ingest.sendCommand(id, cmd),
     emit: (shipId, event, payload) => io.of('/live').to(`ship:${shipId}`).emit(event, payload),
     online: (id) => ingest.sockets.has(id),
+    latest: (id) => states.sources.get(id)?.v ?? null,
     detector,
     scenarios: SCENARIOS,
     log,

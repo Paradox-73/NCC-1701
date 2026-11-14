@@ -20,6 +20,7 @@
 .st-blank b { font: 400 12px/1.2 var(--font-display); letter-spacing: 0.12em; color: var(--ink2); }
 .st-blank span { font-size: 12px; color: var(--mute); max-width: 32ch; }
 .st-blink-slow { animation: blink 1.6s steps(1) infinite; }
+.st-clamp2 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; white-space: normal; line-height: 1.35; }
 
 /* ---- tables and lists ------------------------------------------------------ */
 .st-table { width: 100%; border-collapse: collapse; font-size: 13px; }

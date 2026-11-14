@@ -15,6 +15,7 @@ import SceneFX from './SceneFX.jsx';
 //   damage   { saucer, engineering, portNacelle, starboardNacelle } 0..1   tints that section toward red
 //   alert    'green' | 'yellow' | 'red'              lighting mood
 //   spin     idle rotation on/off (default on)
+//   visible  false hides the ship and keeps the scene around it (default true)
 
 const HULL = new THREE.Color('#c9ccd3');
 const HURT = new THREE.Color('#b3261e');
@@ -375,7 +376,7 @@ function PrimitiveHull({ warp, damage, shields }) {
 
 // model: URL of the glb (default the TOS Enterprise), or null for the primitives ship only.
 // hold: a ref holding the performance.now() until which the idle turn waits (someone is steering the camera).
-export function Starship({ warp = 0, shields, damage, alert = 'green', spin = true, hold, model = MODEL_URL }) {
+export function Starship({ warp = 0, shields, damage, alert = 'green', spin = true, visible = true, hold, model = MODEL_URL }) {
   const root = useRef();
   useFrame((_, dt) => {
     if (spin && root.current && !(hold?.current > performance.now())) root.current.rotation.y += Math.min(dt, 0.1) * 0.12;
@@ -385,7 +386,7 @@ export function Starship({ warp = 0, shields, damage, alert = 'green', spin = tr
     <>
       {/* lights stay put while the ship turns, so the shading moves across the hull */}
       <Lights alert={alert} />
-      <group ref={root}>
+      <group ref={root} visible={visible}>
         {model ? (
           <ModelBoundary fallback={primitives}>
             <Suspense fallback={null}>

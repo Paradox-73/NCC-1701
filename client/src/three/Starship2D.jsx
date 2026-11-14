@@ -25,7 +25,8 @@ const ARCS = {
   port: arc(3 * Q, 5 * Q),
 };
 
-export default function Starship2D({ warp = 0, shields, damage, alert = 'green', className, style }) {
+export default function Starship2D({ warp = 0, shields, damage, alert = 'green', visible = true, className, style }) {
+  if (!visible) return null;
   const w = clamp(warp, 0, 9) / 9;
   return (
     <div className={className} style={{ position: 'relative', width: '100%', height: '100%', minHeight: 0, background: '#04060c', ...style }}>

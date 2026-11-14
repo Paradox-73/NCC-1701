@@ -5,7 +5,7 @@ import { play, soundOn, toggleSound, useSound } from '../lib/sound.js';
 import Login from '../pages/Login.jsx';
 import StarshipView, { hasWebGL } from '../three/StarshipView.jsx';
 import { FLIGHT_MS, NARRATION_AT, THEME_AT } from '../three/rig.js';
-import { Delta, Icon, LitButton } from '../ui/index.js';
+import { Delta, Icon, KeyCap, LitButton } from '../ui/index.js';
 import './stage.css';
 
 const OPENED = 'ncc.opened';
@@ -72,7 +72,6 @@ function useIntro() {
 function ColdOpen({ intro, onStart, onDone }) {
   const [t, setT] = useState(null); // ms into the intro; null before Engage
   const lines = useRef(LINES.map((l) => (typeof l === 'function' ? l() : l))).current;
-  const sound = useSound();
   const skip = useCallback(() => { intro.fadeOut(900); onDone(); }, [intro, onDone]);
 
   const alive = useRef(true);
@@ -98,6 +97,7 @@ function ColdOpen({ intro, onStart, onDone }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [t == null, skip]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const onEngage = async () => { stop.current = await engage(); };
   if (t == null) {
     return (
       <div className="gate">
@@ -105,12 +105,15 @@ function ColdOpen({ intro, onStart, onDone }) {
           <Delta emblem="command" className="delta gate__delta" />
           <p className="gate__ship">U.S.S. Enterprise · NCC-1701</p>
           <h1 className="gate__title">Bridge</h1>
-          <LitButton color="amber" size="lg" className="gate__engage" label="Engage" keyCap="Enter" autoFocus
-            onClick={async () => { stop.current = await engage(); }} />
-          <p className="label gate__note">Plays the original-series opening with sound. <button type="button" className="linkbtn" onClick={toggleSound}>{sound ? 'Mute' : 'Sound is off: turn on'}</button></p>
+          <LitButton color="amber" size="lg" className="gate__engage" label="Engage" aria-keyshortcuts="Enter" autoFocus onClick={onEngage} />
+          <KeyCap>Enter</KeyCap>
+          <p className="label gate__note">Plays the original-series opening with sound.</p>
+          <div className="gate__more">
+            <SoundToggle />
+            <button type="button" className="stage-pill" onClick={skip}>Skip intro <KeyCap>Esc</KeyCap></button>
+          </div>
         </div>
-        <button type="button" className="coldopen__skip" onClick={skip}>Skip intro <kbd className="keycap">Esc</kbd></button>
-        <EscToSkip onSkip={skip} />
+        <GateKeys onEngage={onEngage} onSkip={skip} />
       </div>
     );
   }
@@ -120,21 +123,33 @@ function ColdOpen({ intro, onStart, onDone }) {
         {lines.map((l, i) => <Typed key={i} text={l} on={t >= NARRATION_AT[i]} />)}
       </div>
       <div className="coldopen__bar" onPointerDown={(e) => e.stopPropagation()}>
-        <button type="button" className="iconbtn" onClick={toggleSound} aria-pressed={sound} title={sound ? 'Mute (M)' : 'Sound on (M)'}>
-          <Icon name={sound ? 'soundOn' : 'soundOff'} title={sound ? 'Sound on' : 'Sound off'} />
-        </button>
-        <button type="button" className="coldopen__skip" onClick={skip}>Skip <kbd className="keycap">any key</kbd></button>
+        <SoundToggle />
+        <button type="button" className="stage-pill" onClick={skip}>Skip <KeyCap>any key</KeyCap></button>
       </div>
     </div>
   );
 }
 
-function EscToSkip({ onSkip }) {
+/** The speaker switch, with its state in words: sound is on unless the user mutes it. */
+function SoundToggle() {
+  const sound = useSound();
+  return (
+    <button type="button" className="stage-pill stage-pill--sound" onClick={toggleSound} aria-pressed={sound} aria-keyshortcuts="M" title="Sound on or off (M)">
+      <Icon name={sound ? 'soundOn' : 'soundOff'} />{sound ? 'Sound on' : 'Sound off'}
+    </button>
+  );
+}
+
+// Enter engages from anywhere on the gate (a focused button keeps its own Enter); Esc skips to the login.
+function GateKeys({ onEngage, onSkip }) {
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onSkip(); };
+    const onKey = (e) => {
+      if (e.key === 'Escape') onSkip();
+      else if (e.key === 'Enter' && !e.repeat && !e.target.closest?.('button, a, input')) onEngage();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onSkip]);
+  }, [onEngage, onSkip]);
   return null;
 }
 
@@ -179,7 +194,7 @@ export default function Stage({ phase, onOpened, onBoarded, onFaded }) {
   return (
     <div className="stage" data-phase={phase} data-gliding={gliding || undefined} onClick={phase === 'boarding' ? () => skip.current() : undefined}>
       <div className="stage__ship" aria-hidden="true">
-        <StarshipView rig={rig} spin={phase === 'identify'} warp={2} alert="green" shields={NO_SHIELDS} />
+        <StarshipView rig={rig} visible={rig !== 'wait'} spin={phase === 'identify'} warp={2} alert="green" shields={NO_SHIELDS} />
       </div>
       <div className="stage__veil" aria-hidden="true" />
       {phase === 'coldopen' && <ColdOpen intro={intro} onStart={() => setGliding(true)} onDone={opened} />}

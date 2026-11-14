@@ -1,6 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Shell from './app/Shell.jsx';
 import Stage from './app/Stage.jsx';
+import { homeOf } from './app/stations.js';
 import { AuthProvider, useAuth } from './lib/auth.jsx';
 import { SourcesProvider } from './lib/context.jsx';
 import { resetShip } from './lib/ship.js';
@@ -22,6 +24,15 @@ function Root() {
   useEffect(() => { setAuthLostHandler(() => logout('refused')); }, [logout]);
   const [phase, setPhase] = useState(() => (user ? 'aboard' : 'coldopen'));
   useEffect(() => { if (!user) setPhase('coldopen'); }, [user]); // signed out: back to the Engage gate
+  // A sign-in always starts at that role's own seat (captain: bridge, chief engineer: engineering, ...), whatever page
+  // the last person was on before signing out. A reload while signed in keeps its page, and moving between stations
+  // afterwards is untouched.
+  const navigate = useNavigate();
+  const signedIn = useRef(!!user);
+  useEffect(() => {
+    if (user && !signedIn.current) navigate(homeOf(user), { replace: true });
+    signedIn.current = !!user;
+  }, [user, navigate]);
   const toIdentify = useCallback(() => setPhase('identify'), []);
   const toFade = useCallback(() => setPhase('fade'), []);
   const toAboard = useCallback(() => setPhase('aboard'), []);

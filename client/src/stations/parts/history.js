@@ -115,7 +115,16 @@ export function useHistory(sourceId, channel, rangeSec, enabled = true) {
         }
         setMeta((m) => ({ ...m, status: 'ready', joinTs, count: res.samples.length, downsampled: !!res.downsampled }));
       })
-      .catch((e) => !dead && setMeta((m) => ({ ...m, status: 'error', error: e.message })));
+      .catch((e) => {
+        if (dead) return;
+        // no stored readings: from here the live stream is drawn on its own, all of it in the live colour
+        loaded = true;
+        d.liveOnly = true;
+        for (const r of buf) append(r[0], r[1], r[2]);
+        buf.length = 0;
+        d.ver++;
+        setMeta((m) => ({ ...m, status: 'error', error: e.message }));
+      });
     const tick = setInterval(() => setMeta((m) => (m.live === live && m.dropped === dropped ? m : { ...m, live, dropped })), 1000);
     return () => { dead = true; off(); offConn(); clearInterval(tick); };
   }, [sourceId, channel, rangeSec, group, subscribed, on]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -137,7 +146,7 @@ export function useHistoryData(data, deps, split = true) {
       seen = d.ver; at = now;
       if (!d.xs.length) return null;
       if (!split) return [d.xs, d.ys];
-      const j = d.joinSeq ? d.seqs.findIndex((s) => s > d.joinSeq) : -1;
+      const j = d.liveOnly ? 0 : d.joinSeq ? d.seqs.findIndex((s) => s > d.joinSeq) : -1;
       const n = d.xs.length;
       const cut = j < 0 ? n : j;
       const hist = new Array(n), live = new Array(n);

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import uPlot from 'uplot';
 import 'uplot/dist/uPlot.min.css';
 import { chartColors, chartFont, reducedMotion } from '../lib/chartTheme.js';
@@ -15,13 +15,14 @@ const fmtVal = (v, dec = 0) => (v == null || Number.isNaN(v) ? '–' : Number(v)
 // series: [{ label, color, width?, fill?, fillTo?, step?, dec?, unit? }] (the x series is added here)
 // x: 'time' (clock), 'ago' (seconds before now), 'num' (plain numbers), or a format function.
 // Styling lives in the .chart-* classes (index.css) and the --chart-* CSS variables (lib/chartTheme.js).
-export default function Chart({ series, getData, data, height = 150, fill = false, x = 'time', xRange, yRange, title, unit = '', legend = series.length > 1, sync, showX = true }) {
+export default function Chart({ series, getData, data, height = 150, fill = false, x = 'time', xRange, yRange, title, unit = '', legend = series.length > 1, sync, showX = true, wait = 'Loading readings' }) {
   const wrap = useRef(null);
   const host = useRef(null);
   const plot = useRef(null);
   const getRef = useRef(getData);
   getRef.current = getData;
   const real = useRef(false); // false while the plot holds its placeholder points
+  const [ready, setReady] = useState(false); // the placeholder's axes (0 to 1, the epoch) stay under a plate until then
   const revealRef = useRef(() => {});
 
   useEffect(() => {
@@ -92,6 +93,7 @@ export default function Chart({ series, getData, data, height = 150, fill = fals
       }),
     });
     else if (x === 'time') Object.assign(xAxis, {
+      space: 80, // an HH:MM:SS label is about 60 px wide at 12 px: keep a gap between neighbours on a phone
       incrs: [1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 900, 1800, 3600], // never finer than a second, so labels never repeat
       values: (u, vals) => vals.map((v) => clock(v)),
     });
@@ -130,7 +132,7 @@ export default function Chart({ series, getData, data, height = 150, fill = fals
       if (!getRef.current || t - lastDraw < 33) return;
       lastDraw = t; // ask at most ~30 times a second, whether or not there was anything new
       const d = getRef.current();
-      if (d) { const first = !real.current; real.current = true; u.setData(d); if (first) drawIn(); if (u.cursor.left >= 0) showTip(u); }
+      if (d) { const first = !real.current; real.current = true; u.setData(d); if (first) { drawIn(); setReady(true); } if (u.cursor.left >= 0) showTip(u); }
     });
     return () => { off(); stops.forEach((f) => f()); ro.disconnect(); u.destroy(); tip.remove(); plot.current = null; };
     // series shape is fixed per mount; remount through `key` when it changes
@@ -142,7 +144,7 @@ export default function Chart({ series, getData, data, height = 150, fill = fals
     const first = !real.current;
     real.current = true;
     plot.current.setData(data);
-    if (first) revealRef.current();
+    if (first) { revealRef.current(); setReady(true); }
   }, [data]);
 
   return (
@@ -157,7 +159,10 @@ export default function Chart({ series, getData, data, height = 150, fill = fals
           )}
         </div>
       )}
-      <div ref={host} role="img" aria-label={title ? `${title} chart` : 'Chart'} className="chart-host" />
+      <div className="chart-body">
+        <div ref={host} role="img" aria-label={title ? `${title} chart` : 'Chart'} className="chart-host" />
+        {!ready && <div className="chart-wait"><span className="blink-slow">{wait}</span></div>}
+      </div>
     </div>
   );
 }

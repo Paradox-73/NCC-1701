@@ -36,6 +36,8 @@
 .st-seg-ctl { display: inline-flex; gap: 2px; padding: 2px; border-radius: 4px; background: var(--raised); }
 .st-seg-ctl button { min-height: 28px; padding: 0 10px; border: 0; border-radius: 3px; background: transparent; cursor: pointer; font: 400 10px/1 var(--font-display); letter-spacing: 0.08em; color: var(--ink2); }
 .st-seg-ctl button[aria-checked='true'], .st-seg-ctl button[aria-pressed='true'] { background: var(--accent-fill); color: #fff; }
+.st-field { display: flex; gap: 8px; align-items: center; min-width: 0; flex: 1 1 240px; max-width: 420px; }
+.st-field .st-select { flex: 1; min-width: 0; width: 100%; }
 .st-select { min-height: 32px; padding: 0 8px; border-radius: 4px; border: 1px solid var(--line); background: var(--raised); color: var(--ink); font: 400 13px var(--font-ui); max-width: 100%; }
 .st-btn { min-height: 28px; padding: 0 10px; border-radius: 3px; border: 1px solid #5cb8ff66; background: transparent; color: var(--accent); cursor: pointer; font: 400 10px/1 var(--font-display); letter-spacing: 0.08em; white-space: nowrap; }
 .st-btn:hover { background: #5cb8ff1a; }

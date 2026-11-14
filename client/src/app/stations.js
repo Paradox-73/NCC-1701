@@ -28,3 +28,10 @@ export function canEnter(user, st) {
   if (st.admin) return !!user.admin;
   return !st.needs || (user.groups ?? []).includes(st.needs);
 }
+
+// Where each role starts after sign-in: its own seat, the bridge for the captain (and any role not listed).
+const HOME = { chief_engineer: 'engineering', chief_medical_officer: 'sickbay', science_officer: 'science', communications_officer: 'comms', starfleet_command: 'fleet' };
+export function homeOf(user) {
+  const st = STATIONS.find((s) => s.id === HOME[user?.role]);
+  return st && canEnter(user, st) ? st.path : '/bridge';
+}

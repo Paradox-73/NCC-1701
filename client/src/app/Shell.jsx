@@ -11,7 +11,7 @@ import Bridge from '../pages/Bridge.jsx';
 import MainViewer from './MainViewer.jsx';
 import { ShortcutSheet, Turbolift } from './Overlays.jsx';
 import StationRoute from './StationRoute.jsx';
-import { PAGES, STATIONS, stationAt } from './stations.js';
+import { PAGES, STATIONS, homeOf, stationAt } from './stations.js';
 import { TopBar } from './TopBar.jsx';
 import './shell.css';
 
@@ -150,7 +150,7 @@ export default function Shell({ powered, aboard }) {
           {[...STATIONS.slice(1), ...PAGES].map((st) => (
             <Route key={st.id} path={`${st.path}/*`} element={<StationRoute station={st} onBack={back} />} />
           ))}
-          <Route path="*" element={<Navigate to="/bridge" replace />} />
+          <Route path="*" element={<Navigate to={homeOf(user)} replace />} />
         </Routes>
       </div>
       <MainViewer viewer={viewer} condition={condition} threeD={aboard} />

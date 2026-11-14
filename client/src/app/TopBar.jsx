@@ -6,6 +6,7 @@ import { state } from '../lib/store.js';
 import { STATIONS, canEnter } from './stations.js';
 
 const WORD = { normal: 'Normal', yellow: 'Yellow alert', red: 'Red alert' };
+const SHORT = { normal: 'Normal', yellow: 'Yellow', red: 'Red' }; // narrower desktops: the lamp colour says "alert
 const ROLE_DIVISION = { captain: 'command', chief_engineer: 'ops', communications_officer: 'ops', science_officer: 'science', chief_medical_officer: 'science', starfleet_command: 'fleet' };
 export const divisionOfRole = (role) => ROLE_DIVISION[role] ?? 'fleet';
 
@@ -18,9 +19,12 @@ function ConditionLamp({ condition, captain, standDown }) {
   return (
     <div className="cond" data-level={standDown ? 'standdown' : condition}>
       <button type="button" className="cond__btn" onClick={() => captain && setOpen((o) => !o)} aria-expanded={captain ? open : undefined}
-        aria-haspopup={captain ? 'true' : undefined} disabled={!captain} title={captain ? 'Change condition' : 'Ship condition, set by the captain'}>
+        aria-haspopup={captain ? 'true' : undefined} disabled={!captain} aria-label={word} title={captain ? 'Change condition' : 'Ship condition, set by the captain'}>
         <i className="cond__lamp" aria-hidden="true" />
-        <span className="cond__word">{word}</span>
+        <span className="cond__word">
+          <span className="cond__long" aria-hidden="true">{word}</span>
+          <span className="cond__short" aria-hidden="true">{standDown ? 'Normal' : SHORT[condition]}</span>
+        </span>
       </button>
       {open && (
         <div className="cond__menu" role="menu">

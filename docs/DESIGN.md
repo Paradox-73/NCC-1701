@@ -117,7 +117,7 @@ All three families are free under the SIL Open Font License 1.1 and are self-hos
 
 Scale in px: 11, 12, 14, 16, 20, 28, 40, 64. Body text is 14. Labels are 12 Space Grotesk 500 in `mute`. Michroma labels are uppercase and at most three words; Space Grotesk text is sentence case. The hero number on a monitor is Space Mono 700 at 28 or 40; the warp factor on the helm is 64.
 
-An optional TOS-style display face for the wordmark and the ship registries only, if its licence allows: Final Frontier Old Style by Allen R. Walden, based on the show's title lettering, or Airborne by Charles Casimiro Design, made for TOS-era hull lettering. Their FontSpace pages blocked my fetcher, so their licences are not verified here. Read the licence file inside the download before adding either, and credit it.
+An optional TOS-style display face for the wordmark and the ship registries only, if its licence allows: Final Frontier Old Style by Allen R. Walden, based on the show's title lettering, or Airborne by Charles Casimiro Design, made for TOS-era hull lettering. Their FontSpace pages could not be opened during this research, so their licences are not verified here. Read the licence file inside the download before adding either, and credit it.
 
 ## Space, shape and layout frame
 

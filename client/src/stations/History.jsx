@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { CHANNEL_BY_KEY, GROUP_CHANNELS, GROUP_DEFS, SOURCES } from '@ncc/shared/schema.js';
+import { CHANNEL_BY_KEY, GROUP_CHANNELS, GROUP_DEFS, SOURCES, canSeeSource, kindOf } from '@ncc/shared/schema.js';
 import Chart from '../components/Chart.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import { useTick } from '../lib/hooks.js';
@@ -8,16 +8,15 @@ import { useHistory, useHistoryData } from './parts/history.js';
 import { C, ConsoleStrip, J, LitButton, LevelChip, Monitor, Num, Station, decOf, fmt } from './parts/ui.jsx';
 
 const RANGES = [['1 min', 60], ['5 min', 300], ['15 min', 900], ['1 hour', 3600]];
-const kindOf = (s) => s.kind ?? (s.id > 10 ? 'crew' : 'ship');
 
 /** History merged with live (docs/PROTOCOL.md): stored samples from MongoDB, then the live stream, joined by sequence number. */
 export default function History({ shipId = 1 }) {
   useTick();
   const { user } = useAuth();
-  const sources = SOURCES.filter((s) => (user?.ships ? user.ships.includes(s.id) : true));
+  const sources = SOURCES.filter((s) => canSeeSource(user?.role, s.id));
   const [src, setSrc] = useState(sources.some((s) => s.id === shipId) ? shipId : sources[0]?.id);
   const source = SOURCES.find((s) => s.id === src);
-  const groups = GROUP_DEFS.filter((g) => canSee(user, g.key) && (!g.kind || g.kind === kindOf(source ?? {})) && GROUP_CHANNELS[g.key]?.length);
+  const groups = GROUP_DEFS.filter((g) => canSee(user, g.key) && (!g.kind || g.kind === kindOf(src)) && GROUP_CHANNELS[g.key]?.length);
   const first = groups.find((g) => g.key === 'warp' || g.key === 'helm') ?? groups[0];
   const [channel, setChannel] = useState(GROUP_CHANNELS[first?.key]?.[0]);
   const ch = CHANNEL_BY_KEY[channel] && groups.some((g) => g.key === CHANNEL_BY_KEY[channel].group) ? channel : GROUP_CHANNELS[first?.key]?.[0];
@@ -40,7 +39,7 @@ export default function History({ shipId = 1 }) {
   }
 
   return (
-    <Station name="History" division="fleet" ship={kindOf(source) === 'ship' ? src : null} rows="auto minmax(320px, 1fr) auto" desk={desk}
+    <Station name="History" division="fleet" ship={kindOf(src) === 'ship' ? src : null} rows="auto minmax(320px, 1fr) auto" desk={desk}
       end={`${shipCode(src)} · ${source.name}`}>
       <Monitor title="Channel" meta="source · reading · range" className="st-c12">
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 18px', alignItems: 'center', padding: '10px 12px' }}>

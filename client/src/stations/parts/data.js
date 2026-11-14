@@ -2,7 +2,7 @@
 // buffers, room subscriptions with a history backfill, and the command route. Every lookup tolerates a channel or group
 // the registry does not have yet: it reads as "no data", never as an error.
 import { useEffect, useState } from 'react';
-import { CHANNEL_BY_KEY, GROUP_CHANNELS, RULES, SOURCES } from '@ncc/shared/schema.js';
+import { CHANNEL_BY_KEY, GROUP_CHANNELS, RULES, SOURCES, roleMayCommand } from '@ncc/shared/schema.js';
 import { api } from '../../lib/api.js';
 import { useAuth } from '../../lib/auth.jsx';
 import { useSubscription } from '../../lib/hooks.js';
@@ -106,12 +106,8 @@ export function useFeed(src, groups, ms = 120000) {
   return ready;
 }
 
-// DOMAIN.md deck names (our choice; the show never gave a full deck plan)
-export const DECKS = ['Bridge', "Officers' quarters", 'Crew quarters', 'Laboratories', 'Sickbay', 'Recreation', 'Transporter rooms', 'Shuttle hangar', 'Cargo and food stores', 'Life support plant', 'Main engineering', 'Impulse and auxiliary control'];
 export const pad2 = (n) => String(n).padStart(2, '0');
-
-/** Stardate as the top bar shows it (DOMAIN.md): ten units a day. */
-export const stardate = (ts) => 1000 + (ts - Date.UTC(2026, 0, 1)) / 8_640_000;
+export { DECK_NAMES, stardate } from '@ncc/shared/schema.js';
 
 /**
  * Commands to a ship (DOMAIN.md section 7). `send` posts it; the button that sent it blinks until the server answers,
@@ -121,10 +117,7 @@ export function useCommand(shipId) {
   const { user } = useAuth();
   const [pending, setPending] = useState(null);
   const [last, setLast] = useState(null);
-  const can = (type) => {
-    const list = user?.commands;
-    return !list || list.some((c) => c === type || (c.endsWith('.*') && type.startsWith(c.slice(0, -1))));
-  };
+  const can = (type) => roleMayCommand(user?.role, type);
   /** Resolves true when the server acknowledged the command. */
   const send = async (type, payload = {}, say = type) => {
     if (!can(type)) { setLast({ ok: false, text: `${say}: not your station's order` }); return false; }

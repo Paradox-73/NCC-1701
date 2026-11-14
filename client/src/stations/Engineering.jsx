@@ -2,7 +2,7 @@ import { useState } from 'react';
 import Chart from '../components/Chart.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import { useTick } from '../lib/hooks.js';
-import { DECKS, levelOf, meta, monState, pad2, read, useCommand, useFeed, worst } from './parts/data.js';
+import { DECK_NAMES, levelOf, meta, monState, pad2, read, useCommand, useFeed, worst } from './parts/data.js';
 import { useHistory, useHistoryData } from './parts/history.js';
 import { ArcGauge, J, Station, BarGauge, C, Chip, ConsoleStrip, HBar, LevelChip, LitButton, Monitor, Num, Readout, Val, clamp, decOf, fmt, useCanvas } from './parts/ui.jsx';
 
@@ -125,7 +125,7 @@ function Pads({ src }) {
 function DeckStack({ src, sel, onSel }) {
   return (
     <div role="listbox" aria-label="Decks" className="st-fill-scroll" style={{ display: 'grid', gap: 1, padding: '6px 10px 6px 6px', height: '100%', alignContent: 'start' }}>
-      {DECKS.map((name, i) => {
+      {DECK_NAMES.map((name, i) => {
         const d = i + 1;
         const lv = worst(deckKeys(d).map((k) => levelOf(k, read(src, k))));
         const on = sel === d;
@@ -255,7 +255,7 @@ export default function Engineering({ shipId = 1 }) {
         <Monitor title="Deck stack" meta="life support · gravity" state={st('lifesupport', 'gravity')} className="st-c5">
           <DeckStack src={src} sel={deck} onSel={setDeck} />
         </Monitor>
-        <Monitor title={`Deck ${pad2(deck)} · ${DECKS[deck - 1]}`} meta="history and live" state={st('lifesupport', 'gravity')} className="st-c7" style={{ '--mh': '470px' }}>
+        <Monitor title={`Deck ${pad2(deck)} · ${DECK_NAMES[deck - 1]}`} meta="history and live" state={st('lifesupport', 'gravity')} className="st-c7" style={{ '--mh': '470px' }}>
           <DeckDetail src={src} deck={deck} />
         </Monitor>
     </Station>

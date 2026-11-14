@@ -4,13 +4,14 @@ import VirtualList from '../components/VirtualList.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import { useTick } from '../lib/hooks.js';
 import { getRing } from '../lib/store.js';
-import { DECKS, canSee, levelOf, meta, monState, pad2, read, useCommand, useFeed, worst } from './parts/data.js';
+import { crewHubOf, crewLabel, deckOfCrew } from '@ncc/shared/schema.js';
+import { DECK_NAMES, canSee, levelOf, meta, monState, pad2, read, useCommand, useFeed, worst } from './parts/data.js';
 import { useHistory, useHistoryData } from './parts/history.js';
 import { C, Chip, ConsoleStrip, J, LevelChip, LitButton, Monitor, Num, Station, clamp, fmt, useCanvas } from './parts/ui.jsx';
 
 // DOMAIN.md section 4: crew 001-012 on deck 1, then 38 a deck; four vitals each, one group per deck on the crew hub
 const pad3 = (n) => String(n).padStart(3, '0');
-const DECK_OF = (n) => (n <= 12 ? 1 : 2 + Math.floor((n - 13) / 38));
+const DECK_OF = deckOfCrew;
 const BY_DECK = Array.from({ length: 12 }, (_, d) => Array.from({ length: 430 }, (_, i) => i + 1).filter((n) => DECK_OF(n) === d + 1));
 const BIO = BY_DECK.map((_, d) => `bio-d${pad2(d + 1)}`);
 // `sd`: the spread one standard deviation stands for on the grid (our choice), so resting noise stays under 1
@@ -24,7 +25,7 @@ const CLS = [C.raised, C.dev1, C.warn, C.crit]; // under 1, 1-2, 2-3, over 3 sta
 const MEDICAL = 'Medical records: CMO and captain only.';
 // the overview lists ships only, so a crew hub counts as silent when its newest sample is over 5 s old
 const isStale = (hub) => { const r = getRing(hub, BIO[0]); return !!r?.len && Date.now() - r.lastTs > 5000; };
-const who = (n) => `Crew ${pad3(n)} · Deck ${pad2(DECK_OF(n))} · ${DECKS[DECK_OF(n) - 1]}`;
+const who = (n) => `${crewLabel(n)} · ${DECK_NAMES[DECK_OF(n) - 1]}`;
 
 /** Each crew member's own baseline per vital: the median of what the store holds (up to 600 samples), refreshed every 15 s. */
 function useBaselines(hub) {
@@ -79,7 +80,7 @@ function CrewGrid({ hub, base, sel, onSel }) {
     BY_DECK.forEach((crew, d) => {
       const y = top + d * rowH;
       ctx.fillStyle = C.mute; ctx.textAlign = 'left';
-      ctx.fillText(w < 520 ? pad2(d + 1) : `${pad2(d + 1)} ${DECKS[d].split(' ')[0]}`, 4, y + cell / 2);
+      ctx.fillText(w < 520 ? pad2(d + 1) : `${pad2(d + 1)} ${DECK_NAMES[d].split(' ')[0]}`, 4, y + cell / 2);
       crew.forEach((n, i) => {
         const x = L + i * (cell + gap), s = crewStatus(hub, base.current, n, stale);
         if (s.cls < 0) {
@@ -131,7 +132,7 @@ function Biobed({ hub, n }) {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '10px 12px', gap: 8 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{ font: '400 11px var(--font-display)', letterSpacing: '0.08em' }}>CREW {pad3(n)}</span>
-        <span className="st-label">Deck {pad2(DECK_OF(n))} · {DECKS[DECK_OF(n) - 1]}</span>
+        <span className="st-label">{crewLabel(n).split(' · ').slice(1).join(' · ')} · {DECK_NAMES[DECK_OF(n) - 1]}</span>
         <i aria-hidden="true" className="sb-beat" style={{ marginLeft: 'auto', animationDuration: `${Math.max(0.5, 60 / clamp(hr ?? 60, 20, 220))}s` }} title={`Pulses at the heart rate, ${fmt(hr, 0)} bpm`} />
       </div>
       <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
@@ -173,7 +174,7 @@ function Trend({ hub, k, label, unit, dec }) {
 export default function Sickbay({ shipId = 1 }) {
   useTick();
   const { user } = useAuth();
-  const hub = shipId + 10; // DOMAIN.md: the crew hub of ship N has id N + 10
+  const hub = crewHubOf(shipId) ?? shipId + 10; // DOMAIN.md: the crew hub of ship N has id N + 10
   useFeed(hub, BIO, 180000);
   useFeed(shipId, ['crewsummary']);
   const base = useBaselines(hub);

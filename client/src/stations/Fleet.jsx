@@ -118,7 +118,7 @@ function ShipCard({ id, onOpen }) {
     </>
   );
   const style = { display: 'flex', flexDirection: 'column', gap: 8, width: '100%', padding: '10px 12px', border: 0, borderRadius: 8, textAlign: 'left', background: '#ffffff07', boxShadow: `inset 0 0 0 1px ${link === 'lost' ? '#ff4a5555' : '#ffffff12'}` };
-  return onOpen ? <button type="button" style={{ ...style, cursor: 'pointer' }} onClick={() => onOpen(id)} aria-label={`Open the bridge of ${shipName(id)}`}>{body}</button> : <div style={style}>{body}</div>;
+  return onOpen ? <button type="button" style={{ ...style, cursor: 'pointer' }} onClick={() => onOpen(id)} aria-label={`Open the history of ${shipName(id)}`} title="Open this ship's history">{body}</button> : <div style={style}>{body}</div>;
 }
 
 const SEV = { critical: ['crit', 'RED'], warn: ['warn', 'YELLOW'], info: ['info', 'INFO'] };

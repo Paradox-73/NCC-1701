@@ -222,6 +222,9 @@ function Lights({ alert }) {
 //
 // Model units: fore is +z, up is +y, port is +x (same as the primitives ship), about 289 long.
 export const MODEL_URL = `${import.meta.env.BASE_URL}models/enterprise.glb`;
+// Fetch + decode the glb ahead of time (main.jsx calls this when the browser is idle), so the first 3D
+// view doesn't stall on it.
+export const preloadShip = () => useGLTF.preload(MODEL_URL, false, true);
 const MODEL_LENGTH = 289;
 const SHIP_LENGTH = 10.5; // same overall size as the primitives ship, so cameras and shields fit both
 const BUSSARDS = [

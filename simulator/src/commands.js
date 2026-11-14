@@ -41,7 +41,10 @@ export const COMMANDS = {
   'engineering.allocate': (s, { preset }) => s.setPreset(preset),
   'engineering.coldRestart': () => {}, // the scenario script restarts the core; nothing in calm running
   'transporter.energize': (s) => s.energize(),
-  'medical.inoculate': (s, { deck }) => s.crew.recover(deck ? { deck } : 'all', 20, 'infected'),
+  'medical.inoculate': (s, { deck }) => {
+    s.crew.recover(deck ? { deck } : 'all', 20, 'infected');
+    if (!deck) s.crew.stopSpread(); // a ship-wide inoculation ends the outbreak
+  },
   'medical.quarantine': (s, { deck }) => s.crew.quarantine(deck),
   'science.scan': (s, { mode }) => s.scan(mode),
   'security.ventGas': () => {}, // as the cold restart: the scenario script sedates the crew

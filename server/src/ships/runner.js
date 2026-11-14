@@ -113,10 +113,15 @@ export class ScenarioRunner {
     for (const ship of c.sc.ships) {
       this.world.sendSim(ship, { type: 'scn.release', args: { over: RELEASE_SEC } });
       this.world.setCondition(ship, 'normal', by);
-      this.world.settle(ship, 30_000);
+      if (this.#offCruise(ship)) this.world.settle(ship, 30_000); // the ship goes back to warp 6: its statistics follow, but a scenario that never left cruise leaves them alone
       this.world.logLine(ship, state === 'ended' ? `Scenario ended: ${c.sc.title}` : `Scenario stopped: ${c.sc.title}`, { by });
     }
     this.#emit(state, c);
+  }
+
+  #offCruise(ship) {
+    const v = this.world.latest(ship);
+    return !v || Math.abs(v.warpFactor - 6) > 0.3 || v.impulse > 5;
   }
 
   #progress(state, c = this.cur) {

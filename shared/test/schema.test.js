@@ -63,6 +63,7 @@ test('role access follows groups and ships; biosigns belong to the captain and t
   assert.ok(!canSeeGroup('starfleet_command', 'bio-d07'));
   assert.ok(canSeeSource('starfleet_command', 3) && !canSeeSource('captain', 3));
   assert.ok(canSeeSource('chief_medical_officer', 11) && !canSeeSource('chief_engineer', 11));
+  assert.ok(canSeeSource('starfleet_command', 40) && !canSeeSource('captain', 40), 'a source outside the registry is for admins');
 });
 
 test('command permissions: families by pattern, single commands exactly', () => {

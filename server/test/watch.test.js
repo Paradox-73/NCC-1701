@@ -58,6 +58,21 @@ test('settle(): while an operating point changes on purpose its statistics follo
   assert.equal(alerts2.filter((a) => a.type === 'zscore' && a.channel === 'reactionRate').length, 1);
 });
 
+test('a sickbay hub that sends once a second is not lost until 3.5 s of silence; a ship is lost after 1.5 s', () => {
+  let now = 1_000_000;
+  const alerts = [];
+  const d = new Detector({ onAlert: (a) => alerts.push(a), now: () => now, graceMs: 0 });
+  const calm = (id) => Object.fromEntries(channelsOf(id).map((c) => [c.key, c.nominal]));
+  d.push(11, { ...calm(11), ts: now });
+  d.push(1, { ...calm(1), ts: now });
+  now += 2000;
+  d.tick();
+  assert.deepEqual(alerts.map((a) => a.sourceId), [1], 'only the ship, 2 s silent');
+  now += 2000;
+  d.tick();
+  assert.deepEqual(alerts.map((a) => a.sourceId), [1, 11]);
+});
+
 test('a sickbay source runs only crew rules: a fever on crew 207 alerts in the deck 7 group, a ship rule never fires on it', () => {
   let now = 1_000_000;
   const alerts = [];

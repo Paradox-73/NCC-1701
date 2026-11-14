@@ -45,6 +45,11 @@ export class Detector {
     this.sources = new Map(); // sourceId -> { lastRx, firstRx, z }
   }
 
+  /** How long a source may stay silent: the configured limit, and at least 3.5 s for a sickbay hub, which sends once a second. */
+  _silenceLimit(sourceId) {
+    return kindOf(sourceId) === 'crew' ? Math.max(this.linkLossMs, 3500) : this.linkLossMs;
+  }
+
   _source(id) {
     let c = this.sources.get(id);
     if (!c) this.sources.set(id, (c = { lastRx: 0, firstRx: 0, z: {} }));
@@ -56,7 +61,7 @@ export class Detector {
     const t = this.now();
     const src = this._source(sourceId);
     // a source back after a silence (a restarted simulator or logger) is not compared with its old statistics: learn its values again
-    if (src.lastRx && t - src.lastRx > this.linkLossMs) Object.assign(src, { z: {}, zFrom: t + 1000 });
+    if (src.lastRx && t - src.lastRx > this._silenceLimit(sourceId)) Object.assign(src, { z: {}, zFrom: t + 1000 });
     src.lastRx = t;
     src.firstRx ||= t;
 
@@ -64,6 +69,7 @@ export class Detector {
     for (const rule of kind.rules) {
       const v = s[rule.channel];
       const sev = severity(rule, v);
+      if (!sev && !this.conds.has(sourceId + '|' + rule.id)) continue; // nothing to open and nothing open to close: skip building the message
       const limit = sev === 'critical' ? rule.critical : rule.warn;
       this._cond(sourceId, rule.id, sev, { type: rule.type, channel: rule.channel, value: v, threshold: limit, message: fmt(rule.channel, v) }, t, 0);
     }
@@ -107,7 +113,7 @@ export class Detector {
         continue;
       }
       const settled = t - this.startedAt >= this.graceMs && t - src.firstRx >= this.graceMs;
-      this._cond(sourceId, 'link-loss', settled && silent > this.linkLossMs ? 'warn' : null, { type: 'link-loss', channel: 'samples', value: silent / 1000, threshold: this.linkLossMs / 1000, message: `No samples for ${(silent / 1000).toFixed(1)} s` }, t, 0);
+      this._cond(sourceId, 'link-loss', settled && silent > this._silenceLimit(sourceId) ? 'warn' : null, { type: 'link-loss', channel: 'samples', value: silent / 1000, threshold: this._silenceLimit(sourceId) / 1000, message: `No samples for ${(silent / 1000).toFixed(1)} s` }, t, 0);
     }
   }
 

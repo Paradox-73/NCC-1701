@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import { EVENTS, GROUPS, GROUP_KIND, LIMITS, ROLES, SOURCES, isCrewSource, kindOf, roleGroups } from '@ncc/shared/schema.js';
+import { EVENTS, GROUPS, GROUP_KIND, LIMITS, ROLES, SOURCES, canSeeSource, isCrewSource, kindOf, roleGroups } from '@ncc/shared/schema.js';
 import { alertRoom, denyRoom } from '../alerts.js';
 import { TokenBucket } from '../ingest/tokenBucket.js';
 
@@ -57,7 +57,7 @@ export function setupLive({ io, config, metrics, alerts, log }) {
       guard((payload, reply) => {
         const { sourceIds: ids, groups = allowed } = subscribeSchema.parse(payload);
         const denied = groups.filter((g) => !allowed.includes(g));
-        const deniedSources = ids.filter((id) => !ships.includes(id));
+        const deniedSources = ids.filter((id) => !canSeeSource(user.role, id));
         const rooms = [];
         for (const id of ids) {
           if (deniedSources.includes(id)) continue;

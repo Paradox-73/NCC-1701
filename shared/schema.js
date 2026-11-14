@@ -42,8 +42,8 @@ export const groupsOf = (sourceId) => KINDS[kindOf(sourceId)].groups;
 export const roleGroups = (role) => ROLES[role]?.groups ?? [];
 /** True when the role may see the group. A null group (not tied to a channel group, such as link loss) is visible to every role. */
 export const canSeeGroup = (role, group) => group == null || roleGroups(role).includes(group);
-/** True when the role may see the source. */
-export const canSeeSource = (role, sourceId) => !!ROLES[role]?.ships.includes(sourceId);
+/** True when the role may see the source. A source outside the registry (a load-test source, a rogue one) is for admins only. */
+export const canSeeSource = (role, sourceId) => (SOURCE_BY_ID[sourceId] ? !!ROLES[role]?.ships.includes(sourceId) : !!ROLES[role]?.admin);
 
 // Limits enforced by the server; the simulator and load test read them too.
 export const LIMITS = {

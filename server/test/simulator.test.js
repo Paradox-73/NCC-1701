@@ -209,6 +209,18 @@ test('the crew: 430 people with their own baselines, the same on every run of a 
   assert.deepEqual([a.counts.watch, a.counts.critical], [0, 0]);
 });
 
+test('inoculating the whole ship ends the outbreak: nobody new falls ill while the infected recover', () => {
+  const ship = new Ship(1, { rand: lcg(18) });
+  ship.command({ type: 'scn.crew', args: { infect: [207], spread: { every: 4 } } });
+  run(ship, 60);
+  const sick = ship.crew.kind.filter((k) => k === 'infected').length;
+  assert.ok(sick > 10);
+  ship.command({ type: 'medical.inoculate', args: {} });
+  run(ship, 40);
+  assert.equal(ship.crew.kind.filter((k) => k !== null).length, 0, 'everyone recovered and nobody was infected after the shot');
+  assert.deepEqual([ship.crew.counts.watch, ship.crew.counts.critical], [0, 0]);
+});
+
 test('quarantine stops the spread from a deck', () => {
   const crew = new Ship(1, { rand: lcg(14) }).crew;
   for (let n = 13; n < 51; n++) crew.infect(n);

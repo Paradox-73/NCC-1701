@@ -208,6 +208,7 @@ export class Ship {
     s.channels = 2;
     s.torpedoes = 24;
     s.kick = 0;
+    s.battery = 100; // calm running starts with a charged battery, so a drained wreck does not keep alerting for minutes
   }
 
   // ---- stepping -----------------------------------------------------------------------------------------------------

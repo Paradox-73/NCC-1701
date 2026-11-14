@@ -24,4 +24,4 @@ jobs:
         run: curl -fsS -X POST "$RENDER_DEPLOY_HOOK" > /dev/null
       - name: Client (Vercel, built on Vercel from vercel.json)
         if: env.VERCEL_TOKEN != ''
-        run: npx --yes vercel@39 deploy --prod --yes --token "$VERCEL_TOKEN"
+        run: npx --yes vercel@65.16.0 deploy --prod --yes --token "$VERCEL_TOKEN"

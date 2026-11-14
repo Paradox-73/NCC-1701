@@ -1,0 +1,13 @@
+{
+  "name": "@ncc/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "exports": {
+    "./registry.js": "./registry.js",
+    "./schema.js": "./schema.js"
+  }
+}

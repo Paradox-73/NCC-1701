@@ -370,17 +370,4 @@ export function Station({ name, division, ship, rows, end, desk, children }) {
   );
 }
 
-/** Station-local keyboard shortcuts; ignored while typing in a field. */
-export function useKeys(map) {
-  const ref = useRef(map);
-  ref.current = map;
-  useEffect(() => {
-    const on = (e) => {
-      if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
-      const fn = ref.current[(e.shiftKey && e.key.length === 1 ? 'Shift+' : '') + e.key] ?? ref.current[e.key];
-      if (fn) { e.preventDefault(); fn(e); }
-    };
-    window.addEventListener('keydown', on);
-    return () => window.removeEventListener('keydown', on);
-  }, []);
-}
+export { useKeys } from '../../lib/keys.js';

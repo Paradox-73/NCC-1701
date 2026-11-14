@@ -3,22 +3,19 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-
 import { useAuth } from '../lib/auth.jsx';
 import { commandWords, mayCommand, onCommandResult, sendCommand } from '../lib/commands.js';
 import { useTick } from '../lib/hooks.js';
+import { inField } from '../lib/keys.js';
 import { conditionOf, loadShip } from '../lib/ship.js';
 import { play, toggleSound } from '../lib/sound.js';
 import { ackAlert, getRing, state } from '../lib/store.js';
 import Bridge from '../pages/Bridge.jsx';
 import { ShortcutSheet, Turbolift } from './Overlays.jsx';
 import StationRoute from './StationRoute.jsx';
-import { PAGES, STATIONS, screenOf, stationAt, stationById } from './stations.js';
+import { PAGES, STATIONS, stationAt } from './stations.js';
 import { TopBar } from './TopBar.jsx';
 import './shell.css';
 
-// Keys a station screen binds itself (client/src/stations): on that screen the shell leaves them to it, so one
-// key press never sends a command twice. Everywhere else the shell handles them.
-const OWNED_KEYS = { helm: /^([0-9]|Arrow(Up|Down|Left|Right)|[iIxXpP]|S)$/, comms: /^[hH]$/, alerts: /^[aA]$/ };
 const MAGNIFY = [1, 2, 4, 8];
 const VIEW_MODES = ['forward', 'tactical'];
-const typing = (el) => el?.closest?.('input, textarea, select, [contenteditable="true"]');
 
 /** The signed-in frame: top bar, alert bars, the station views and every keyboard shortcut. */
 export default function Shell({ powered, aboard }) {
@@ -53,7 +50,7 @@ export default function Shell({ powered, aboard }) {
 
   // ---- feedback line for commands and refusals --------------------------------------------------------
   const say = useCallback((text, tone = 'info') => setToast({ text, tone, id: Math.random() }), []);
-  useEffect(() => onCommandResult((r) => say(r.ok ? `${commandWords(r.type, r.payload)}, aye · ${r.rtt} ms` : `${commandWords(r.type, r.payload)}: ${r.error}`, r.ok ? 'ok' : 'bad')), [say]);
+  useEffect(() => onCommandResult((r) => say(r.ok ? `${r.text ?? `${commandWords(r.type, r.payload)}, aye`} · ${r.rtt} ms` : `${commandWords(r.type, r.payload)}: ${r.error}`, r.ok ? 'ok' : 'bad')), [say]);
   useEffect(() => { if (!toast) return undefined; const t = setTimeout(() => setToast(null), 2600); return () => clearTimeout(t); }, [toast]);
 
   // ---- station changes ---------------------------------------------------------------------------------
@@ -67,28 +64,33 @@ export default function Shell({ powered, aboard }) {
   useEffect(() => { setLift((n) => n + 1); }, [location.pathname]);
 
   // ---- keyboard (DESIGN.md, At the helm) ---------------------------------------------------------------
+  // Two listeners on window. The capture one runs before anything else and owns the turbolift (Ctrl K) and the
+  // G-then-letter jumps. The bubble one runs after every station's own keys (lib/keys.js useKeys listens on
+  // document, which an event reaches first) and skips a key a station already took. No key fires twice.
   const order = useCallback((type, payload) => {
     if (!mayCommand(user, type)) { say(`${commandWords(type, payload)}: ${type.startsWith('comms.') ? 'captain or communications officer only' : 'captain only'}`, 'bad'); return; }
     sendCommand(type, payload);
   }, [user, say]);
   const gAt = useRef(0);
   useEffect(() => {
+    const quiet = (e) => e.ctrlKey || e.metaKey || e.altKey || e.repeat || inField(e.target) || overlay || !aboard;
+    const take = (e) => { e.preventDefault(); e.stopPropagation(); };
+    const onNav = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { take(e); setOverlay((o) => (o === 'lift' ? null : 'lift')); return; }
+      if (quiet(e)) return;
+      if (performance.now() - gAt.current < 1500) { // the letter after G is a destination, never a command
+        gAt.current = 0;
+        take(e);
+        go(STATIONS.find((s) => s.key === e.key.toLowerCase()));
+      } else if (e.key === 'g' || e.key === 'G') { gAt.current = performance.now(); take(e); }
+    };
     const onKey = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setOverlay((o) => (o === 'lift' ? null : 'lift')); return; }
-      if (e.ctrlKey || e.metaKey || e.altKey || typing(e.target) || overlay) return;
+      if (e.defaultPrevented || quiet(e)) return;
       const k = e.key;
       if (k === 'Escape') { if (location.pathname !== '/bridge') go(STATIONS[0]); return; }
-      if (performance.now() - gAt.current < 1500) {
-        gAt.current = 0;
-        const st = STATIONS.find((s) => s.key === k.toLowerCase());
-        if (st) { e.preventDefault(); go(st); }
-        return;
-      }
-      if (OWNED_KEYS[current]?.test(k) && screenOf(stationById[current].screen)) return;
       const ov = state.overview.get(1);
       const warpNow = Math.round(ov?.warp ?? getRing(1, 'helm')?.last('warpFactor') ?? 0);
       switch (k) {
-        case 'g': case 'G': gAt.current = performance.now(); return;
         case '?': setOverlay('keys'); return;
         case 'm': case 'M': toggleSound(); return;
         case 'r': case 'R': order('ship.condition', { level: 'red' }); return;
@@ -97,9 +99,8 @@ export default function Shell({ powered, aboard }) {
         case 'i': case 'I': order('helm.impulse', { percent: 100 }); return;
         case 'x': case 'X': order('helm.stop', {}); return;
         case 'S': if (e.shiftKey) order('tactical.shields', { up: !(getRing(1, 'shields')?.last('shieldsUp') > 0) }); return;
-        case 'p': order('tactical.phasers', { bank: 'fore' }); return;
-        case 'P': order('tactical.torpedo', {}); return;
-        case 'h': case 'H': order(getRing(1, 'comms')?.last('hailing') > 0 ? 'comms.close' : 'comms.hail', { target: 'command' }); return;
+        case 'p': case 'P': if (e.shiftKey) order('tactical.torpedo', {}); else order('tactical.phasers', { bank: 'fore' }); return;
+        case 'h': case 'H': if (getRing(1, 'comms')?.last('hailing') > 0) order('comms.close', {}); else order('comms.hail', { target: 'command' }); return;
         case 'v': case 'V': setViewer((v) => ({ ...v, mode: VIEW_MODES[(VIEW_MODES.indexOf(v.mode) + 1) % VIEW_MODES.length] })); return;
         case '+': case '=': setViewer((v) => ({ ...v, zoom: MAGNIFY[Math.min(3, MAGNIFY.indexOf(v.zoom) + 1)] })); return;
         case '-': case '_': setViewer((v) => ({ ...v, zoom: MAGNIFY[Math.max(0, MAGNIFY.indexOf(v.zoom) - 1)] })); return;
@@ -119,9 +120,10 @@ export default function Shell({ powered, aboard }) {
           if (/^[0-9]$/.test(k)) order('helm.warp', { factor: Number(k) });
       }
     };
+    window.addEventListener('keydown', onNav, true);
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [overlay, location.pathname, current, go, order, say, user]);
+    return () => { window.removeEventListener('keydown', onNav, true); window.removeEventListener('keydown', onKey); };
+  }, [overlay, aboard, location.pathname, go, order, say, user]);
 
   const back = useCallback(() => go(STATIONS[0]), [go]);
   const nextView = useCallback(() => setViewer((v) => ({ ...v, mode: VIEW_MODES[(VIEW_MODES.indexOf(v.mode) + 1) % VIEW_MODES.length] })), []);

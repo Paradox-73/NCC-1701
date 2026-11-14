@@ -6,4 +6,4 @@ dist/
 *.log
 coverage/
 .DS_Store
-loadtest/results/raw/
+loadtest/results/

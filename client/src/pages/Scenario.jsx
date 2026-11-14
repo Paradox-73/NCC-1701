@@ -128,7 +128,7 @@ export function ScenarioPicker({ user, onClose }) {
               <li key={s.id} className="scenario" data-running={on || undefined}>
                 <div className="scenario__head">
                   <b className="display">{s.title}</b>
-                  <span className="mono label">{s.episode} · {s.duration} s</span>
+                  <span className="mono label" style={{ whiteSpace: 'nowrap' }}>{s.episode} · {s.duration} s</span>
                 </div>
                 <p className="scenario__summary">{s.summary}</p>
                 {s.shows && <p className="label">Shows: {Array.isArray(s.shows) ? s.shows.join(', ') : s.shows}</p>}

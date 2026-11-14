@@ -118,18 +118,20 @@ function CommsReadout() {
   );
 }
 
-function FleetReadout() {
+// a ship the role may not see never reaches it in the overview: that is a restriction, not a lost link
+function FleetReadout({ user }) {
   const ships = SOURCES.filter((s) => (s.kind ?? 'ship') === 'ship' && s.id !== SHIP).slice(0, 3);
   return (
     <ul className="fleet">
       {ships.map((s) => {
         const o = state.overview.get(s.id);
+        const cleared = user?.ships?.includes(s.id) ?? true;
         const status = o ? (o.condition && o.condition !== 'normal' ? COND_STATUS[o.condition] : FLAG_STATUS(o.flags)) : 'off';
         return (
           <li key={s.id}>
-            <Jewel status={status} label={`${s.name}: ${status === 'off' ? 'no signal' : o?.condition ?? 'online'}`} />
+            <Jewel status={status} label={`${s.name}: ${!cleared ? 'restricted' : status === 'off' ? 'no signal' : o?.condition ?? 'online'}`} />
             <span className="fleet__name"><b className="mono">{s.code}</b><span>{s.name.replace('USS ', '')}</span></span>
-            <span className="fleet__warp mono">{o?.warp != null ? `W${o.warp.toFixed(1)}` : status === 'off' ? 'NO SIGNAL' : ''}</span>
+            <span className="fleet__warp mono">{!cleared ? 'RESTRICTED' : o?.warp != null ? `W${o.warp.toFixed(1)}` : status === 'off' ? 'NO SIGNAL' : ''}</span>
           </li>
         );
       })}
@@ -158,7 +160,7 @@ function Tile({ tile, user, index, onZoom }) {
       onClick={() => onZoom(st, ref.current)} aria-label={`${tile.title}: open the ${st.label} station${enters ? '' : ' (restricted)'}`}>
       <Monitor title={tile.title} division={tile.division} index={index} status={status} state={sees ? 'live' : 'restricted'}
         restricted={RESTRICTED_TEXT[tile.group]} meta={!enters && <Icon name="lock" className="tile__lock" title="Restricted station" />}>
-        <tile.Body />
+        <tile.Body user={user} />
       </Monitor>
       <ButtonGrid rows={1} cols={16} seed={index + 3} className="tile__lamps" />
     </button>

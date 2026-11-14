@@ -213,7 +213,7 @@ export default function Engineering({ shipId = 1 }) {
   );
 
   return (
-    <Station name="Engineering" division="ops" ship={src} rows="minmax(236px, 2.6fr) minmax(150px, 1.3fr) minmax(270px, 2.6fr)" desk={desk}>
+    <Station name="Engineering" division="ops" ship={src} rows="minmax(240px, 2.6fr) minmax(140px, 1.3fr) minmax(220px, 2.6fr)" desk={desk}>
         <Monitor title="Reaction chamber" meta="matter / antimatter" state={st('warp')} className="st-c4" style={{ '--mh': '300px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(110px, 44%) 1fr', height: '100%' }}>
             <div style={{ position: 'relative' }}><Chamber src={src} /></div>

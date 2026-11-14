@@ -243,7 +243,7 @@ export default function Fleet({ onOpenShip }) {
     </ConsoleStrip>
   );
   return (
-    <Station name="Starfleet Command" division="fleet" ship={null} rows="minmax(250px, 1.3fr) minmax(220px, 1fr) minmax(210px, auto)" desk={desk}
+    <Station name="Starfleet Command" division="fleet" ship={null} rows="minmax(230px, 1.3fr) minmax(190px, 1fr) minmax(180px, auto)" desk={desk}
       end={`${ids.length - lost} of ${ids.length} ships linked · ${fmt(state.rx, 0)} readings/s`}>
       <Monitor title="Sector map" meta="task force · sector units" className="st-c7" style={{ '--mh': '340px' }}>
         <SectorMap ids={ids} />

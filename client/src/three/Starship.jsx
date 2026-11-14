@@ -4,7 +4,7 @@ import { OrbitControls, Stars, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
 // The ship: the TOS Enterprise model from client/public/models/enterprise.glb, with a low-poly ship built
-// from three.js primitives as the fallback (while the model loads, if it fails, or with model={null}).
+// from three.js primitives as the fallback (if the model fails to load, or with model={null}).
 // Both point down +z, y is up, port is +x.
 //
 // Props (all optional, all safe to update every frame):
@@ -329,7 +329,7 @@ class ModelBoundary extends Component {
 }
 
 // ---------------------------------------------------------------------------------------------------
-// The hand-built ship: fallback while the model loads or if it fails, and the `model={null}` option.
+// The hand-built ship: fallback if the model fails to load, and the `model={null}` option.
 function PrimitiveHull({ warp, damage, shields }) {
   const saucerMat = useHullMaterial();
   const engMat = useHullMaterial();
@@ -382,7 +382,7 @@ export function Starship({ warp = 0, shields, damage, alert = 'green', spin = tr
       <group ref={root}>
         {model ? (
           <ModelBoundary fallback={primitives}>
-            <Suspense fallback={primitives}>
+            <Suspense fallback={null}>
               <EnterpriseHull url={model} warp={warp} damage={damage} />
               <Shields shields={shields} position={[0, 0, 0.1]} scale={[3.0, 1.9, 6.3]} />
             </Suspense>

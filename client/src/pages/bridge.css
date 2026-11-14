@@ -1,161 +1,180 @@
-/* The bridge: a 1600 x 900 room scaled to fit (Bridge.jsx), or a list of stations on narrow screens. */
-.bridge { position: relative; flex: 1; display: grid; place-items: center; min-height: calc(100dvh - var(--topbar-h) - 2px); overflow: hidden; background: #070908; }
+/* The bridge (Bridge.jsx): the forward wall seen from the captain's chair, at least 1600 x 936 and scaled to fit, or
+   the same parts in one column on narrow screens. Monitors, plates, headlines and buttons come from ui/ui.css. */
+.bridge { position: relative; flex: 1; display: grid; place-items: start center; min-height: calc(100dvh - var(--topbar-h) - 2px); overflow: hidden; background: var(--floor); }
 .bridge__fit { position: relative; }
-.bridge__scale { position: absolute; left: 0; top: 0; width: 1600px; height: 900px; transform-origin: 0 0; }
-.bridge__stage { position: absolute; inset: 0; transform-origin: var(--zx) var(--zy); transition: transform 450ms var(--ease-out), opacity 450ms var(--ease-out); }
+.bridge__scale { position: absolute; left: 0; top: 0; height: 936px; transform-origin: 0 0; }
+.bridge__stage {
+  position: absolute; inset: 0; transform-origin: var(--zx) var(--zy); transition: transform 450ms var(--ease-out), opacity 450ms var(--ease-out);
+  /* the wall: lit from the cove above, a hairline seam every 200 px; the carpet below it */
+  background:
+    linear-gradient(180deg, #00000000 0 662px, #00000038 662px 666px, #00000000 666px),
+    repeating-linear-gradient(90deg, #00000000 0 199px, #00000017 199px 200px) 0 0 / 100% 662px no-repeat,
+    linear-gradient(180deg, var(--wall-hi) 0, var(--wall) 220px, var(--wall-lo) 662px, var(--floor) 662px);
+}
 .bridge__stage > * { position: absolute; }
 .bridge__stage.is-zooming { transform: scale(2.6); opacity: 0; }
 .bridge__stage.is-returning { animation: bridge-return 520ms var(--ease-in) both; }
 @keyframes bridge-return { from { opacity: 0; transform: scale(1.9); } }
-.bridge[data-boot] .grid-lamps { animation: none; }
 
-/* the room */
-.room { inset: 0; width: 1600px; height: 900px; }
-.room__wall { transition: opacity 600ms var(--ease-in); }
-.room__seam { stroke: #ffffff0c; stroke-width: 1.5; }
-.room__step { fill: #23292a; stroke: #56625e55; stroke-width: 2; }
-.room__ring { fill: none; stroke: #ffffff08; stroke-width: 1.5; }
-.room__rail { fill: none; stroke-width: 13; stroke-linecap: round; filter: drop-shadow(0 0 10px #e0522a55); }
-.room__rail-shadow { fill: none; stroke: #000; stroke-opacity: 0.55; stroke-width: 22; stroke-linecap: round; transform: translateY(9px); }
-:root[data-condition='red'] .room__rail { filter: drop-shadow(0 0 16px #ff2a3d99); }
+/* the side consoles under the station screens: black desk top, the red edge, the grey kick panel and its grilles */
+.desk { top: 600px; width: 380px; height: 64px; background: linear-gradient(180deg, #1b1c1f 0, #0a0b0d 4px, #0a0b0d 36px, var(--railing) 36px 42px, var(--kick) 42px); }
+.desk::before, .desk::after {
+  content: ''; position: absolute; top: 47px; width: 92px; height: 12px; border-radius: 1px;
+  background: radial-gradient(circle, #00000000 0 0.9px, #00000080 1.2px) 0 0 / 3px 3px, var(--g);
+}
+.desk::before { --g: #e46bd8; left: 64px; }
+.desk::after { --g: #5fe08a; right: 64px; }
+.desk--l { left: 0; }
+.desk--r { right: 0; }
+.desk--r::before { --g: #ffb347; }
+.desk--r::after { --g: #f4f7fa; }
 
-/* red-alert beacons either side of the viewscreen */
-.beacon { top: 190px; width: 22px; height: 22px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffffff55 0 14%, transparent 30%), #3a1210; box-shadow: 0 0 0 4px #0b0c0f, 0 0 0 5px #ffffff14; }
-.beacon--l { left: 370px; }
-.beacon--r { left: 1208px; }
-:root[data-condition='yellow'] .beacon { background: radial-gradient(circle at 35% 30%, #fff9 0 14%, transparent 30%), var(--warn); box-shadow: 0 0 0 4px #0b0c0f, 0 0 26px 6px #ffd23f88; }
-:root[data-condition='red'] .beacon { background: radial-gradient(circle at 35% 30%, #fff9 0 14%, transparent 30%), var(--red-alert); box-shadow: 0 0 0 4px #0b0c0f, 0 0 46px 14px #ff2a3daa; animation: red-pulse 1s ease-in-out infinite; }
+/* the red railing round the well */
+.rail { top: 676px; width: 440px; height: 150px; overflow: visible; }
+.rail--l { left: 0; }
+.rail--r { right: 0; transform: scaleX(-1); }
+.rail__bar { fill: none; stroke: var(--railing); stroke-width: 15; stroke-linecap: round; }
+.rail__post { fill: #0b0c0e; }
 
-/* the main viewscreen */
-.viewscreen { left: 404px; top: 22px; width: 792px; height: 400px; margin: 0; display: flex; flex-direction: column; }
-.viewscreen__glass { position: relative; flex: 1; min-height: 0; border-radius: 20px; padding: 7px; background: var(--frame); box-shadow: 0 0 0 3px #0b0c0f, 0 0 30px -6px color-mix(in oklab, var(--frame) 70%, transparent), 0 24px 50px -10px #000; transition: background-color 400ms var(--ease-in), box-shadow 400ms var(--ease-in); }
-.viewscreen__glass > .viewscreen__zoom { width: 100%; height: 100%; border-radius: 14px; overflow: hidden; background: #020308; }
+/* the main viewscreen: the largest screen on the wall, in the same slate bay and pale rim. The rim takes the
+   condition's colour, steady: the alert bars at the screen's edges carry the pulse. */
+.viewscreen { left: calc(50% - 420px); top: 18px; width: 840px; height: 470px; margin: 0; padding: 10px; border-radius: 22px; background: var(--bay);
+  box-shadow: inset 0 3px 5px -1px #00000080, inset 0 -1px 0 #ffffff21, 0 1px 0 #ffffff4d; }
+.viewscreen__glass { position: relative; width: 100%; height: 100%; border-radius: 13px; background: #020308; box-shadow: 0 0 0 3px var(--frame-rim, var(--rim)); transition: box-shadow 400ms var(--ease-in); }
+:root[data-condition='yellow'] .viewscreen__glass { --frame-rim: var(--warn); }
+:root[data-condition='red'] .viewscreen__glass { --frame-rim: var(--red-alert); }
+.viewscreen__glass > .viewscreen__zoom { width: 100%; height: 100%; border-radius: inherit; overflow: hidden; background: #020308; }
 .viewscreen__zoom > * { transform: scale(var(--zoom, 1)); transition: transform 400ms var(--ease-in); }
 .viewscreen__slot, .viewer-host { width: 100%; height: 100%; }
 .viewer-host { position: relative; } /* the exterior view lies over the paused viewscreen */
-:root[data-condition='red'] .viewscreen__glass { animation: frame-pulse 1s ease-in-out infinite; }
-@keyframes frame-pulse { 50% { box-shadow: 0 0 0 3px #0b0c0f, 0 0 60px 6px #ff2a3d99, 0 24px 50px -10px #000; } }
-.viewscreen__caption { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 6px 0; color: var(--ink2); }
-.viewscreen__caption .display { font-size: 11px; }
-.viewscreen__caption .mono { font-size: 12px; color: var(--mute); }
+.viewscreen__mode { position: absolute; left: 12px; bottom: 12px; z-index: 2; padding: 5px 8px; border-radius: 2px; background: #000000b3; font-size: 11px; color: #aab2bc; white-space: nowrap; }
 .bridge[data-boot] .viewscreen__zoom { animation: fade 900ms 300ms var(--ease-in) both; }
 
-/* station tiles on the upper deck */
-.tile { width: 320px; height: 196px; padding: 0; border: 0; background: none; color: inherit; text-align: left; display: flex; flex-direction: column; gap: 6px; cursor: pointer; transition: transform 200ms var(--ease-in), filter 200ms var(--ease-in); }
-.tile .monitor { flex: 1; box-shadow: inset 0 0 0 1px var(--line), 0 18px 34px -14px #000, 0 0 0 1px #0007; }
-.tile .monitor__screen { padding: 10px 12px; }
-.tile:hover { transform: translateY(-3px) scale(1.015); filter: brightness(1.08); }
-.tile:hover .monitor { box-shadow: inset 0 0 0 1px var(--accent), 0 22px 40px -14px #000; }
-.tile:focus-visible { outline: none; }
-.tile:focus-visible .monitor { box-shadow: inset 0 0 0 2px var(--accent); }
-.tile__lamps { height: 12px; padding: 0 14px; grid-template-rows: 10px; }
-.tile__lock { width: 14px; height: 14px; color: var(--lit-amber); }
-.tile--engineering { left: 22px; top: 36px; transform-origin: right center; }
-.tile--lifesupport { left: 8px; top: 262px; }
-.tile--sickbay { left: 30px; top: 488px; }
-.tile--science { left: 1258px; top: 36px; }
-.tile--comms { left: 1272px; top: 262px; }
-.tile--fleet { left: 1250px; top: 488px; }
-.tile .readout__num { font-size: 26px; }
-.tile .spark { height: 24px; margin-top: 2px; }
-.tile__subs { display: flex; gap: 14px; margin-top: 8px; }
-.tile__sub { display: flex; align-items: baseline; gap: 5px; min-width: 0; white-space: nowrap; }
-.tile__sub .label { font-size: 11px; }
-.tile__sub .mono, .tile__sub b { font: 700 13px var(--font-mono); color: var(--ink); }
-.tile__sub small { font: 400 10px var(--font-mono); color: var(--mute); }
-.tile__sub[data-status='warn'] .mono, .tile__sub[data-status='warn'] b { color: var(--warn); }
-.tile__sub[data-status='crit'] .mono, .tile__sub[data-status='crit'] b { color: var(--crit); }
-.tile__sub[data-status='ready'] b { color: var(--ready); }
-.tile__scope { display: grid; grid-template-columns: 116px 1fr; gap: 14px; align-items: center; height: 100%; }
-.tile__scope .scope { width: 116px; }
-.tile__scope-read { display: grid; gap: 6px; }
-.fleet { list-style: none; margin: 0; padding: 0; display: grid; gap: 9px; }
-.fleet li { display: grid; grid-template-columns: 14px 1fr auto; align-items: center; gap: 10px; }
-.fleet__name { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
-.fleet__name b { font-size: 12px; color: var(--ink); }
-.fleet__name span { color: var(--ink2); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.fleet__warp { font-size: 11px; color: var(--mute); }
-
-/* helm and navigation console */
-.helm { left: 520px; top: 444px; width: 560px; height: 184px; padding: 10px 18px 10px; border-radius: 14px 14px 26px 26px;
-  background: linear-gradient(180deg, #1b1e23, #0d0e11 70%); box-shadow: inset 0 1px 0 #ffffff1a, inset 0 0 0 1px var(--line), 0 26px 40px -16px #000, 0 2px 0 3px #0b0c0f;
-  display: flex; flex-direction: column; }
-.helm__title { display: flex; align-items: center; gap: 8px; }
-.helm__title h3 { font: 400 11px var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink2); }
-.helm__body { flex: 1; display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: center; gap: 12px; min-height: 0; }
-.helm__warp, .helm__nav, .helm__shield { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 0; }
-.helm__warp .arc { width: 150px; }
-.helm__warp .arc__num { font-size: 26px; }
-.helm__warp .arc__read { bottom: 8px; }
-.compass { width: 92px; height: 92px; }
-.compass__ring { fill: #050608; stroke: #ffffff1c; stroke-width: 1.5; }
-.compass__tick { stroke: var(--mute); stroke-width: 1; }
-.compass__major { stroke: var(--ink2); stroke-width: 2; }
-.compass__label { font: 400 8px var(--font-mono); fill: var(--mute); text-anchor: middle; }
-.compass__ship { fill: var(--lit-white); }
-.helm__heading { font: 700 18px var(--font-mono); color: var(--ink); }
-.helm__shield-num { font: 700 40px/1 var(--font-mono); color: var(--ink); margin-top: 6px; }
-.helm__shield-num small { font: 400 14px var(--font-mono); color: var(--ink2); margin-left: 3px; }
-.helm__shield-word { font: 700 11px var(--font-mono); letter-spacing: 0.08em; color: var(--ready); }
-.helm__shield[data-status='warn'] .helm__shield-num { color: var(--warn); }
-.helm__shield[data-status='warn'] .helm__shield-word { color: var(--void); background: var(--warn); padding: 2px 5px; border-radius: 3px; }
-.helm__shield[data-status='crit'] .helm__shield-num { color: var(--crit); }
-.helm__shield[data-status='crit'] .helm__shield-word { color: #fff; background: var(--crit-fill); padding: 2px 5px; border-radius: 3px; }
-.helm__shield[data-status='off'] .helm__shield-word { color: var(--mute); }
-.helm__lamps { margin-top: 6px; justify-content: center; grid-template-rows: repeat(2, 7px); gap: 4px; }
-.helm__lamps i { width: 12px; height: 7px; }
-
-/* the captain's chair, seen from behind, with its arm panels */
-.chair { left: 520px; top: 640px; width: 560px; height: 250px; display: flex; justify-content: center; align-items: flex-start; gap: 14px; }
-.chair > * { position: relative; }
-.chair__seat { flex: none; width: 140px; height: 250px; }
-.chair__seat i { position: absolute; left: 50%; bottom: 0; width: 64px; height: 78px; margin-left: -32px; border-radius: 10px 10px 4px 4px; background: linear-gradient(180deg, #2a2d33, #121418); }
-.chair__back { position: absolute; left: 0; top: 14px; width: 140px; height: 160px; border-radius: 64px 64px 26px 26px; background: radial-gradient(120% 90% at 50% 15%, #3a3d44, #17191d 70%); box-shadow: inset 0 2px 0 #ffffff22, inset 0 -10px 20px #0008, 0 20px 30px -10px #000; }
-.chair__back::after { content: ''; position: absolute; left: 22px; right: 22px; top: 22px; bottom: 30px; border-radius: 50px 50px 18px 18px; background: linear-gradient(180deg, #2c2e33, #111215); box-shadow: inset 0 0 0 2px #0006, inset 0 10px 14px -8px #ffffff1f; }
-/* the arms of the real chair (RESEARCH.md, Bridge consoles): grey boxes under walnut caps, the buttons on black plates */
-.chair__arm {
-  margin-top: 74px; display: grid; gap: 6px; width: 178px; padding: 20px 12px 12px; border-radius: 6px;
-  background: linear-gradient(180deg, #7a4428 0, #5a3019 8px, #2d170b 10px, #00000000 11px), linear-gradient(180deg, #a2a8af, #6f757c);
-  box-shadow: inset 0 1px 0 #ffffff40, 0 18px 30px -12px #000;
-}
-.chair__arm::before { content: ''; position: absolute; inset: 15px 7px 7px; border-radius: 4px; background: var(--plate); box-shadow: inset 0 1px 2px #000, 0 1px 0 #ffffff33; }
-.chair__arm > * { position: relative; }
-.chair__arm--l { border-top-right-radius: 4px; }
-.chair__arm--r { border-top-left-radius: 4px; }
-.chair__arm .lit { justify-content: space-between; width: 100%; }
-
-/* captain's log and the turbolift */
-.log { left: 1188px; top: 704px; width: 392px; height: 180px; }
-.log .monitor__screen { padding: 8px 10px; }
-.log__all { font: 500 11px var(--font-ui); }
-.log__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
-.log__row { display: flex; align-items: baseline; gap: 8px; min-width: 0; font-size: 12.5px; line-height: 1.55; color: var(--ink2); }
+/* captain's log: a black plate under the viewscreen, three lines at most */
+.log { left: calc(50% - 420px); top: 500px; width: 840px; height: 104px; display: flex; flex-direction: column; gap: 6px; padding: 9px 14px 10px; border-radius: 4px; background: var(--plate); box-shadow: 0 1px 0 #ffffff59; }
+.log__head { display: flex; align-items: baseline; gap: 12px; }
+.log__title { margin: 0; font: 400 11px/1 var(--font-display); letter-spacing: 0.14em; text-transform: uppercase; color: #f2f4f6; }
+.log__all { margin-left: auto; padding: 0; border: 0; background: none; color: var(--accent); font: 400 11px/1 var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; }
+.log__all:hover { color: #9fd4ff; }
+.log__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; min-width: 0; }
+.log__row { display: flex; align-items: center; gap: 10px; min-width: 0; height: 21px; font-size: 14px; color: var(--ink2); }
 .log__row[data-fresh] { animation: log-in 600ms var(--ease-in) both; }
-.log__row[data-fresh][data-sev='critical'] .log__text { animation: red-pulse 600ms ease-in-out 3; }
-@keyframes log-in { from { opacity: 0; transform: translateY(-10px); } }
+@keyframes log-in { from { opacity: 0; transform: translateY(-8px); } }
 .log__row[data-acked] { opacity: 0.6; }
 .log__row[data-sev='cmd'] .log__text { color: var(--ink); }
 .log__row[data-sev='bad'] .log__text { color: var(--crit-ink); }
-.log__sd { flex: none; font-size: 11px; color: var(--mute); }
+.log__sd { flex: none; font-size: 12px; color: var(--mute); }
 .log__text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.log__empty { color: var(--mute); font-size: 12px; padding: 6px 0; }
+.log__empty { color: var(--mute); font-size: 13px; }
 
-.liftdoor { left: 30px; top: 704px; width: 250px; height: 180px; padding: 0; border: 0; background: none; color: var(--ink); display: flex; flex-direction: column; gap: 8px; }
-.liftdoor__doors { position: relative; flex: 1; display: flex; gap: 2px; padding: 16px 12px 0; border-radius: 18px 18px 4px 4px; overflow: hidden; background: #0b0c0f; box-shadow: inset 0 0 0 1px var(--line2), 0 18px 30px -12px #000; }
-.liftdoor__doors::before { content: ''; position: absolute; left: 30%; right: 30%; top: 6px; height: 4px; border-radius: 2px; background: var(--lit-amber); box-shadow: 0 0 10px var(--lit-amber); opacity: 0.85; }
-.liftdoor__doors i { flex: 1; border-radius: 6px 6px 0 0; background: linear-gradient(90deg, #5c1a0d, #8f2b14 40%, #6e2010), linear-gradient(180deg, #ffffff14, transparent 30%); background-blend-mode: screen; box-shadow: inset 0 1px 0 #ffffff26, inset 0 -30px 40px #0007; transition: transform 380ms var(--ease-in); }
-.liftdoor__doors i:last-child { background: linear-gradient(270deg, #5c1a0d, #8f2b14 40%, #6e2010), linear-gradient(180deg, #ffffff14, transparent 30%); }
-.liftdoor:hover .liftdoor__doors i:first-child { transform: translateX(-10px); }
-.liftdoor:hover .liftdoor__doors i:last-child { transform: translateX(10px); }
-.liftdoor:focus-visible { outline: none; }
-.liftdoor:focus-visible .liftdoor__doors { box-shadow: inset 0 0 0 2px var(--accent); }
-.liftdoor__label { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; }
-.liftdoor__label .display { font-size: 11px; color: var(--ink2); }
+/* the station monitors on the side walls, three a side; each opens its station */
+.tile { width: 320px; height: 176px; padding: 0; border: 0; background: none; color: inherit; text-align: left; display: flex; cursor: pointer; }
+.tile .monitor { flex: 1; }
+.tile .monitor__bay { padding: 11px; border-radius: 16px; }
+.tile .monitor__screen { transition: box-shadow var(--t-hover) var(--ease-in); }
+.tile:hover .monitor__screen, .tile:focus-visible .monitor__screen { box-shadow: 0 0 0 3px var(--accent), 0 0 0 4px #000; }
+.tile:focus-visible { outline: none; }
+.tile__lock { width: 13px; height: 13px; color: var(--lit-amber); }
+.tile--engineering, .tile--science { top: 18px; }
+.tile--lifesupport, .tile--comms { top: 212px; }
+.tile--sickbay, .tile--fleet { top: 406px; }
+.tile--engineering, .tile--lifesupport, .tile--sickbay { left: 28px; }
+.tile--science, .tile--comms, .tile--fleet { right: 28px; }
+.tile .headline { padding: 10px 14px; gap: 6px; }
+.tile .headline__num { font-size: 46px; }
+.tile .trace { height: 30px; }
+.decks { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 2px; }
+.decks li { display: flex; flex-direction: column; align-items: center; gap: 3px; font: 400 9px/1 var(--font-mono); color: var(--mute); }
+.scr-scope { display: grid; grid-template-columns: 112px minmax(0, 1fr); align-items: center; gap: 4px; height: 100%; padding-left: 12px; }
+.scr-scope .scope { width: 112px; }
+.fleet { list-style: none; margin: 0; padding: 14px 16px; display: grid; gap: 12px; align-content: center; height: 100%; }
+.fleet li { display: grid; grid-template-columns: 18px auto minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+.fleet b { font-size: 13px; color: var(--ink); }
+.fleet__name { min-width: 0; color: var(--ink2); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* helm and navigation: one console in front of the chair, black top, red front, the astrogator between two screens */
+.helm { left: calc(50% - 340px); top: 616px; width: 680px; height: 178px; display: flex; flex-direction: column; }
+.helm__top { flex: 1; display: grid; grid-template-columns: 1fr 150px 1fr; gap: 16px; padding: 12px 16px; border-radius: 8px 8px 0 0; background: #0c0d0f; box-shadow: inset 0 1px 0 #ffffff26; }
+.helm__front { height: 34px; border-top: 3px solid #c3c9cf; background: var(--railing); box-shadow: inset 0 -8px 12px -6px #0000004d; }
+.helm .monitor__title { min-height: 20px; }
+.helm .monitor__title h2 { padding: 4px 8px; font-size: 10px; box-shadow: none; }
+.helm .monitor__bay { padding: 6px; border-radius: 12px; }
+.helm .headline { padding: 6px 12px; flex-direction: row; align-items: center; justify-content: space-between; gap: 10px; }
+.helm .headline__num { font-size: 40px; }
+.helm .monitor__overlay span { display: none; } /* too small for the reason: the lock and the word stay */
+.bridge--list .tile .monitor__overlay span { font-size: 10px; line-height: 1.25; }
+.helm .monitor__overlay b { font-size: 10px; }
+.helm__astro { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.helm__astro .plate { padding: 4px 8px; font-size: 10px; box-shadow: none; }
+.helm__astro svg { width: 92px; height: 92px; }
+.helm__astro figcaption { font-size: 13px; font-weight: 700; color: #ffd27a; }
+.astro__ring { fill: #c3c9cf; }
+.astro__glass { fill: #efe4c1; }
+.astro__grid { fill: none; stroke: #1d1e2040; stroke-width: 1; }
+.astro__centre { fill: #f4c43c; }
+.astro__course { transform-origin: 60px 60px; transition: transform 600ms var(--ease-in); }
+.astro__course line { stroke: #c8261c; stroke-width: 3; stroke-linecap: round; }
+.astro__course circle { fill: #ff6a4d; }
+
+/* the captain's chair from behind, its arms carrying the orders */
+.chair { left: calc(50% - 340px); top: 804px; width: 680px; height: 132px; display: flex; justify-content: center; align-items: flex-start; gap: 12px; }
+.chair > * { position: relative; }
+.chair__seat { flex: none; width: 120px; height: 132px; border-radius: 40px 40px 0 0; background: linear-gradient(180deg, #2a2c31, #141518 70%); box-shadow: inset 0 2px 0 #ffffff1f; }
+.chair__seat::after { content: ''; position: absolute; left: 20px; right: 20px; top: 18px; bottom: 0; border-radius: 28px 28px 0 0; background: #0f1012; box-shadow: inset 0 2px 0 #ffffff12; }
+/* a grey arm box under a walnut cap, the black button plate set into it */
+.chair__arm { flex: none; margin-top: 8px; padding: 13px 9px 9px; border-radius: 6px;
+  background: linear-gradient(180deg, #6b3b22 0 7px, #a2a8af 7px, #868c93); box-shadow: 0 1px 0 #ffffff33 inset; }
+.chair__arm .btnrow__keys { display: grid; grid-template-columns: auto auto; }
+.chair__arm .lit { justify-content: space-between; min-height: 30px; padding: 0 8px; font-size: 10px; }
+
+/* ---- narrow screens: the same parts in one column on the wall ---- */
+.bridge--list { display: block; place-items: normal; overflow: visible; overflow-x: clip; background: linear-gradient(180deg, var(--wall-hi), var(--wall) 240px, var(--wall-lo)); }
+.bridge__list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 16px 16px 32px; }
+.bridge__list > * { position: relative; left: auto; top: auto; width: auto; height: auto; }
+.bridge--list .viewscreen { padding: 7px; border-radius: 16px; }
+.bridge--list .viewscreen__glass { height: auto; aspect-ratio: 16 / 9; border-radius: 10px; }
+.bridge--list .log { height: auto; padding: 10px 12px; }
+.bridge--list .log__row { font-size: 13px; }
+.bridge--list .log__head { gap: 8px; }
+.bridge--list .log__head .log__sd { display: none; }
+.bridge--list .log__title, .bridge--list .log__all { font-size: 10px; letter-spacing: 0.08em; white-space: nowrap; }
+.bridge--list .log__sd { display: none; }
+.bridge--list .chair { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; }
+.bridge--list .chair__seat { display: none; }
+.bridge--list .chair__arm { margin: 0; padding: 0; background: none; box-shadow: none; }
+.bridge--list .chair__arm .btnrow { display: flex; }
+.bridge--list .chair__arm .btnrow__keys { grid-template-columns: 1fr 1fr; }
+.bridge--list .chair__arm .lit { min-height: 44px; }
+.bridge--list .helm__top { grid-template-columns: minmax(0, 1fr) 96px minmax(0, 1fr); gap: 8px; padding: 10px; }
+.bridge--list .helm__front { height: 14px; }
+.bridge--list .helm .headline { flex-direction: column; align-items: flex-start; padding: 6px 8px; gap: 4px; }
+.bridge--list .helm .headline__num { font-size: 28px; }
+.bridge--list .helm__astro svg { width: 72px; height: 72px; }
+.bridge__tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 10px; }
+.bridge--list .tile { width: auto; height: 180px; }
+.bridge--list .tile .monitor__title h2, .bridge--list .helm .monitor__title h2, .bridge--list .helm__astro .plate { font-size: 9px; letter-spacing: 0.06em; padding: 5px 6px; }
+.bridge--list .tile .headline { padding: 8px 10px; }
+.bridge--list .tile .headline__num { font-size: 32px; }
+.bridge--list .tile .headline__unit { font-size: 11px; }
+.bridge--list .scr-scope { grid-template-columns: minmax(0, 1fr); justify-items: center; padding: 6px 0 0; }
+.bridge--list .scr-scope .scope { width: 56px; }
+.bridge--list .scr-scope .headline { align-items: center; padding: 4px; }
+.bridge--list .fleet { padding: 8px 10px; gap: 8px; }
+.bridge--list .fleet li { grid-template-columns: 14px minmax(0, 1fr); gap: 6px; }
+.bridge--list .fleet__name, .bridge--list .fleet .chip { display: none; }
+.bridge--list .decks { gap: 1px; }
+.bridge--list .decks .jewel { width: 9px; height: 9px; }
+.bridge--list .decks span { display: none; }
+/* a tablet: the viewscreen beside the log, the chair beside the helm, the six monitors three a row */
+@media (min-width: 700px) {
+  .bridge__list { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); align-items: start; }
+  .bridge__tiles { grid-column: 1 / -1; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
 
 /* first-visit tour */
 .tour { position: fixed; inset: 0; z-index: 120; pointer-events: none; }
 .tour__spot { position: fixed; border-radius: 16px; box-shadow: 0 0 0 9999px #000000b0, 0 0 0 2px var(--accent), 0 0 30px 4px #5cb8ff55; transition: left 320ms var(--ease-in), top 320ms var(--ease-in), width 320ms var(--ease-in), height 320ms var(--ease-in); }
-.tour__card { position: fixed; pointer-events: auto; padding: 16px 18px; border-radius: 12px; background: var(--raised); box-shadow: 0 20px 50px #000c, 0 0 0 1px var(--line2); animation: rise 320ms var(--ease-in); transition: left 320ms var(--ease-in), top 320ms var(--ease-in); }
+.tour__card { position: fixed; pointer-events: auto; padding: 16px 18px; border-radius: 6px; background: var(--raised); box-shadow: 0 20px 50px #000c, 0 0 0 1px var(--line2); animation: rise 320ms var(--ease-in); transition: left 320ms var(--ease-in), top 320ms var(--ease-in); }
 .tour__count { font-size: 11px; color: var(--mute); }
 .tour__title { margin: 6px 0 6px; font: 400 14px var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink); }
 .tour__text { color: var(--ink2); font-size: 14px; }
@@ -163,46 +182,22 @@
 .tour__actions .linkbtn { margin-right: auto; font-size: 13px; color: var(--mute); }
 .tour__keys { margin-top: 10px; }
 
-/* ---- narrow screens: the bridge as a list of stations ---- */
-.bridge--list { display: block; overflow: visible; overflow-x: clip; background: var(--void); }
-.bridge__list { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 12px; padding-bottom: 32px; } /* a long ticker line must not widen the column past the phone */
-.bridge__list > * { position: relative; left: auto; top: auto; width: auto; height: auto; }
-.bridge--list .viewscreen { height: auto; }
-.bridge--list .viewscreen__glass { aspect-ratio: 16 / 9; flex: none; border-radius: 16px; padding: 5px; }
-.bridge--list .viewscreen__caption { flex-wrap: wrap; }
-.bridge--list .tile { width: 100%; height: auto; }
-.bridge--list .tile .monitor { min-height: 170px; }
-.bridge--list .tile:hover { transform: none; }
-.bridge--list .helm { height: auto; padding: 12px; border-radius: 14px; }
-.bridge--list .helm__body { grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
-.bridge--list .helm__warp .arc { width: 100%; max-width: 120px; height: auto; }
-.bridge--list .compass { width: 72px; height: 72px; }
-.bridge--list .helm__shield-num { font-size: 30px; }
-.bridge--list .chair { height: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.bridge--list .chair__seat { display: none; }
-.bridge--list .chair__arm { width: auto; margin: 0; padding: 18px 10px 10px; border-radius: 6px; }
-.bridge--list .chair__arm .lit { padding: 0 10px; }
-.bridge--list .log { height: auto; }
-.bridge--list .log .monitor__screen { min-height: 120px; }
-.bridge--list .liftdoor { height: 120px; }
-.bridge--list .tile__lamps, .bridge--list .helm__lamps { display: none; }
-
-/* ---- scenario progress over the viewscreen, the presenter's button, the log ticker ---- */
-.scn { position: absolute; left: 18px; right: 18px; top: 16px; z-index: 3; display: flex; align-items: center; gap: 12px; height: 34px; padding: 0 12px; overflow: hidden;
-  border-radius: 8px; background: #050608cc; backdrop-filter: blur(4px); box-shadow: inset 0 0 0 1px var(--line2); animation: rise 320ms var(--ease-in); }
-.scn__lamp { width: 9px; height: 9px; border-radius: 50%; background: var(--lit-green); box-shadow: 0 0 8px var(--lit-green); animation: jewel-slow 1s steps(1) infinite; }
-.scn[data-state='awaiting'] .scn__lamp { background: var(--lit-amber); box-shadow: 0 0 8px var(--lit-amber); animation-duration: 500ms; }
+/* ---- scenario progress over the viewscreen, the presenter's button ---- */
+.scn { position: absolute; left: 14px; right: 14px; top: 14px; z-index: 3; display: flex; align-items: center; gap: 12px; height: 34px; padding: 0 12px; overflow: hidden;
+  border-radius: 2px; background: #000000d9; box-shadow: inset 0 0 0 1px var(--line2); animation: rise 320ms var(--ease-in); }
+.scn__lamp { width: 9px; height: 9px; border-radius: 50%; background: var(--lit-green); box-shadow: 0 0 8px var(--lit-green); }
+.scn[data-state='awaiting'] .scn__lamp { background: var(--lit-amber); box-shadow: 0 0 8px var(--lit-amber); animation: jewel-slow 1s steps(1) infinite; }
 .scn[data-state='ended'] .scn__lamp, .scn[data-state='stopped'] .scn__lamp { background: var(--mute); box-shadow: none; animation: none; }
 .scn__title { min-width: 0; font-size: 11px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .scn__state { font-size: 11px; color: var(--ink2); white-space: nowrap; }
 .scn[data-state='awaiting'] .scn__state { color: var(--lit-amber); }
-.scn__bar { flex: 1; min-width: 40px; height: 4px; border-radius: 2px; background: #ffffff14; overflow: hidden; }
-.scn__bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent-fill), var(--accent)); transition: width 900ms linear; }
+.scn__bar { flex: 1; min-width: 40px; height: 4px; border-radius: 1px; background: #ffffff14; overflow: hidden; }
+.scn__bar i { display: block; height: 100%; background: var(--accent); transition: width 900ms linear; }
 .scn__time { font-size: 11px; color: var(--mute); white-space: nowrap; }
-.scn__stop { height: 24px; padding: 0 10px; border: 1px solid var(--line2); border-radius: 12px; background: transparent; color: var(--ink2); font: 500 12px var(--font-ui); }
+.scn__stop { height: 24px; padding: 0 10px; border: 1px solid var(--line2); border-radius: 2px; background: transparent; color: var(--ink2); font: 400 10px var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; }
 .scn__stop:hover { color: var(--crit-ink); border-color: var(--crit); }
-.await { position: absolute; left: 50%; bottom: 20px; z-index: 3; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 10px;
-  border-radius: 12px; background: #050608d9; box-shadow: inset 0 0 0 1px var(--line2), 0 16px 40px #000c; animation: await-in 320ms var(--ease-in); }
+.await { position: absolute; left: 50%; bottom: 16px; z-index: 3; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 10px 12px 10px 10px;
+  border-radius: 4px; background: #000000e0; box-shadow: inset 0 0 0 1px var(--line2), 0 16px 40px #000c; animation: await-in 320ms var(--ease-in); }
 /* rises into place without losing the centring: the shared `rise` would replace translateX(-50%) while it runs */
 @keyframes await-in { from { opacity: 0; transform: translate(-50%, 40px); } to { opacity: 1; transform: translate(-50%, 0); } }
 .lit.await__btn { min-width: 220px; animation: lit-blink 1s steps(1) infinite; }
@@ -210,15 +205,9 @@
 .await__wait { color: var(--ink2); font-size: 13px; padding: 0 6px; }
 .await__wait b { font-size: 12px; color: var(--lit-amber); }
 .await__count { min-width: 44px; text-align: right; font-size: 22px; font-weight: 700; color: var(--ink); }
-.viewscreen__caption .ticker { flex: 1; min-width: 0; }
-.ticker { display: flex; align-items: baseline; gap: 10px; margin: 0; min-width: 0; }
-.ticker__tag { flex: none; font-size: 10px; color: var(--div-command); }
-.ticker__sd { flex: none; font-size: 11px; color: var(--mute); }
-.ticker__text { min-width: 0; font-size: 13px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.viewscreen__mode { flex: none; font-size: 11px; color: var(--mute); }
 .scenarios { width: min(520px, 100%); }
 .scenarios__list { list-style: none; margin: 14px 0; padding: 0; display: grid; gap: 10px; }
-.scenario { display: grid; gap: 6px; padding: 12px 14px; border-radius: 10px; background: var(--void); box-shadow: inset 0 0 0 1px var(--line); }
+.scenario { display: grid; gap: 6px; padding: 12px 14px; border-radius: 4px; background: var(--void); box-shadow: inset 0 0 0 1px var(--line); }
 .scenario[data-running] { box-shadow: inset 0 0 0 1px var(--lit-green); }
 .scenario__head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .scenario__head .display { font-size: 12px; color: var(--ink); }
@@ -231,4 +220,4 @@
 .bridge--list .scn__time, .bridge--list .scn__bar { display: none; }
 .bridge--list .await { bottom: 8px; padding: 6px; }
 .bridge--list .lit.await__btn { min-width: 150px; }
-.bridge--list .viewscreen__caption { flex-direction: column; align-items: stretch; gap: 4px; }
+.bridge--list .viewscreen__mode { left: 8px; bottom: 8px; font-size: 10px; }

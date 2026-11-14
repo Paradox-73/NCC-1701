@@ -6,11 +6,81 @@ The reference is the bridge of the starship Enterprise in Star Trek: The Origina
 
 Three rules turn that set into a dashboard:
 
-1. **Monitors carry data, consoles carry light.** Data lives on dark monitor panels in the upper part of each screen. The decorative lit buttons and blinking jewel lights live in a console strip along the bottom. Decorative lights never sit next to a number.
+1. **Monitors carry data, consoles carry light.** Data lives on monitors set in the grey wall in the upper part of each screen, one picture to a monitor. The lit buttons live on the black console along the bottom, and only real controls light up. Decorative lights hold still and never sit next to a number.
 2. **Colour on data means something.** On monitors, yellow means yellow alert and red means red alert, always with a word next to the colour. Healthy readings stay white and blue.
-3. **Everything moves, one thing calls for attention.** Background animation runs everywhere but stays dim and slow. Only one thing at a time pulses brightly: red alert, else the newest critical alert, else the live indicator.
+3. **Everything moves, one thing calls for attention.** Monitor graphics move and numbers tween everywhere, slowly. Nothing blinks for decoration. Only one thing at a time pulses brightly: red alert, else the newest critical alert, else the live indicator.
 
 The previous project's engine and chart code are reused (see `DOMAIN.md`). Its UX rules carry over: one shared animation-frame loop, React state updated at most four times a second, history and live data merged by sequence number, every colour paired with a word.
+
+## The 1966 set
+
+The look every screen shares, written so that anyone can convert a station with the pieces in `client/src/ui` and nothing else. The bridge (`client/src/pages/Bridge.jsx`, `bridge.css`) uses every piece and is the worked example. The reference photos are in `mernify/design/ncc/consoles/refs/` (`RESEARCH.md`, Bridge consoles): a pale grey-blue wall, slate recesses holding rectangular screens with rounded corners and a thin pale rim, black consoles with rows of translucent jewel buttons, an orange-red rail and desk edge, and one big viewscreen. Flat colour, hard simple shapes, few words. It is not LCARS, the 1987 look: no pill shapes, no elbow bars, no cards.
+
+### What a screen is made of
+
+- **The wall.** Flat grey-blue (`--wall-hi` at the top, `--wall`, `--wall-lo` low down), with a hairline seam between wall panels. No text sits on the wall itself.
+- **Label plates.** A black plate (`--plate`) with white Michroma capitals names a station, a monitor or a console. 11 px type, letter spacing 0.14em, radius 2 px, a 1 px light line along its lower edge where it meets the wall. Three words at most. The plate sits on the wall just above what it names.
+- **Monitors.** The wall steps back into a slate recess (`--bay`, radius 14 px, 8 px of slate round the screen, a shadow along the recess's top edge). The screen sits flush in it: near-black glass (`--glass`, radius 10 px) inside a 1.5 px pale rim (`--rim`). No gloss, no scan lines, no glass sheen, no drop shadow under a monitor.
+- **One monitor, one picture.** A monitor shows one reading as a `Headline`, or one graphic (a gauge, a `Trace`, a scope, a plot), or one short list. The readings that picture leaves out go on a second page of the same monitor (`views`, one press away) as `Readings` windows, or on the History page. A column of label and number pairs on the glass is the old look; do not build it.
+- **Consoles.** Black desk (`--desk`), the real controls as jewel buttons (`LitButton`) on black plates (`ButtonRow`), a 6 px red edge (`--railing`), a grey kick panel (`--kick`) with backlit grilles. A jewel button exists only where it does something. The jellybean plates and grilles are set dressing and hold still.
+- **Red.** `--railing` is the rail, a desk edge, the helm console's front and the line under the top bar. It is never a status.
+- **Status colour.** Yellow and red appear only on a reading past a limit, and always with the word YELLOW or RED. A nominal number is white, a nominal graphic blue (`--chart-1`), and a nominal word (HOLDING, CLEAR, OPEN) is lit green in a dark window.
+- **Shape.** Radius 2 px for plates, status words and windows; 4 px for jewel buttons and button plates; 10 to 16 px only for screens and their recesses.
+
+### The pieces
+
+All come from `client/src/ui/index.js`.
+
+| Piece | Use it for | Props |
+|---|---|---|
+| `Monitor` | Every screen | `title` (its plate), `meta` (a small plate at the right, such as a lock or a scale note), `status` (a lamp on that plate), `state` (`live`, `awaiting`, `nosignal`, `restricted`), `restricted` (who may see it), `views` (`[{ label, content }]`: page buttons under the screen, so readings past the headline stay one press away; children are ignored then), `flickerOn`, `index` (power-up order) |
+| `LabelPlate` | Naming anything on the wall that is not a monitor, such as a console | `as` (the element, `span` by default), children (the words) |
+| `Headline` | A monitor whose picture is one reading | `value`, `unit`, `dec`, `level` (`ok`, `warn`, `crit`, `off`), `word` (the nominal word), `trend` (1 rising, -1 falling), `warn` and `crit` (other words for YELLOW and RED), children (one graphic under the number) |
+| `LampBar` | One channel's level as a row of lamps | `value`, `k` (the channel: its warn and critical zones tint the unlit lamps), `min`, `max`, `segs` |
+| `ArcGauge`, `BarGauge`, `HBar`, `SweepScope` | Dials, bars and the sensor scope | as in Components |
+| `Trace` | A chart inside a monitor: one channel over the live minute | `src`, `k`, `ms` (60 000 by default) |
+| `Chart` (`components/Chart.jsx`) | Stored history next to the live minute, with axes and hover | Put it inside a `Monitor`, as the History page does |
+| `Readings` | The numbers a headline leaves out, as small backlit windows with an amber number | `items` (`[{ label, value, unit, dec, level }]`; `value` may be a word) |
+| `LevelChip`, `Chip` | The status word | `level`; `warn`, `crit`, `ok` and `off` set the words |
+| `LitButton` | A real control, a translucent jewel block with its label and key cap | `color` by meaning (Lit button colours), `label`, `keyCap`, `lit`, `pressed`, `pending` |
+| `ButtonRow` | Real controls on a black plate | `label` (the caption under the row and its accessible name), children (`LitButton`s) |
+| `Jewel` | One lamp per system | `status`, `label` |
+| `Station`, `ConsoleStrip` | A station's frame: its plate, the wall grid, the desk | as in Components |
+
+`ButtonGrid` belongs to the login console, and `ReadoutWindows` is gone: neither goes on a bridge or station screen.
+
+### Converting a station
+
+1. Choose the three or four readings that matter from that seat. Each gets a `Monitor` whose picture is a `Headline`, or one gauge with its number.
+2. Move every other number of that station onto a second page of the same monitor: `views={[{ label: 'Main', content: <Headline ... /> }, { label: 'Detail', content: <Readings items={...} /> }]}`. Long history stays on the History page. Nothing the problem statement needs may disappear: live telemetry per source, charts, history, alerts and acknowledgement, role-based access, commands.
+3. Keep every command on the desk (`ConsoleStrip` children), every keyboard shortcut, every role check (`state="restricted"` with who may see it) and every accessible name.
+4. Signature pieces (the astrogator, the hooded viewer, the bed monitor) stay: each is the one graphic of its monitor.
+
+### Type, spacing and motion
+
+- Type: Michroma capitals for plates, buttons and status words, 9 to 13 px. Space Mono 700 for numbers: a headline is 40 to 48 px, a reading in a window 16 px. Space Grotesk for sentences.
+- Spacing: steps of 4, 8, 12, 16 and 24 px. 5 px from a plate to its recess, 14 to 18 px of wall between monitors.
+- Motion: numbers tween in 240 ms; lamp bars switch like lamps; a trace scrolls at 8 frames a second; the scope sweeps once in 4 s; a monitor switches on like a picture tube; a page change flickers the tube once. Nothing blinks for decoration. Only an alert lamp (slow for yellow, fast for red), a command waiting for its acknowledgement and the order a scenario waits for blink, and the red alert bars pulse once a second.
+
+### Sound for each interaction
+
+Every cue plays through `play(cue)` in `client/src/lib/sound.js` from the clips in `client/public/sfx/`.
+
+| Interaction | Cue | Wired in |
+|---|---|---|
+| Pressing a jewel button: any `LitButton`, a monitor's page button, an item in the Help menu | `press` | `ui/controls.jsx` (`LitButton`) |
+| Opening the Help menu | `press` | `app/TopBar.jsx` |
+| The bridge's monitors switching on, once per session | `press`, four quick beeps | `pages/Bridge.jsx` |
+| A command the server acknowledged | `ack`, or the command's own: `hail`, `phaser`, `torpedo`, `transport`, `reactor` | `lib/commands.js` |
+| Acknowledging an alert with A | `ack` | `app/Shell.jsx` |
+| Changing station: a tab, G and a letter, a bridge monitor, the turbolift | `station` | `app/Shell.jsx` |
+| Opening the turbolift (Ctrl K, the menu button, Help) | `lift` | `app/Shell.jsx` |
+| Yellow alert; red alert, played twice | `yellow`; `red` | `app/Shell.jsx` |
+| A scenario's log line; a subspace message | `intercom`; `chirp` | `lib/ship.js` |
+| A time warp | `warp` | `lib/ship.js` |
+| The selected crew member's pulse in Sickbay | `heartbeat` | `stations/Sickbay.jsx` |
+
+Not in the kit yet: the original-series computer beep sequence for a monitor switching on (`toscomputer/sequences/tos_computerbeeps.mp3`, the `console` cue in Sound), which would replace the four `press` beeps; and a sound for a shield hit on the bridge (the `boom` clip exists, but a scenario's `hit` effect plays nothing).
 
 ## Colour tokens
 
@@ -34,15 +104,17 @@ The station set (`RESEARCH.md`, Bridge consoles) adds its own surfaces. They are
 
 | Token | Hex | Use |
 |---|---|---|
-| `wall-hi`, `wall`, `wall-lo` | `#A4AAB1`, `#878D94`, `#646A71` | The grey wall behind a station's screens, lit from the top, with faint vertical panel seams. Never carries text directly: words on the wall sit on a black placard. |
-| `bay` | `#2A2F37` | The dark rounded recess each wall screen sits in |
-| `bezel` | `#C3C9CF` | The thin pale frame round a screen |
-| `desk`, `plate` | `#121315`, `#050506` | The sloped desk top, and the black plates the jellybeans and real controls sit in |
+| `wall-hi`, `wall`, `wall-lo` | `#B9C0C7`, `#A3ABB3`, `#8C949D` | The grey-blue wall behind a station's screens, lit from the top, with hairline seams between panels. Never carries text directly: words on the wall sit on a black label plate. |
+| `bay` | `#505965` | The slate recess each wall screen sits in |
+| `glass` | `#04070B` | The screen itself |
+| `rim` | `#C9CFD5` | The thin pale rim round a screen |
+| `desk`, `plate` | `#121315`, `#050506` | The desk top, and the black plates: label plates, button plates, windows |
 | `kick` | `#7B8188` | The grey kick panel under the desk, with backlit grilles |
+| `floor` | `#36383D` | The carpet in front of the consoles on the bridge |
 
-Under red alert the wall, bay and kick panel take a red cast, like the set under its red lights.
+Under red alert the wall, bay, kick panel and floor take a red cast, like the set under its red lights.
 
-A wall screen is a near-black glass inside a 3 px `bezel` frame with a 12 px radius, set in a `bay` recess with a 17 px radius and an inner top shadow. Scan lines and a faint glass sheen lie over the picture: `repeating-linear-gradient(0deg, #FFFFFF07 0 1px, transparent 1px 3px)`.
+A wall screen is near-black glass inside a 1.5 px `rim` with a 10 px radius, flush in a `bay` recess with a 14 px radius, 8 px of slate round it and a shadow along the recess's top edge. No scan lines, sheen or gloss (The 1966 set).
 
 ### Text
 
@@ -134,7 +206,7 @@ An optional TOS-style display face for the wordmark and the ship registries only
 ## Space, shape and layout frame
 
 - Spacing steps: 4, 8, 12, 16, 24, 32, 48.
-- Radius: 3-4 px buttons and chips, the shape of the jellybean lenses; 10 px panels; 12 px screens in 17 px bays, the rounded screens of the set; full round for jewels.
+- Radius: 2 px plates, status words and windows; 4 px jewel buttons, the shape of the jellybean lenses; 10 px screens in 14 px recesses, the rounded screens of the set; full round for jewels.
 - Touch layouts, narrower than 1024 px or with a coarse pointer, give every control a 44 px target.
 - No sideways page scroll at 390, 768, 1024, 1280 or 1440 px.
 
@@ -142,16 +214,17 @@ Every station screen is the view from the operator's seat: the wall in front, th
 
 ```
 +------------------------------------------------------------------------+
-| top bar: wordmark | station tabs | condition | stardate | rate | sound | user |
+| top bar: wordmark | station tabs | condition | stardate | rate | HELP | sound | user |
 +================================ railing (2 px): the red line under the ceiling cove
-| [black placard: division pill, STATION, ship]              [end plate] |
-|  grey wall:  ( bay [screen] )  ( bay [screen] )  ( instrument housing ) |
-|              screens in their bays on 12 columns; the station's        |
-|              signature piece stands proud of the wall in pale grey      |
+| [label plate: division pill, STATION, ship]                [end plate] |
+|  grey wall:  [PLATE]              [PLATE]            [PLATE]            |
+|              ( bay [screen] )     ( bay [screen] )   ( housing )        |
+|              screens flush in their recesses on 12 columns; the        |
+|              station's signature piece stands proud in pale grey       |
 +------------------------------------------------------------------------+
 | readout band, 42 px: a window per system (lamp, name, word) | live      |
-|                      readouts | small backlit decorative windows        |
-| desk: real controls on a black plate | fan-shaped jellybean plates      |
+|                      readouts                                           |
+| desk: real controls on a black plate | still jellybean plates          |
 +===================== red desk edge, 6 px ===============================+
 | kick panel, 15 px: grey with backlit grilles                            |
 +------------------------------------------------------------------------+
@@ -165,15 +238,22 @@ Below 1024 px the screens stack in one column; the readout band, the jellybean p
 
 | Component | What it is | Notes |
 |---|---|---|
-| `TopBar` | Wordmark, station tabs, condition lamp, stardate clock, live readings per second, sound toggle, user and role | Stardate comes from `DOMAIN.md`. Sticky. |
-| `StationTab` | Division pill and a Michroma label | Active tab: `accent` underline sitting on the railing line. A station the role may not use keeps its tab with a lock; it opens to restricted monitors, and the server refuses the data anyway. |
-| `ConditionLamp` | NORMAL, YELLOW ALERT or RED ALERT as a lamp and a word | The captain can click it to change condition. |
-| `Monitor` | A wall screen: a rounded glass in a pale frame, set in a dark bay with its title above. `monitor--housing` turns the bay into a pale grey instrument housing for a signature piece | Slots: chart, readout, scope, list. States: power-on, live, awaiting telemetry (no reading yet, the words blink slowly), no signal, restricted. No signal shows a low-resolution static pattern and the words NO SIGNAL. Restricted shows a lock and "Medical records: CMO and captain only". One component in `client/src/ui` for the bridge and every station. |
+| `TopBar` | The black console band: wordmark, station tabs, condition sign, stardate and readings-per-second windows, HELP, sound toggle, user and role | Stardate comes from `DOMAIN.md`. Sticky. As the screen narrows it drops words (long tab names, the stardate, key caps, the wordmark's text, the user's name) before any tab leaves view, and below 1220 px the tabs give way to the turbolift menu button. |
+| `Help` | A HELP plate button in the top bar with a menu: Replay the tour, Keyboard shortcuts (?), Turbolift (Ctrl K) | Replay the tour goes to the bridge and starts the tour at step 1, even during a scenario. The tour's first step points at HELP. |
+| `StationTab` | A small square lamp in the division colour and a Michroma label | The active tab's lamp lights and an `accent` underline sits on the railing line. A station the role may not use keeps its tab with a lock; hover or keyboard focus shows who may use it on a plate under the tab (for Starfleet: "Starfleet Command (admin) only"). It opens to restricted monitors, and the server refuses the data anyway. |
+| `ConditionLamp` | The condition sign: NORMAL as a word beside a dim green lamp; under yellow or red alert the whole sign lights up yellow or red with YELLOW ALERT or RED ALERT | Steady: the alert bars carry the pulse. The captain can click it to change condition. |
+| `Monitor` | A wall screen: its title on a black label plate on the wall, the screen flush in a slate recess under it (The 1966 set). `monitor--housing` turns the recess into a pale grey instrument housing for a signature piece | One picture per monitor; `views` adds page buttons under the screen for the readings past it. States: power-on, live, awaiting telemetry (no reading yet, the words blink slowly), no signal, restricted. No signal shows a low-resolution static pattern and the words NO SIGNAL. Restricted shows a lock and "Medical records: CMO and captain only". One component in `client/src/ui` for the bridge and every station. |
+| `LabelPlate` | A black plate with white capitals | For anything on the wall that is not a monitor. |
+| `Headline` | One reading as a monitor's whole picture: big number, unit, one word or one trend arrow, one graphic under it | The number takes the level's colour past a limit and the word YELLOW or RED stands under it. |
+| `LampBar` | A row of lamps lit from the left up to the value | Unlit lamps in a warn or critical zone keep a dim tint of that colour. |
+| `Trace` | One channel over the live minute, a bold line on the glass | Normal band, dashed limit lines, a dot on the newest reading; redrawn 8 times a second. |
+| `Readings` | Small backlit windows, a capitals label over an amber number | Where a station's secondary numbers live. |
+| `ButtonRow` | Real controls on a black plate, with the row's name under it | The plate's name is also its accessible name. |
+| `LevelChip` | The status word | YELLOW and RED on lit plates; a nominal word lit green in a dark window. |
 | `Readout` | Label, big number, unit, change arrow, 60 s sparkline with the normal band | The number ticks to its new value. Colour appears only past a limit. |
 | `LitButton` | A real control, a translucent jellybean block with a bright top bevel and darker side facets, a Michroma label and a key cap, set into the desk's black plate | A real `<button>` with `aria-pressed` where it toggles. States: dim, lit, blinking while the server has not yet acknowledged the command, pressed. Colour from the lit-button table. |
-| `ButtonGrid` | Decorative rows of jellybeans that light up in random patterns | `aria-hidden`. Pattern seeded per grid. CSS animations only, no JavaScript per frame. |
-| `JellybeanPlate` | A fan-shaped black plate of lenses on the desk: round domes, square blocks and long faceted gems in the six lit colours | `aria-hidden` SVG, seeded. A lit lens stays lit between blinks, so reduced motion leaves a still, lit pattern. Yellow and red alert recolour it like `ButtonGrid`. |
-| `ReadoutWindows` | The readout band's small backlit windows: rows of gel strips, lamp matrices, yellow graph paper with a red line, bars, an orange curve, a schematic | `aria-hidden`, seeded, decoration only. Live readouts in the band go through `ConsoleStrip`'s `readouts`. |
+| `ButtonGrid` | Decorative rows of jellybeans that light up in random patterns | The login console only. `aria-hidden`. Pattern seeded per grid. CSS animations only, no JavaScript per frame. |
+| `JellybeanPlate` | A fan-shaped black plate of lenses on the desk: round domes, square blocks and long faceted gems in the six lit colours | `aria-hidden` SVG, seeded, still: some lenses lit, the rest dim. Yellow and red alert recolour it. |
 | `Jewel` | A small round faceted lamp, one per system | Steady dim green when nominal, slow blink in `warn`, fast blink in `crit`, dark with no signal. Always has a text label or `aria-label`. |
 | `SweepScope` | Round sensor scope with a rotating sweep and contact blips that fade | Canvas. One turn every 4 s. A cloaked contact shows as a faint, broken blip. |
 | `BarGauge` | Vertical segmented bar with the normal band and limit ticks | Nacelle output, shield quadrants, deck oxygen. |
@@ -187,11 +267,11 @@ Below 1024 px the screens stack in one column; the readout band, the jellybean p
 | `Astrogator` | Helm's plotting disc: backlit pale glass, a yellow centre plate, range rings every 50 sector units, a bearing ring, the trail in green, the course in red ending in the bright "flying point", the task force, the nearest contact's bearing | Canvas, north up, own ship at the centre. Its housing carries the sensors alert lamp (a red trapezoid lit with CONTACT CLOSING or COLLISION RANGE) and the chronometer windows: stardate, heading, speed, position, orbit. |
 | `TargetFan` | Navigation's targeting scanner: an amber fan 60° either side of the bow, the forward phaser arc in green, the nearest contact under a crosshair ring | Off the fan, an arrow names the side. The words under it give bearing, range and the level word. |
 | `SlideLevers` | Engineering's power allocation as red-knobbed slide levers, with the preset, total output and battery in readout windows | Display only (`role="meter"`): the server takes the CRUISE, COMBAT and EMERGENCY presets from the desk. |
-| `CaptainsLog` | Feed of alerts, commands and scenario steps, each as a log line with a stardate | Newest first, filter by severity, acknowledge button. |
+| `CaptainsLog` | On the bridge, a black plate under the viewscreen: the newest three lines of alerts, commands and scenario steps, each with a stardate | Repeats fold into one line with a count ("Shield strength, fore 21 % · ×3"); quiet links from several sources become "5 sources quiet". All alerts opens the Alerts page, which filters and acknowledges. |
 | `AlertBars` | The condition bars at the viewport edges | See Condition modes. |
 | `FleetMap` | 2D sector plot of the task force with headings, short trails and a condition ring per ship | Canvas, in the shared animation loop. |
 | `ShipCard` | One ship of the task force: registry, name, condition, warp, weakest shield, open alerts, link state | Condition from the ship's overview row. Click opens that ship's history (`/history?ship=N`; every station takes `?ship=N` for a ship the role sees), so a lost ship shows its last readings. |
-| `Turbolift` | Station change, and the station picker on `Ctrl+K` | The transition is in Motion. |
+| `Turbolift` | Station change, and the station picker on `Ctrl+K`, the menu button and Help | The transition is in Motion. |
 | `ScenarioConsole` | Picks a TOS episode scenario, starts and stops it, shows its timeline with step markers | Captain and admin only. The list and the step times come from `shared/scenarios`, the progress from the `scenario` event, so every console shows the same run. |
 | `KeyCap` | A small key label on a button | Space Mono 10 px in a 1 px `line` box. |
 
@@ -201,12 +281,12 @@ Durations: 80 ms hover; 120 ms press and light on; 200 ms toggles and chips; 280
 
 Two tiers of animation:
 
-- **Ambient**, many at once, dim and slow: button grids twinkle (each lamp changes every 1.5 to 6 s), jewels idle, the scope sweeps, the starfield drifts, the live dot pings. All pause while the tab is hidden.
+- **Ambient**, many at once, dim and slow: monitor graphics move (traces scroll, lamp bars and needles ease, the scope sweeps), numbers tween, the starfield drifts, the live dot pings. No decorative light blinks. All pause while the tab is hidden.
 - **Attention**, one at a time and bright: red alert bars, else the newest critical alert, else the live dot. `data-attention` on the root names which one owns it.
 
 | Moment | What happens |
 |---|---|
-| Power-up, once per session | Console grids light up left to right over 600 ms. Monitors switch on like a tube screen: a bright horizontal line opens to full height in 240 ms. The viewscreen fades in on the starfield. Any key or click skips it. |
+| Power-up, once per session | Monitors switch on one after another like a tube screen: a bright horizontal line opens to full height in 240 ms, with four computer beeps. The viewscreen fades in on the starfield. Any key or click skips it. |
 | Station change | A light runs up the right edge like the turbolift indicator; the old station slides up 40 px and fades, the new one rises from below. 450 ms. |
 | New number | Ticks to the new value in 240 ms. Crossing a limit flashes the reading once. |
 | Monitor content change | Brief tube flicker: opacity 1, 0.6, 1 over 120 ms. |
@@ -215,14 +295,14 @@ Two tiers of animation:
 | Warp engage | The starfield stretches into streaks over 800 ms; the warp needle sweeps to the new factor. |
 | Shield hit | The quadrant arc flares; the 3D shield bubble ripples from the hit point; the viewscreen shakes 2 px for 200 ms. |
 | Alert raised | The log row slides in from the top and pulses three times; the system's jewel switches to fast blink. |
-| Yellow alert | Bars slide in over 240 ms and stay; console grids shift to amber and yellow. |
-| Red alert | Bars pulse at 1 Hz; surfaces tint red; console grids blink red in step; the viewscreen frame turns red; RED ALERT in the top bar. |
+| Yellow alert | Bars slide in over 240 ms and stay; console lights shift to amber and yellow; the condition sign lights yellow; the viewscreen rim turns yellow. |
+| Red alert | Bars pulse at 1 Hz; the wall and surfaces tint red; console lights turn red; the condition sign lights red with RED ALERT; the viewscreen rim turns red. |
 | Stand down | Bars slide out; CONDITION NORMAL shows for 1 s in `ready`. |
 | Login | The ship turns slowly in the left half of the screen beside the "State your position" console, one lit button per demo role. Dragging turns the ship and the wheel or a pinch zooms it; its turn comes back 3 s after the last touch. On sign-in the console powers down and the camera flies from there into the bridge dome. |
 
 Flash safety: nothing flashes faster than twice a second. WCAG 2.3.1 sets the limit at three flashes per second. The red alert pulse is a smooth 1 Hz ramp on edge bars and a light tint, not a full-screen strobe.
 
-Reduced motion, from `prefers-reduced-motion: reduce` or the Help toggle (`data-motion="reduce"`): no twinkle, no sweep (the scope redraws a still wedge every 2 s), no streaks (warp shows on the gauge), no camera moves or shake, red alert bars steady, station change is a 150 ms crossfade, numbers jump to the new value. Colour changes stay, so no information is lost. The 3D canvas renders on demand, only when data changes.
+Reduced motion, from `prefers-reduced-motion: reduce` (the CSS also honours `data-motion="reduce"` on the root, which nothing sets yet): no sweep (the scope redraws a still wedge every 2 s), no streaks (warp shows on the gauge), no camera moves or shake, red alert bars steady, station change is a 150 ms crossfade, numbers jump to the new value. Colour changes stay, so no information is lost. The 3D canvas renders on demand, only when data changes.
 
 ## Sound
 
@@ -268,21 +348,22 @@ Seven screens plus login. Every role sees every station tab; monitors fed by gro
 
 Everyone can open it; tiles a role may not see show as restricted.
 
+The forward wall seen from the captain's chair, at least 1600 x 936 px, scaled to the window's height and widened to fill a wider one. The side stations keep to the walls and the rest stays centred.
+
 ```
-+---------------+-------------------------------------+---------------+
-| ENGINEERING   |                                     | SCIENCE       |
-| warp, reactor |                                     | contacts      |
-+---------------+         MAIN VIEWSCREEN (3D)        +---------------+
-| LIFE SUPPORT  |                                     | COMMS         |
-| worst deck    |                                     | channels      |
-+---------------+-------------------+-----------------+---------------+
-| HELM: warp arc, heading, speed    | CAPTAIN'S LOG: alerts and steps |
-+-----------------------------------+---------------------------------+
-| SICKBAY: crew on watch, critical      | TASK FORCE: 3 jewels       |
-+--------------------------------------------------------------------+
+  [ENGINEERING]   +----------------------------------+   [SCIENCE]
+  ( 64 % rated )  |                                  |   ( scope, 0 contacts )
+  [LIFE SUPPORT]  |        MAIN VIEWSCREEN (3D)      |   [COMMUNICATIONS]
+  ( 20.8 % O2 )   |                                  |   ( 44.5 dB, trace )
+  [SICKBAY]       +----------------------------------+   [TASK FORCE]
+  ( 0 on watch )  | CAPTAIN'S LOG: the newest 3 lines|   ( a lamp per ship )
+==desk, red edge==+----------------------------------+==desk, red edge==
+   red rail        [WARP] (astrogator) [SHIELDS]          red rail
+                   ===== red front of the helm =====
+                   [CONDITION]  ( chair )  [ORDERS]
 ```
 
-Each side tile is a small monitor with one number, a sparkline and a jewel; clicking it takes the turbolift to that station. The sickbay tile shows counts only, which every role may see. Console strip, the arms of the captain's chair: RED ALERT, YELLOW ALERT, STAND DOWN, HAIL, VIEWER mode, SHIELDS, SCENARIO, and the button a running scenario waits for, such as VENT GAS.
+Each station monitor shows one reading: engineering the reaction rate with a lamp bar, life support the lowest deck's oxygen with a lamp per deck, sickbay the crew on medical watch, science the contact count beside the sweep scope, communications the carrier strength with its trace, the task force a lamp per ship. Clicking a monitor takes the turbolift to that station, where every other number lives. The sickbay monitor shows counts only, which every role may see. The helm console in front of the chair carries the warp factor, the astrogator with the heading, and the weakest shield quadrant with UP or DOWN. The arms of the captain's chair hold the orders on two button plates: RED ALERT, YELLOW, STAND DOWN; HAIL, SHIELDS, the viewer mode, SCENARIO. The button a running scenario waits for, such as VENT GAS, lights on the viewscreen. Below 1100 px the same parts stack in one column (two columns on a tablet), and a phone shows the six monitors two to a row.
 
 ### Helm and navigation (`/helm`)
 

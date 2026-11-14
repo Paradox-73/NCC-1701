@@ -1,26 +1,131 @@
-/* Bare placeholder styles. The design system replaces this file. */
-:root { color-scheme: dark; font-family: system-ui, sans-serif; background: #0b0c0e; color: #e8eaed; }
-body { margin: 0; }
-main { max-width: 960px; margin: 0 auto; padding: 16px; }
-table { border-collapse: collapse; }
-td, th { padding: 2px 12px 2px 0; text-align: left; }
-.mono { font-family: ui-monospace, monospace; }
+/* NCC-1701 Bridge: design tokens and base styles (docs/DESIGN.md). Component styles live in ui/ui.css. */
+:root {
+  color-scheme: dark;
+  /* surfaces */
+  --void: #050608;
+  --console: #0b0c0f;
+  --panel: #14161a;
+  --raised: #1e2127;
+  --bulkhead: #56625e;
+  --line: #ffffff14;
+  --line2: #ffffff24;
+  --railing: #e0522a;
+  --frame: var(--railing); /* the viewscreen frame; follows the condition */
+  /* text */
+  --ink: #f1f3f5;
+  --ink2: #b3b9c2;
+  --mute: #8d95a0;
+  /* interaction */
+  --accent: #5cb8ff;
+  --accent-fill: #1c6fc0;
+  /* lit buttons: on, dim */
+  --lit-red: #ff3b30; --lit-red-dim: #4a1410;
+  --lit-amber: #ff9a1f; --lit-amber-dim: #4a2b08;
+  --lit-yellow: #ffd83d; --lit-yellow-dim: #4a3d10;
+  --lit-green: #3edb6a; --lit-green-dim: #10401e;
+  --lit-blue: #3fa3ff; --lit-blue-dim: #0e2c4a;
+  --lit-white: #f4efe2; --lit-white-dim: #3a3830;
+  /* status */
+  --ready: #3edb6a;
+  --warn: #ffd23f;
+  --crit: #ff4a55;
+  --crit-ink: #ff7a82;
+  --crit-fill: #c8102e;
+  --red-alert: #ff2a3d;
+  /* divisions */
+  --div-command: #edbe4f;
+  --div-science: #7ab4e8;
+  --div-ops: #e8503a;
+  --div-fleet: #f4efe2;
+  /* charts and scopes (lib/chartTheme.js reads the --chart-* ones) */
+  --chart-1: #7cc4ff;
+  --chart-2: #f4efe2;
+  --scope: #58c4ff;
+  --chart-axis: var(--mute);
+  --chart-grid: #ffffff12;
+  --chart-ink: var(--ink2);
+  /* type */
+  --font-display: 'Michroma', 'Space Grotesk Variable', sans-serif;
+  --font-ui: 'Space Grotesk Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'Space Mono', ui-monospace, 'Cascadia Mono', monospace;
+  --chart-font: var(--font-ui);
+  /* motion */
+  --ease-in: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out: cubic-bezier(0.4, 0, 1, 1);
+  --t-hover: 80ms;
+  --t-press: 120ms;
+  --t-toggle: 200ms;
+  --t-panel: 280ms;
+  --t-station: 450ms;
+  /* frame */
+  --topbar-h: 56px;
+  --console-h: 112px;
+  --gutter: 16px;
+}
+
+/* Red alert tints every surface; yellow keeps them. The accent stays blue in every mode so focus stays visible. */
+:root[data-condition='red'] {
+  --void: #0a0204;
+  --console: #0e0406;
+  --panel: #1a0b0e;
+  --raised: #261217;
+  --line: #ff6a7a1c;
+  --line2: #ff6a7a30;
+  --frame: var(--red-alert);
+}
+:root[data-condition='yellow'] { --frame: var(--warn); }
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+html { background: var(--void); }
+body {
+  background: var(--void);
+  color: var(--ink);
+  font: 400 14px/1.45 var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color 600ms var(--ease-in);
+  overflow-x: hidden;
+}
+#root { min-height: 100vh; min-height: 100dvh; }
+h1, h2, h3, h4, p { margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+a { color: var(--accent); text-underline-offset: 3px; }
+::selection { background: color-mix(in oklab, var(--accent) 45%, transparent); color: var(--ink); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+* { scrollbar-width: thin; scrollbar-color: var(--bulkhead) transparent; }
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: var(--bulkhead); border-radius: 8px; border: 2px solid transparent; background-clip: padding-box; }
+input::placeholder { color: var(--mute); }
+
+.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.display { font-family: var(--font-display); text-transform: uppercase; letter-spacing: 0.08em; }
+.label { font: 500 12px/1.3 var(--font-ui); color: var(--mute); }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 
 /* Chart and list infrastructure (components/Chart.jsx, VirtualList.jsx) */
 .chart { position: relative; min-width: 0; }
 .chart-fill { height: 100%; display: flex; flex-direction: column; }
 .chart-fill .chart-host { flex: 1; min-height: 0; overflow: hidden; }
 .chart-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin-bottom: 8px; }
-.chart-head h3 { margin: 0; font-size: 14px; }
-.chart-legend { margin-left: auto; display: flex; gap: 16px; font-size: 12px; white-space: nowrap; }
+.chart-head h3 { margin: 0; font: 400 11px var(--font-display); text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink2); }
+.chart-legend { margin-left: auto; display: flex; gap: 16px; font-size: 12px; white-space: nowrap; color: var(--ink2); }
 .chart-legend span { display: flex; align-items: center; gap: 6px; }
 .chart-legend i { display: block; width: 12px; height: 2px; border-radius: 1px; }
 .chart-tip {
   position: absolute; z-index: 5; pointer-events: none; min-width: 120px; display: none;
-  background: #1b1e22; border-radius: 6px; padding: 8px 10px; box-shadow: 0 8px 24px #00000066, 0 0 0 1px #ffffff14; font-size: 12px;
+  background: var(--raised); border-radius: 6px; padding: 8px 10px; box-shadow: 0 8px 24px #00000066, 0 0 0 1px var(--line); font-size: 12px;
 }
-.chart-tip .t { color: #878e99; margin-bottom: 4px; }
+.chart-tip .t { color: var(--mute); margin-bottom: 4px; font-family: var(--font-mono); }
 .chart-tip .r { display: flex; align-items: center; gap: 8px; line-height: 1.6; }
 .chart-tip .r i { width: 10px; height: 2px; border-radius: 1px; flex: none; }
-.chart-tip .r b { font-weight: 600; font-size: 15px; }
+.chart-tip .r b { font: 700 14px var(--font-mono); }
 .u-over { cursor: crosshair; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+}
+:root[data-motion='reduce'] *, :root[data-motion='reduce'] *::before, :root[data-motion='reduce'] *::after {
+  animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important;
+}

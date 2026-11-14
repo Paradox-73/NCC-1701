@@ -28,7 +28,9 @@ export default function Tour({ page, delay = 600 }) {
   const [box, setBox] = useState(null);
   const done = () => { try { localStorage.setItem(key, '1'); } catch { /* private mode */ } setStep(-1); };
   const s = steps[step];
-  const text = s && (typeof s.text === 'function' ? s.text(user) : s.text);
+  // a phone or tablet with no keyboard (the same test as the CSS that hides key caps): steps name buttons, not keys
+  const touch = useMemo(() => typeof matchMedia === 'function' && matchMedia('(hover: none) and (pointer: coarse)').matches, []);
+  const text = s && (typeof s.text === 'function' ? s.text(user, touch) : s.text);
 
   useEffect(() => {
     if (seen()) return undefined;
@@ -94,7 +96,7 @@ export default function Tour({ page, delay = 600 }) {
           {step > 0 && <LitButton color="white" size="sm" label="Back" onClick={() => setStep(step - 1)} />}
           <LitButton color="blue" size="sm" label={step + 1 < steps.length ? 'Next' : page === 'bridge' ? 'Take the conn' : 'Got it'} keyCap="↵" lit onClick={() => (step + 1 < steps.length ? setStep(step + 1) : done())} />
         </div>
-        <p className="label tour__keys"><KeyCap>←</KeyCap> <KeyCap>→</KeyCap> to step, <KeyCap>Esc</KeyCap> to close</p>
+        <p className="label tour__keys kbd-only"><KeyCap>←</KeyCap> <KeyCap>→</KeyCap> to step, <KeyCap>Esc</KeyCap> to close</p>
       </div>
     </div>,
     document.body,

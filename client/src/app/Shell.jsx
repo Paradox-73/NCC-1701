@@ -11,9 +11,8 @@ import Bridge from '../pages/Bridge.jsx';
 import MainViewer from './MainViewer.jsx';
 import { ShortcutSheet, Turbolift } from './Overlays.jsx';
 import StationRoute from './StationRoute.jsx';
-import { PAGES, STATIONS, homeOf, stationAt } from './stations.js';
+import { PAGES, STATIONS, stationAt } from './stations.js';
 import { TopBar } from './TopBar.jsx';
-import { replayTour } from './Tour.jsx';
 import './shell.css';
 
 const MAGNIFY = [1, 2, 4, 8];
@@ -72,7 +71,6 @@ export default function Shell({ powered, aboard }) {
     navigate(st.path);
   }, [location.pathname, navigate]);
   useEffect(() => { setLift((n) => n + 1); }, [location.pathname]);
-  useEffect(() => { if (overlay === 'lift') play('lift'); }, [overlay]); // the turbolift's own sound as its picker opens
 
   // ---- keyboard (DESIGN.md, At the helm) ---------------------------------------------------------------
   // Two listeners on window. The capture one runs before anything else and owns the turbolift (Ctrl K) and the
@@ -124,7 +122,7 @@ export default function Shell({ powered, aboard }) {
           const a = state.alerts.find((x) => !x.ack && x.sourceId === 1);
           if (!a) { say('No open alert to acknowledge'); return; }
           if (!user.canAck) { say('Your role cannot acknowledge alerts', 'bad'); return; }
-          ackAlert(a.id).then((r) => { if (r.ok) play('ack'); say(r.ok ? `Acknowledged: ${a.message}` : 'Acknowledge refused', r.ok ? 'ok' : 'bad'); });
+          ackAlert(a.id).then((r) => say(r.ok ? `Acknowledged: ${a.message}` : 'Acknowledge refused', r.ok ? 'ok' : 'bad'));
           return;
         }
         default:
@@ -137,24 +135,22 @@ export default function Shell({ powered, aboard }) {
   }, [overlay, aboard, location.pathname, go, order, say, user]);
 
   const back = useCallback(() => go(STATIONS[0]), [go]);
-  const tour = useCallback(() => { go(STATIONS[0]); replayTour(); }, [go]); // the tour lives on the bridge
   const nextView = useCallback(() => setViewer((v) => ({ ...v, mode: VIEW_MODES[(VIEW_MODES.indexOf(v.mode) + 1) % VIEW_MODES.length] })), []);
   return (
     <div className="shell">
       <div className="alertbar alertbar--top" aria-hidden="true" />
       <div className="alertbar alertbar--bottom" aria-hidden="true" />
       <div className="redwash" aria-hidden="true" />
-      <TopBar user={user} condition={condition} standDown={standDown} onLift={() => setOverlay('lift')} onKeys={() => setOverlay('keys')} onTour={tour} onSignOut={() => logout()} />
+      <TopBar user={user} condition={condition} standDown={standDown} onLift={() => setOverlay('lift')} onSignOut={() => logout()} />
       <div className="railing" aria-hidden="true" />
       <i key={lift} className="lift-light" aria-hidden="true" />
-      {lift > 1 && location.pathname !== '/bridge' && <div key={`doors${lift}`} className="lift-doors" aria-hidden="true"><i /><i /></div>}
       <div key={location.pathname} className={`view ${location.pathname === '/bridge' ? 'view--bridge' : 'view--station'}`}>
         <Routes location={location}>
-          <Route path="/bridge" element={<Bridge powered={powered} viewer={viewer} onViewer={nextView} onGo={go} user={user} />} />
+          <Route path="/bridge" element={<Bridge powered={powered} viewer={viewer} onViewer={nextView} onGo={go} onLift={() => setOverlay('lift')} user={user} />} />
           {[...STATIONS.slice(1), ...PAGES].map((st) => (
             <Route key={st.id} path={`${st.path}/*`} element={<StationRoute station={st} onBack={back} />} />
           ))}
-          <Route path="*" element={<Navigate to={homeOf(user)} replace />} />
+          <Route path="*" element={<Navigate to="/bridge" replace />} />
         </Routes>
       </div>
       <MainViewer viewer={viewer} condition={condition} threeD={aboard} />

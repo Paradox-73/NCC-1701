@@ -11,7 +11,7 @@ export const STATIONS = [
   { id: 'science', path: '/science', label: 'Science', short: 'Sci', division: 'science', key: 's', screen: 'Science', needs: 'sensors', who: 'Captain, science and communications officers' },
   { id: 'comms', path: '/comms', label: 'Comms', short: 'Comms', division: 'ops', key: 'c', screen: 'Comms', needs: 'comms', who: 'Captain, science and communications officers' },
   { id: 'sickbay', path: '/sickbay', label: 'Sickbay', short: 'Med', division: 'science', key: 'm', screen: 'Sickbay', needs: 'bio-d01', who: 'Medical records: CMO and captain only' },
-  { id: 'fleet', path: '/fleet', label: 'Starfleet', short: 'Fleet', division: 'fleet', key: 'f', screen: 'Fleet', admin: true, who: 'Starfleet Command (admin) only' },
+  { id: 'fleet', path: '/fleet', label: 'Starfleet', short: 'Fleet', division: 'fleet', key: 'f', screen: 'Fleet', admin: true, who: 'Starfleet Command only' },
 ];
 // Pages the stations build adds next to the stations; anyone signed in may open them.
 export const PAGES = [
@@ -27,11 +27,4 @@ export function canEnter(user, st) {
   if (!user || !st) return false;
   if (st.admin) return !!user.admin;
   return !st.needs || (user.groups ?? []).includes(st.needs);
-}
-
-// Where each role starts after sign-in: its own seat, the bridge for the captain (and any role not listed).
-const HOME = { chief_engineer: 'engineering', chief_medical_officer: 'sickbay', science_officer: 'science', communications_officer: 'comms', starfleet_command: 'fleet' };
-export function homeOf(user) {
-  const st = STATIONS.find((s) => s.id === HOME[user?.role]);
-  return st && canEnter(user, st) ? st.path : '/bridge';
 }

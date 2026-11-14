@@ -1,9 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { CHANNEL_BY_KEY } from '@ncc/shared/schema.js';
 import { reducedMotion } from '../lib/chartTheme.js';
-import { alarmOf, bandOf, limitsOf } from '../lib/limits.js';
+import { alarmOf, limitsOf } from '../lib/limits.js';
 import { onFrame } from '../lib/raf.js';
-import { getRing } from '../lib/store.js';
 import { cx } from './controls.jsx';
 import { Num, decOf, fmt, useTween } from './Readout.jsx';
 import { THEME } from './theme.js';
@@ -98,93 +97,6 @@ export function BarGauge({ value, k, label, min, max, unit, dec, segs = 16, h = 
       {label && <span className="bar__lab">{label}</span>}
     </div>
   );
-}
-
-/**
- * A row of lamps lit from the left up to the value: a monitor's level bar (DESIGN.md, The 1966 set). With a channel `k`
- * the unlit lamps in its warn and critical zones keep a dim tint of that colour, and past a limit the lit lamps take
- * the reading's colour (the headline beside it carries the word).
- */
-export function LampBar({ value, k, min, max, segs = 24, label }) {
-  const m = CHANNEL_BY_KEY[k];
-  const lo = min ?? m?.min ?? 0, hi = max ?? m?.max ?? 100;
-  const on = value == null ? 0 : Math.round(clamp((value - lo) / (hi - lo)) * segs);
-  return (
-    <div className="lampbar" data-level={alarmOf(k, value) ?? undefined} role="meter" aria-valuemin={lo} aria-valuemax={hi} aria-valuenow={value ?? undefined}
-      aria-label={label ?? m?.label ?? 'Level'}>
-      {Array.from({ length: segs }, (_, i) => <i key={i} className={i < on ? 'on' : undefined} data-z={alarmOf(k, lo + ((i + 0.5) / segs) * (hi - lo)) ?? undefined} />)}
-    </div>
-  );
-}
-
-/**
- * The chart inside a monitor: one channel of source `src` over the last `ms`, live from the store's ring, as a bold
- * line on the glass with the normal band, dashed warn and critical lines and a dot on the newest reading. The line
- * takes the colour of the newest reading's level. Redrawn about 8 times a second on the shared loop, once a second
- * with reduced motion. For stored history next to the live minute, put components/Chart.jsx in the monitor instead.
- */
-export function Trace({ src, k, ms = 60000, className, style }) {
-  const ref = useRef(null);
-  useEffect(() => {
-    const cv = ref.current;
-    const ctx = cv.getContext('2d');
-    const m = CHANNEL_BY_KEY[k];
-    const lim = limitsOf(k);
-    const band = bandOf(k);
-    let last = 0;
-    return onFrame((t) => {
-      if (document.hidden || t - last < (reducedMotion() ? 1000 : 125)) return;
-      last = t;
-      const w = cv.clientWidth, h = cv.clientHeight;
-      if (!w || !h || !m) return;
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
-      if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); }
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, w, h);
-      const r = getRing(src, m.group);
-      const col = r?.cols[k];
-      if (!r?.len || !col) return;
-      const end = r.lastTs;
-      let n = 0;
-      while (n < r.len && end - r.ts[(r.head - 1 - n + r.cap * 2) % r.cap] <= ms) n++;
-      if (n < 2) return;
-      const at = (i) => (r.head - n + i + r.cap * 2) % r.cap;
-      let lo = Infinity, hi = -Infinity;
-      for (let i = 0; i < n; i++) { const v = col[at(i)]; if (v < lo) lo = v; if (v > hi) hi = v; }
-      const minSpan = (m.max - m.min) * 0.02 || 1;
-      if (hi - lo < minSpan) { const mid = (hi + lo) / 2; lo = mid - minSpan / 2; hi = mid + minSpan / 2; }
-      const pad = (hi - lo) * 0.15;
-      lo -= pad; hi += pad;
-      const X = (ts) => w - ((end - ts) / ms) * w;
-      const Y = (v) => 3 + (1 - (v - lo) / (hi - lo)) * (h - 6);
-      if (band) { const y0 = clamp(Y(band[1]), 0, h), y1 = clamp(Y(band[0]), 0, h); ctx.fillStyle = '#ffffff0d'; ctx.fillRect(0, y0, w, y1 - y0); }
-      ctx.lineWidth = 1;
-      ctx.setLineDash([4, 4]);
-      for (const side of ['high', 'low']) {
-        const rule = lim?.[side];
-        if (rule) for (const [val, c] of [[rule.warn, THEME.warn], [rule.critical, THEME.crit]]) {
-          if (val <= lo || val >= hi) continue;
-          ctx.strokeStyle = c;
-          ctx.beginPath(); ctx.moveTo(0, Y(val)); ctx.lineTo(w, Y(val)); ctx.stroke();
-        }
-      }
-      ctx.setLineDash([]);
-      const newest = at(n - 1);
-      ctx.strokeStyle = levelColor(alarmOf(k, col[newest])) ?? THEME.chart1;
-      ctx.lineWidth = 2;
-      ctx.lineJoin = 'round';
-      const step = Math.max(1, Math.floor(n / (w * 1.5)));
-      ctx.beginPath();
-      ctx.moveTo(X(r.ts[at(0)]), Y(col[at(0)]));
-      for (let i = step; i < n - 1; i += step) ctx.lineTo(X(r.ts[at(i)]), Y(col[at(i)]));
-      const lx = X(r.ts[newest]), ly = Y(col[newest]);
-      ctx.lineTo(lx, ly);
-      ctx.stroke();
-      ctx.fillStyle = THEME.ink;
-      ctx.beginPath(); ctx.arc(Math.min(lx, w - 3), ly, 2.5, 0, Math.PI * 2); ctx.fill();
-    });
-  }, [src, k, ms]);
-  return <canvas ref={ref} className={cx('trace', className)} style={style} aria-hidden="true" />;
 }
 
 /** A thin horizontal bar from `min` to `max` (impulse, generator load, battery). */

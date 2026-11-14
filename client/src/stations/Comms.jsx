@@ -6,8 +6,8 @@ import { logOf } from '../lib/ship.js';
 import { play } from '../lib/sound.js';
 import { state } from '../lib/store.js';
 import { SHIPS, alertsFor, levelOf, linkOf, meta, monState, read, shipCode, stardate, useCommand, useFeed, worst } from './parts/data.js';
-import { Chip, ConsoleStrip, Headline, J, LampBar, LitButton, Monitor, Num, Readings, Station, Trace, useKeys } from '../ui/index.js';
-import { C, clamp, fmt, useCanvas } from './parts/ui.jsx';
+import { Chip, ConsoleStrip, J, LitButton, Monitor, Num, Station, useKeys } from '../ui/index.js';
+import { C, Readout, clamp, fmt, useCanvas } from './parts/ui.jsx';
 
 const CARRIER_SLOTS = [0.16, 0.3, 0.44, 0.58, 0.72, 0.86]; // where open channels sit across the band
 
@@ -157,7 +157,7 @@ function Log({ src }) {
   );
 }
 
-/** Communications (DESIGN.md "Communications", The 1966 set): carrier and link as headlines, the hailing panel and the message log. */
+/** Communications (DESIGN.md "Communications"): subspace channels, hailing, the carrier scope and the message log. */
 export default function Comms({ shipId = 1 }) {
   useTick();
   const { user } = useAuth();
@@ -173,8 +173,6 @@ export default function Comms({ shipId = 1 }) {
   const hailing = read(src, 'hailing') >= 0.5;
   useKeys({ h: () => (hailing ? close() : hail(false)) });
   const sys = (ks) => worst(ks.map((k) => levelOf(k, read(src, k))));
-  const r = (k, label, dec = 1) => { const v = read(src, k); return { label, value: v, unit: meta(k)?.unit, dec, level: levelOf(k, v) }; };
-  const carrier = read(src, 'carrier'), delay = read(src, 'delay');
   const desk = (
     <ConsoleStrip seed={31} jewels={[J('CARRIER', sys(['carrier']), st('comms')), J('DELAY', sys(['delay']), st('comms')), J('LOSS', sys(['loss']), st('comms')), J('NOISE', sys(['interference']), st('comms'))]}>
       <LitButton color="blue" label={`Hail ${tgt.code}`} keyCap="H" onClick={() => hail(false)} {...cmd.bind('comms.hail')} lit={hailing} />
@@ -184,33 +182,26 @@ export default function Comms({ shipId = 1 }) {
     </ConsoleStrip>
   );
 
-  // The 1966 set (DESIGN.md): carrier and link as headlines, the hailing panel and the message log. The waterfall, the
-  // signal scope, loss and interference are pages of the carrier and link monitors.
   return (
-    <Station name="Communications" division="ops" ship={src} rows="minmax(250px, 1fr) minmax(220px, 1fr)" desk={desk}>
-      <Monitor title="Subspace carrier" status={sys(['carrier']) ?? 'ok'} state={st('comms')} className="st-c4" index={0}
-        views={[
-          { label: 'Carrier', content: (
-            <Headline value={carrier} unit="dB" dec={1} level={levelOf('carrier', carrier)}>
-              <Trace src={src} k="carrier" />
-            </Headline>
-          ) },
-          { label: 'Waterfall', content: <div style={{ position: 'relative', height: '100%' }}><Waterfall src={src} /></div> },
-          { label: 'Scope', content: <SignalScope src={src} /> },
-        ]} />
-      <Monitor title="Link to Starfleet" status={sys(['delay', 'loss', 'interference']) ?? 'ok'} state={st('comms')} className="st-c4" index={1}
-        views={[
-          { label: 'Delay', content: (
-            <Headline value={delay} unit="s delay" dec={1} level={levelOf('delay', delay)} word={hailing ? 'OPEN' : 'CLOSED'}>
-              <LampBar value={delay} k="delay" label="Delay to Starfleet" />
-            </Headline>
-          ) },
-          { label: 'Detail', content: <Readings items={[r('loss', 'Message loss'), r('interference', 'Interference'), r('delay', 'Delay')]} /> },
-        ]} />
-      <Monitor title="Hailing" meta="ear receiver · task force · Starfleet" state={st('comms')} className="st-c4 monitor--housing monitor--comm" index={2}>
+    <Station name="Communications" division="ops" ship={src} rows="minmax(250px, 1.2fr) minmax(210px, 1fr)" desk={desk}>
+      <Monitor title="Subspace channels" meta="receiver waterfall" state={st('comms')} className="st-c7">
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(170px, 34%)', height: '100%' }} className="st-split">
+          <div style={{ position: 'relative', minHeight: 180 }}><Waterfall src={src} /></div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, padding: '10px 14px', minWidth: 0, borderLeft: '1px solid #ffffff0d' }}>
+            <Readout src={src} k="carrier" label="Carrier strength" size="sm" sparkH={20} />
+            <Readout src={src} k="delay" label="Delay to Starfleet" size="sm" sparkH={20} />
+            <Readout src={src} k="loss" label="Message loss" size="sm" sparkH={20} />
+            <Readout src={src} k="interference" label="Interference" size="sm" sparkH={20} />
+          </div>
+        </div>
+      </Monitor>
+      <Monitor title="Hailing" meta="ear receiver · task force · Starfleet" state={st('comms')} className="st-c5 monitor--housing monitor--comm">
         <Hail src={src} target={target} onTarget={setTarget} />
       </Monitor>
-      <Monitor title="Message log" meta="priority · from · text" state={st('comms')} className="st-c12" index={3}>
+      <Monitor title="Signal scope" meta={meta('carrier') ? 'carrier waveform' : ''} state={st('comms')} className="st-c6" style={{ '--mh': '220px' }}>
+        <SignalScope src={src} />
+      </Monitor>
+      <Monitor title="Message log" meta="priority · from · text" state={st('comms')} className="st-c6" style={{ '--mh': '260px' }}>
         <Log src={src} />
       </Monitor>
     </Station>

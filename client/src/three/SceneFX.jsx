@@ -127,7 +127,7 @@ function loginSpace({ width, height }, fov) {
 
 // mode: 'wait' (before the cold open starts), 'flyby' (the ship glides in and holds), 'login' (settles in its space
 // beside the console, then the visitor may orbit and zoom it), 'board' (into the dome, from wherever the camera was left)
-function Rig({ mode, hold, onSteer, steerable = true }) {
+function Rig({ mode, hold, onSteer }) {
   const { camera, scene, size } = useThree();
   const move = useRef(null);
   const controls = useRef(null);
@@ -199,9 +199,7 @@ function Rig({ mode, hold, onSteer, steerable = true }) {
     else camera.clearViewOffset();
     camera.updateProjectionMatrix();
   });
-  // no controls at all when the ship is not steerable: OrbitControls sets touch-action: none on the canvas, which would
-  // stop a phone from scrolling down to the login console
-  if (mode !== 'login' || !steerable) return null;
+  if (mode !== 'login') return null;
   // Orbit round the look point. The polar limits keep the camera off the poles and out from under the hull, so the
   // boarding flight from wherever it was left never passes through the ship; the distance limits keep the ship in its
   // space, clear of the console.
@@ -213,7 +211,7 @@ function Rig({ mode, hold, onSteer, steerable = true }) {
 }
 
 // ---- the effects ---------------------------------------------------------------------------------------------
-export default function SceneFX({ rig, hold, onSteer, steerable }) {
+export default function SceneFX({ rig, hold, onSteer }) {
   return (
     <>
       <Environment resolution={256} frames={1}>
@@ -224,7 +222,7 @@ export default function SceneFX({ rig, hold, onSteer, steerable }) {
       </Environment>
       <Backdrop />
       <Stars radius={150} depth={90} count={4000} factor={2.4} saturation={0.35} fade speed={0.15} />
-      {rig && <Rig mode={rig} hold={hold} onSteer={onSteer} steerable={steerable} />}
+      {rig && <Rig mode={rig} hold={hold} onSteer={onSteer} />}
       <EffectComposer multisampling={4}>
         <Bloom mipmapBlur luminanceThreshold={0.82} luminanceSmoothing={0.18} intensity={1.15} radius={0.72} />
         <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />

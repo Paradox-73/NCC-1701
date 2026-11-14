@@ -2,7 +2,7 @@ import { isValidElement, useEffect, useLayoutEffect, useRef } from 'react';
 import { CHANNEL_BY_KEY } from '@ncc/shared/schema.js';
 import { reducedMotion } from '../lib/chartTheme.js';
 import { onFrame } from '../lib/raf.js';
-import { Chip, LevelChip, cx } from './controls.jsx';
+import { LevelChip, cx } from './controls.jsx';
 import { Icon } from './icons.jsx';
 
 const formats = new Map();
@@ -79,75 +79,21 @@ export function Sparkline({ data, band, domain, status, className }) {
   );
 }
 
-/** A ref whose element flashes its reading once when `level` crosses into warn or crit (DESIGN.md, Motion). */
-function useCrossFlash(level) {
-  const ref = useRef(null);
-  const prev = useRef(level);
-  useEffect(() => {
-    if (prev.current !== level && (level === 'warn' || level === 'crit') && ref.current) {
-      ref.current.classList.remove('is-crossed'); void ref.current.offsetWidth; ref.current.classList.add('is-crossed');
-    }
-    prev.current = level;
-  }, [level]);
-  return ref;
-}
-
-/**
- * One reading as a monitor's whole picture (DESIGN.md, The 1966 set): a big ticking number with its unit, then one word
- * or one trend arrow. level: ok | warn | crit | off. Past a limit the number takes the level's colour and its word
- * stands under it (`warn`, `crit`: YELLOW and RED unless given), so colour never carries meaning alone; with no reading
- * it says NO SIGNAL. Otherwise `word` (HOLDING, OPEN) if given, else the trend arrow (1 rising, -1 falling).
- * children: the monitor's one graphic, drawn under the number (a LampBar, a Trace).
- */
-export function Headline({ value, unit, dec = 0, level: given, word, trend, warn, crit, children, className }) {
-  const level = given || 'ok'; // alarmOf-style callers pass null while nominal
-  const ref = useCrossFlash(level);
-  return (
-    <div ref={ref} className={cx('headline', className)} data-level={level}>
-      <span className="headline__value">
-        <Num className="headline__num" value={level === 'off' ? null : value} dec={dec} />
-        {unit && <span className="headline__unit">{unit}</span>}
-        {level === 'ok' && !word && trend ? <Icon name={trend > 0 ? 'up' : 'down'} className="headline__trend" title={trend > 0 ? 'Rising' : 'Falling'} /> : null}
-      </span>
-      {(level !== 'ok' || word) && (
-        <span className="headline__word">
-          {level !== 'ok' ? <LevelChip level={level} warn={warn} crit={crit} off="NO SIGNAL" /> : <Chip level="ok">{word}</Chip>}
-        </span>
-      )}
-      {children && <div className="headline__graphic">{children}</div>}
-    </div>
-  );
-}
-
-/**
- * The readings a monitor's headline leaves out, the 1966 way: small backlit windows, each a capitals label over an
- * amber number. items: [{ label, value, unit, dec, level }]; `value` may be a word (OPEN). Past a limit the number
- * takes the level's colour and its word.
- */
-export function Readings({ items, className }) {
-  return (
-    <dl className={cx('readings', className)}>
-      {items.map(({ label, value, unit, dec = 0, level }) => (
-        <div key={label} className="readings__win" data-level={level}>
-          <dt>{label}</dt>
-          <dd>
-            {typeof value === 'string' ? value : <Num value={value} dec={dec} />}
-            {unit && <span className="unit">{unit}</span>}
-            <LevelChip level={level} />
-          </dd>
-        </div>
-      ))}
-    </dl>
-  );
-}
-
 /**
  * Label, big ticking number, unit, change arrow, the level word and a sparkline. status: ok | warn | crit | off; past
  * a limit the number takes the colour and a word (YELLOW, RED) stands next to it, so colour never carries meaning
  * alone. spark: data for the SVG sparkline, or an element drawn in its place. size: sm | lg.
  */
 export function Readout({ label, title, value, unit, dec = 0, status = 'ok', trend, spark, band, domain, size, className }) {
-  const ref = useCrossFlash(status);
+  const ref = useRef(null);
+  const prev = useRef(status);
+  useEffect(() => {
+    // crossing into a limit flashes the reading once
+    if (prev.current !== status && (status === 'warn' || status === 'crit') && ref.current) {
+      ref.current.classList.remove('is-crossed'); void ref.current.offsetWidth; ref.current.classList.add('is-crossed');
+    }
+    prev.current = status;
+  }, [status]);
   return (
     <div ref={ref} className={cx('readout', size && `readout--${size}`, className)} data-status={status}>
       <span className="readout__label" title={title}>{label}</span>

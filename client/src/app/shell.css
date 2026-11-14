@@ -4,7 +4,8 @@
 /* ---- top bar -------------------------------------------------------------- */
 .topbar {
   position: sticky; top: 0; z-index: 40; display: flex; align-items: center; gap: 16px; height: var(--topbar-h); padding: 0 16px;
-  background: #0a0b0d; box-shadow: inset 0 -1px 0 #ffffff14;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--panel) 88%, #fff 3%), var(--panel));
+  transition: background-color 600ms var(--ease-in);
 }
 .railing { position: sticky; top: var(--topbar-h); z-index: 40; height: 2px; background: var(--railing); box-shadow: 0 0 14px -2px color-mix(in oklab, var(--railing) 70%, transparent); }
 .wordmark { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; flex: none; }
@@ -16,29 +17,16 @@
   font: 400 10.5px/1 var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap;
   transition: color var(--t-hover) var(--ease-in), background-color var(--t-hover) var(--ease-in);
 }
-.tab:hover { color: var(--ink); background: #ffffff0a; }
-.tab.active { color: #fff; }
-/* the division mark is a small square lamp: dim, lit on the station you are at */
-.tab .pill { width: 7px; height: 7px; border-radius: 1px; opacity: 0.45; transition: opacity var(--t-press) steps(1), box-shadow var(--t-press) steps(1); }
-.tab.active .pill { opacity: 1; box-shadow: 0 0 6px 1px var(--div); }
-.tab-hint {
-  position: fixed; top: calc(var(--topbar-h) + 8px); z-index: 60; transform: translateX(-50%); padding: 7px 10px; border-radius: 2px; pointer-events: none;
-  background: var(--plate); color: #f2f4f6; font: 400 10.5px/1 var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap;
-  box-shadow: 0 0 0 1px #ffffff2e, 0 10px 24px #000c; animation: fade var(--t-toggle) var(--ease-in);
-}
+.tab:hover { color: var(--ink); background: #ffffff08; }
+.tab.active { color: var(--ink); }
 .tab::after { content: ''; position: absolute; left: 10px; right: 10px; bottom: -2px; height: 2px; background: var(--accent); transform: scaleX(0); transition: transform var(--t-toggle) var(--ease-in); z-index: 2; }
 .tab.active::after { transform: scaleX(1); }
-/* the station you are at is lit in its division's colour: a wash up from the railing, a glowing bar and a lit pill */
-.tab.active { color: #fff; background: linear-gradient(0deg, color-mix(in oklab, var(--div, var(--accent)) 26%, transparent), transparent 85%); text-shadow: 0 0 10px color-mix(in oklab, var(--div, var(--accent)) 60%, transparent); }
-.tab.active::after { left: 4px; right: 4px; height: 3px; bottom: -2px; background: var(--div, var(--accent)); box-shadow: 0 0 12px 1px var(--div, var(--accent)); }
-.tab.active .pill { box-shadow: 0 0 10px 2px var(--div, var(--accent)); }
 .tab__lock { width: 13px; height: 13px; color: var(--mute); }
 .topbar__right { margin-left: auto; display: flex; align-items: center; gap: 14px; flex: none; }
-/* stardate and readings a second: small backlit windows, a capitals label over an amber number */
-.stat { display: flex; flex-direction: column; justify-content: center; gap: 4px; height: 36px; padding: 0 9px; border-radius: 2px; line-height: 1; background: #000; box-shadow: 0 0 0 1px #ffffff1f; }
-.stat b { font-size: 13px; font-weight: 700; color: #ffd27a; }
-.stat b small { font: 400 10px var(--font-mono); color: #c9b07a; }
-.stat .label { display: flex; align-items: center; gap: 6px; font: 400 8.5px/1 var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; color: #aab2bc; }
+.stat { display: flex; flex-direction: column; gap: 3px; line-height: 1; }
+.stat b { font-size: 13px; font-weight: 700; color: var(--ink); }
+.stat b small { font: 400 10px var(--font-mono); color: var(--mute); }
+.stat .label { display: flex; align-items: center; gap: 6px; font-size: 10px; letter-spacing: 0.04em; }
 .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--mute); }
 .live-dot.on { background: var(--ready); box-shadow: 0 0 6px var(--ready); }
 :root[data-attention='live'] .live-dot.on { animation: ping 2s var(--ease-in) infinite; }
@@ -58,9 +46,9 @@
 
 /* condition lamp */
 .cond { position: relative; }
-.cond__btn { display: flex; align-items: center; gap: 9px; height: 36px; padding: 0 12px 0 10px; border: 0; border-radius: 2px; background: #000; color: var(--ink); box-shadow: 0 0 0 1px #ffffff2e; }
+.cond__btn { display: flex; align-items: center; gap: 9px; height: 34px; padding: 0 12px 0 10px; border: 1px solid var(--line2); border-radius: 17px; background: #0006; color: var(--ink); }
 .cond__btn:disabled { cursor: default; opacity: 1; }
-.cond__btn:not(:disabled):hover { box-shadow: 0 0 0 1px var(--accent); }
+.cond__btn:not(:disabled):hover { background: var(--raised); }
 .cond__lamp { width: 11px; height: 11px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff9 0 15%, transparent 30%), var(--lamp, var(--ready)); box-shadow: 0 0 8px var(--lamp, var(--ready)); }
 .cond__word { font: 400 10.5px/1 var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
 .cond[data-level='normal'] { --lamp: #3edb6a88; }
@@ -68,25 +56,13 @@
 .cond[data-level='standdown'] { --lamp: var(--ready); }
 .cond[data-level='standdown'] .cond__word { color: var(--ready); }
 .cond[data-level='yellow'] { --lamp: var(--warn); }
-/* under an alert the sign lights up whole, like the set's CONDITION ALERT box: steady, the edge bars carry the pulse */
-.cond[data-level='yellow'] .cond__btn { background: var(--warn); box-shadow: 0 0 14px -2px #ffd23f99; }
-.cond[data-level='yellow'] .cond__word { color: var(--void); }
-.cond[data-level='yellow'] .cond__lamp { background: var(--void); box-shadow: none; }
-.cond[data-level='red'] { --lamp: #fff; }
-.cond[data-level='red'] .cond__btn { background: var(--crit-fill); box-shadow: 0 0 16px -2px #ff2a3daa; }
-.cond[data-level='red'] .cond__word { color: #fff; }
-.cond__menu, .help__menu { position: absolute; right: 0; top: calc(100% + 10px); z-index: 60; display: grid; gap: 6px; padding: 10px; background: var(--plate); border-radius: 4px; box-shadow: 0 16px 40px #000a, 0 0 0 1px #ffffff2e; animation: rise var(--t-panel) var(--ease-in); }
-.help__menu { min-width: 250px; }
-.help__menu .lit { justify-content: space-between; }
-
-/* HELP: a black plate button in the top bar */
-.help { position: relative; }
-.tb-plate {
-  display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; border: 0; border-radius: 2px; background: #000; color: #f2f4f6;
-  font: 400 10.5px/1 var(--font-display); letter-spacing: 0.12em; text-transform: uppercase; box-shadow: 0 0 0 1px #ffffff2e;
-  transition: box-shadow var(--t-hover) var(--ease-in), color var(--t-hover) var(--ease-in);
-}
-.tb-plate:hover, .tb-plate[aria-expanded='true'] { box-shadow: 0 0 0 1px var(--accent); color: #fff; }
+.cond[data-level='yellow'] .cond__btn { border-color: color-mix(in oklab, var(--warn) 60%, transparent); }
+.cond[data-level='yellow'] .cond__word { color: var(--warn); }
+.cond[data-level='red'] { --lamp: var(--red-alert); }
+.cond[data-level='red'] .cond__btn { border-color: var(--crit); background: color-mix(in oklab, var(--crit-fill) 30%, #000); }
+.cond[data-level='red'] .cond__word { color: var(--crit-ink); }
+.cond[data-level='red'] .cond__lamp { animation: red-pulse 1s ease-in-out infinite; }
+.cond__menu { position: absolute; right: 0; top: calc(100% + 8px); z-index: 60; display: grid; gap: 6px; padding: 10px; background: var(--raised); border-radius: 10px; box-shadow: 0 16px 40px #000a, 0 0 0 1px var(--line2); animation: rise var(--t-panel) var(--ease-in); }
 
 /* ---- condition bars and the red-alert wash ---------------------------------- */
 .alertbar { position: fixed; left: 0; right: 0; z-index: 90; height: 8px; pointer-events: none; background: var(--bar, transparent); transform: scaleY(0); transition: transform 240ms var(--ease-in); }
@@ -111,22 +87,6 @@
 .lift-light { position: fixed; right: 0; bottom: 0; z-index: 70; width: 4px; height: 120px; pointer-events: none; opacity: 0;
   background: linear-gradient(0deg, transparent, var(--lit-amber) 50%, transparent); box-shadow: 0 0 16px var(--lit-amber);
   animation: lift-run var(--t-station) var(--ease-in); }
-/* turbolift doors: on every station change they stand shut over the new view for a beat, then part from the seam */
-.lift-doors { position: fixed; inset: calc(var(--topbar-h) + 2px) 0 0; z-index: 60; display: flex; pointer-events: none; }
-.lift-doors i { flex: 1; background: linear-gradient(180deg, #2a2d33, #16181c 45%, #0d0e11); animation: door-l 460ms 140ms cubic-bezier(0.6, 0, 0.2, 1) forwards; }
-.lift-doors i:first-child { box-shadow: inset -2px 0 0 var(--lit-amber), 6px 0 18px -6px var(--lit-amber); }
-.lift-doors i:last-child { box-shadow: inset 2px 0 0 var(--lit-amber); animation-name: door-r; }
-@keyframes door-l { to { transform: translateX(-101%); } }
-@keyframes door-r { to { transform: translateX(101%); } }
-/* then the station's screens come on one after another */
-.view--station .st-grid > * { animation: screen-in 380ms var(--ease-in) both; animation-delay: calc(var(--k, 0) * 45ms + 260ms); }
-.view--station .st-grid > :nth-child(2) { --k: 1; } .view--station .st-grid > :nth-child(3) { --k: 2; } .view--station .st-grid > :nth-child(4) { --k: 3; }
-.view--station .st-grid > :nth-child(5) { --k: 4; } .view--station .st-grid > :nth-child(6) { --k: 5; } .view--station .st-grid > :nth-child(n + 7) { --k: 6; }
-@keyframes screen-in { from { opacity: 0; transform: translateY(14px) scale(0.985); } }
-/* a panel whose subject changes (a new deck) slides its contents in */
-.swap-in { height: 100%; animation: swap-in 300ms var(--ease-in) both; }
-@keyframes swap-in { from { opacity: 0; transform: translateX(12px); } }
-@media (prefers-reduced-motion: reduce) { .lift-doors { display: none; } .view--station .st-grid > *, .swap-in { animation: none; } }
 @keyframes lift-run { 0% { opacity: 1; transform: translateY(0); } 85% { opacity: 1; } 100% { opacity: 0; transform: translateY(calc(-100dvh + 60px)); } }
 
 .station-msg { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--mute); padding: 48px 16px; text-align: center; }
@@ -176,28 +136,21 @@
 .toast[data-tone='ok']::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 10px; border-radius: 50%; background: var(--ready); box-shadow: 0 0 6px var(--ready); }
 .toast[data-tone='bad']::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 10px; border-radius: 50%; background: var(--crit); }
 
-.tab[data-locked] { color: var(--mute); } /* a station your role cannot open reads dimmer */
-/* ---- narrower screens: the top bar sheds words before any station tab leaves view ------------------------------ */
+/* ---- narrow screens ------------------------------------------------------------- */
+/* every tab stays visible down to the phone menu: a restricted tab is dimmed (its lock shows only on wide screens),
+   long labels give way to short ones, then the wordmark text, the stardate and the user's name make room */
+.tab[data-locked] { color: var(--mute); }
+.tab[data-locked] .pill { opacity: 0.45; }
 .tab__short { display: none; }
+@media (max-width: 1700px) { .tab__long, .tab__lock { display: none; } .tab__short { display: inline; } .tab { padding: 0 10px; } }
+@media (max-width: 1500px) { .wordmark span { display: none; } .stat--date { display: none; } }
+@media (max-width: 1300px) { .user__who { display: none; } .tab { padding: 0 8px; gap: 6px; } .topbar__right { gap: 10px; } }
+@media (max-width: 1120px) { .stat--rate { display: none; } .tab { padding: 0 6px; } .topbar { gap: 10px; } }
+/* the condition word shrinks with the tabs, so a long "Yellow alert" never pushes the last tab out of view */
 .cond__short { display: none; }
-@media (max-width: 1999px) { .tab__long { display: none; } .tab__short { display: inline; } .tab { padding: 0 9px; gap: 6px; } }
-@media (max-width: 1799px) {
-  .cond__long, .stat--date, .tb-plate .keycap, .iconbtn .keycap { display: none; }
-  .cond__short { display: inline; }
-  .tab { padding: 0 7px; }
-  .topbar, .topbar__right { gap: 10px; }
-  .tabs { margin-left: 0; }
-  .user__who b { max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
-}
-/* the wordmark keeps only its delta and the role only its emblem (its name is the emblem's tooltip) */
-@media (max-width: 1439px) { .wordmark > span, .user__who { display: none; } }
-/* below 1220 px the tab row no longer fits: the menu button opens the turbolift instead, as on a phone */
-@media (max-width: 1220px) { .tabs { display: none; } .tabs-menu { display: inline-flex; } }
-@media (max-width: 900px) {
+@media (max-width: 1540px) { .cond__long { display: none; } .cond__short { display: inline; } }
+@media (max-width: 1023px) {
   .tabs { display: none; }
-  .tb-plate__word { display: none; }
-  .tb-plate .keycap { display: inline-flex; } /* a phone's HELP is its ? key cap alone */
-  .tb-plate { height: 44px; min-width: 40px; justify-content: center; padding: 0 8px; }
   .tabs-menu { display: inline-flex; }
   .stat--rate, .user__who, .iconbtn .keycap { display: none; }
   .topbar { gap: 8px; padding: 0 10px; }
@@ -205,7 +158,7 @@
   .user { padding-left: 6px; }
   .wordmark small { display: none; }
   .iconbtn { height: 44px; min-width: 40px; justify-content: center; }
-  .cond__btn { height: 40px; padding: 0 10px 0 8px; }
+  .cond__btn { height: 36px; padding: 0 10px 0 8px; }
   .toast { white-space: normal; max-width: calc(100vw - 32px); }
 }
 @media (max-width: 480px) { .wordmark span { display: none; } .user .delta--sm { display: none; } .cond__word { font-size: 9.5px; letter-spacing: 0.06em; } }

@@ -113,6 +113,7 @@ function ColdOpen({ intro, onStart, onDone }) {
           <h1 className="gate__title">Bridge</h1>
           <LitButton color="amber" size="lg" className="gate__engage" label="Engage" aria-keyshortcuts="Enter" autoFocus onClick={onEngage} />
           <KeyCap>Enter</KeyCap>
+          <p className="label gate__note">Plays the original-series opening with sound.</p>
           <div className="gate__more">
             <SoundToggle />
             <button type="button" className="stage-pill" onClick={skip}>Skip intro <KeyCap>Esc</KeyCap></button>
@@ -207,6 +208,7 @@ export default function Stage({ phase, onOpened, onBoarded, onFaded }) {
       {(phase === 'identify' || phase === 'boarding') && <Login leaving={phase === 'boarding'} />}
       {phase === 'identify' && <div className="stage__bar"><SoundToggle /></div>}
       {(phase === 'boarding' || phase === 'fade') && flying && <div className="stage__flash" aria-hidden="true" />}
+      {phase === 'boarding' && flying && <p className="stage__skip label">Boarding the bridge · click or Esc to skip</p>}
     </div>
   );
 }

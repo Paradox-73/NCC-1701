@@ -4,8 +4,8 @@
 import { useEffect, useRef } from 'react';
 import { reducedMotion } from '../../lib/chartTheme.js';
 import { onFrame } from '../../lib/raf.js';
-import { LevelChip, Num, Readout as Reading, THEME, Trace, decOf } from '../../ui/index.js';
-import { levelOf, meta, read, readAgo } from './data.js';
+import { LevelChip, Num, Readout as Reading, THEME, decOf } from '../../ui/index.js';
+import { eachRecent, levelOf, limitsOf, meta, read, readAgo, ringOf } from './data.js';
 import './stations.css';
 
 // canvas colours: the design tokens (ui/theme.js)
@@ -75,5 +75,43 @@ export function Readout({ src, k, label, unit, dec, size, spark = true, ms = 600
   );
 }
 
-/** A channel's last `ms` as a small chart: the kit's Trace (client/src/ui), `h` px tall. */
-export const Spark = ({ src, k, ms = 60000, h = 30 }) => <Trace src={src} k={k} ms={ms} className="st-spark" style={{ height: h }} />;
+/** Canvas sparkline over the last `ms`, redrawn about 8 times a second; dashed warn and critical lines when in view. */
+export function Spark({ src, k, ms = 60000, h = 30 }) {
+  const m = meta(k);
+  const lim = limitsOf(k);
+  const ref = useCanvas((ctx, w, hh) => {
+    ctx.clearRect(0, 0, w, hh);
+    const r = ringOf(src, k);
+    if (!r?.len || !r.cols[k]) return;
+    let lo = Infinity, hi = -Infinity;
+    const n = eachRecent(r, k, ms, (t, v) => { if (v < lo) lo = v; if (v > hi) hi = v; });
+    if (!n) return;
+    const minSpan = m ? (m.max - m.min) * 0.02 : 1;
+    if (hi - lo < minSpan) { const mid = (hi + lo) / 2; lo = mid - minSpan / 2; hi = mid + minSpan / 2; }
+    const pad = (hi - lo) * 0.12;
+    lo -= pad; hi += pad;
+    const end = r.lastTs;
+    const X = (t) => w - ((end - t) / ms) * w;
+    const Y = (v) => 2 + (1 - (v - lo) / (hi - lo)) * (hh - 4);
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    for (const side of ['high', 'low']) {
+      const rule = lim?.[side];
+      if (!rule) continue;
+      for (const [val, col] of [[rule.warn, C.warn], [rule.critical, C.crit]]) {
+        if (val <= lo || val >= hi) continue;
+        ctx.strokeStyle = col; ctx.globalAlpha = 0.7;
+        ctx.beginPath(); ctx.moveTo(0, Y(val)); ctx.lineTo(w, Y(val)); ctx.stroke();
+      }
+    }
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
+    const step = Math.max(1, Math.floor(n / (w * 1.5)));
+    ctx.strokeStyle = C.chart1; ctx.lineWidth = 1.5; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    let first = true, lx = 0, ly = 0;
+    eachRecent(r, k, ms, (t, v) => { lx = X(t); ly = Y(v); if (first) { ctx.moveTo(lx, ly); first = false; } else ctx.lineTo(lx, ly); }, step);
+    ctx.stroke();
+    ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(Math.min(lx, w - 2), ly, 2, 0, Math.PI * 2); ctx.fill();
+  }, [src, k, ms], 125);
+  return <canvas ref={ref} className="st-spark" style={{ height: h }} aria-hidden="true" />;
+}

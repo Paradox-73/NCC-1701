@@ -13,8 +13,6 @@
   font: 400 10px/1 var(--font-mono); color: var(--ink2); border: 1px solid var(--line2); border-radius: 3px; background: #ffffff06;
   white-space: nowrap;
 }
-/* a phone or tablet has no keyboard to press them with: no key caps anywhere (a touch laptop keeps them, it has a fine pointer) */
-@media (hover: none) and (pointer: coarse) { .keycap, .kbd-only { display: none !important; } }
 
 /* ---- lit button: a real control, a translucent jellybean block set into a black plate ------------------------
    The facets are two gradients over the lens colour: a bright top bevel and darker side faces (RESEARCH.md). */
@@ -73,43 +71,38 @@
 @keyframes jewel-slow { 50% { opacity: 0.35; } }
 @keyframes jewel-fast { 50% { opacity: 0.3; } }
 
-/* ---- status word: the word that goes with a status colour. A warning is a lit plate (YELLOW on yellow, RED on red);
-   a nominal word (HOLDING, OPEN) is lit green in a dark window. ------------------------------------------------ */
-.chip { display: inline-flex; flex: none; align-items: center; gap: 6px; height: 20px; padding: 0 7px; border-radius: 2px; font: 400 10px/1 var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
+/* ---- chip: the word that goes with a status colour ------------------------ */
+.chip { display: inline-flex; flex: none; align-items: center; gap: 6px; height: 20px; padding: 0 7px; border-radius: 3px; font: 400 10px/1 var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; white-space: nowrap; }
 .chip[data-level='warn'] { background: var(--warn); color: var(--void); }
 .chip[data-level='crit'] { background: var(--crit-fill); color: #fff; }
-.chip[data-level='ok'] { color: var(--ready); background: #000; box-shadow: inset 0 0 0 1px #3edb6a59; }
+.chip[data-level='ok'] { color: var(--ready); box-shadow: inset 0 0 0 1px #3edb6a66; }
 .chip[data-level='off'] { color: var(--mute); background: var(--raised); }
 .chip[data-level='info'] { color: var(--accent); box-shadow: inset 0 0 0 1px #5cb8ff55; }
 
-/* ---- label plate: a black plate with white capitals, how the set names a station or a screen. Text never sits on
-   the grey wall itself; it sits on a plate. -------------------------------------------------------------------- */
-.plate, .monitor__title h2 {
-  display: inline-block; min-width: 0; max-width: 100%; margin: 0; padding: 5px 10px 4px; border-radius: 2px;
-  background: var(--plate); color: #f2f4f6; font: 400 11px/1.1 var(--font-display); letter-spacing: 0.14em; text-transform: uppercase;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-shadow: 0 1px 0 #ffffff59;
+/* ---- monitor: a wall screen. The wall steps back into a dark rounded bay; the screen sits in it behind a thin pale
+   frame, with scan lines and a glass sheen over the picture (RESEARCH.md, Bridge consoles). -------------------- */
+.monitor {
+  position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0;
+  padding: 0 9px 9px; border-radius: 17px;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--bay) 70%, #000) 0, var(--bay) 30px);
+  box-shadow: inset 0 4px 10px #000000b0, inset 0 -1px 0 #ffffff26, 0 1px 0 #ffffff4d, 0 -1px 0 #0000004d;
 }
-
-/* ---- monitor: a wall screen (DESIGN.md, The 1966 set). The label plate sits on the wall; under it the wall steps back
-   into a slate recess, the bay, holding the screen flush: near-black glass inside a thin pale rim. Flat, no gloss. -- */
-.monitor { position: relative; display: flex; flex-direction: column; gap: 5px; min-width: 0; min-height: 0; }
-.monitor__title { display: flex; align-items: center; gap: 6px; min-width: 0; min-height: 22px; }
-.monitor__title h2 { flex: 0 1 auto; }
-.monitor__meta {
-  margin-left: auto; flex: 0 100 auto; min-width: 0; display: flex; align-items: center; gap: 8px; min-height: 21px; padding: 4px 8px; overflow: hidden;
-  border-radius: 2px; background: var(--plate); box-shadow: 0 1px 0 #ffffff59; font: 400 11px/1 var(--font-mono); color: #aab2bc; white-space: nowrap;
-}
-.monitor__meta:empty { display: none; }
+.monitor__title { display: flex; align-items: center; gap: 8px; min-height: 28px; padding: 2px 6px 0; min-width: 0; }
+.monitor__title h2 { margin: 0; flex: 0 0 auto; max-width: 100%; font: 400 10.5px/1.2 var(--font-display); letter-spacing: 0.12em; text-transform: uppercase; color: #dfe3e8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.monitor__meta { margin-left: auto; flex: 0 100 auto; min-width: 0; display: flex; align-items: center; gap: 8px; overflow: hidden; font: 400 11px/1 var(--font-mono); color: #a3abb5; white-space: nowrap; }
 .monitor__metatext { min-width: 0; overflow: hidden; text-overflow: ellipsis; } /* a narrow monitor ends its caption with … (full text on hover) */
-.monitor__bay {
-  flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 8px; border-radius: 14px; background: var(--bay);
-  box-shadow: inset 0 3px 4px -1px #00000070, inset 0 -1px 0 #ffffff21, 0 1px 0 #ffffff4d;
-}
 .monitor__screen {
-  position: relative; flex: 1; min-height: 0; border-radius: 10px; background: var(--glass); overflow: hidden;
-  box-shadow: 0 0 0 1.5px var(--rim), 0 0 0 3px #0000004d; transform-origin: 50% 50%;
+  position: relative; flex: 1; min-height: 0; border-radius: 12px; background: #030405; overflow: hidden;
+  box-shadow: 0 0 0 3px var(--bezel), 0 0 0 4px #00000099, 0 2px 6px 3px #00000066, inset 0 0 30px #000, inset 0 0 0 1px #ffffff0d;
+  margin: 3px;
+  transform-origin: 50% 50%;
 }
-.monitor__views { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.monitor__screen::after {
+  content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none; border-radius: inherit;
+  background:
+    linear-gradient(160deg, #ffffff0d 0, #ffffff00 34%),
+    repeating-linear-gradient(0deg, #ffffff07 0 1px, transparent 1px 3px);
+}
 /* the tube switches on when the monitor mounts and whenever its state changes */
 .monitor__in { position: relative; height: 100%; animation: tube-in 260ms var(--ease-in) both; transform-origin: 50% 50%; }
 @keyframes tube-in { 0% { transform: scaleY(0.01); opacity: 0.2; } 70% { opacity: 1; } 100% { transform: none; opacity: 1; } }
@@ -169,47 +162,6 @@
 .spark[data-status='warn'] path.line { stroke: var(--warn); }
 .spark[data-status='crit'] path.line { stroke: var(--crit); }
 
-/* ---- headline: one reading as a monitor's whole picture, a big number, its unit, one word or trend, one graphic ---- */
-.headline { display: flex; flex-direction: column; justify-content: center; align-items: flex-start; gap: 8px; height: 100%; min-width: 0; padding: 12px 16px; }
-.headline__value { display: flex; align-items: baseline; gap: 8px; min-width: 0; max-width: 100%; }
-.headline__num { font: 700 48px/0.9 var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.03em; color: var(--ink); white-space: nowrap; }
-.headline__unit { font: 400 14px/1 var(--font-mono); color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.headline__word { display: flex; align-items: center; min-height: 20px; }
-.headline__trend { flex: none; align-self: center; width: 18px; height: 18px; color: var(--ink2); }
-.headline__graphic { align-self: stretch; min-width: 0; }
-.headline[data-level='warn'] .headline__num { color: var(--warn); }
-.headline[data-level='crit'] .headline__num { color: var(--crit); }
-.headline[data-level='off'] .headline__num { color: var(--mute); }
-.headline.is-crossed .headline__num { animation: limit-flash 600ms var(--ease-in); }
-
-/* ---- lamp bar: a row of lamps lit from the left up to the value. Unlit lamps in a warn or critical zone keep a dim
-   tint of that colour, so the limits show before a reading reaches them; lit lamps take the reading's level. ---- */
-.lampbar { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 3px; height: 10px; }
-.lampbar i { border-radius: 1px; background: #ffffff14; transition: background-color var(--t-press) steps(1); }
-.lampbar i[data-z='warn'] { background: #ffd23f33; }
-.lampbar i[data-z='crit'] { background: #ff4a5540; }
-.lampbar i.on { background: var(--chart-1); }
-.lampbar[data-level='warn'] i.on { background: var(--warn); }
-.lampbar[data-level='crit'] i.on { background: var(--crit); }
-
-/* ---- readings: the numbers a monitor's headline leaves out, as small backlit windows: a capitals label over an amber
-   number (the set's readout band) ------------------------------------------------------------------------------- */
-.readings { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 6px; margin: 0; padding: 10px; align-content: start; }
-.readings__win { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 7px 9px; border-radius: 2px; background: #000; box-shadow: 0 0 0 1px #ffffff1a; }
-.readings dt { font: 400 9px/1.1 var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; color: #aab2bc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.readings dd { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 6px; margin: 0; font: 700 16px/1 var(--font-mono); color: #ffd27a; white-space: nowrap; }
-.readings dd .unit { margin-left: 0; font-size: 11px; color: #c9b07a; }
-.readings__win[data-level='warn'] dd { color: var(--warn); }
-.readings__win[data-level='crit'] dd { color: var(--crit-ink); }
-
-/* ---- trace: the chart inside a monitor, one channel over the last minute as a bold phosphor line ---------------- */
-.trace { display: block; width: 100%; height: 40px; }
-
-/* ---- button row: real controls on a black desk plate, with the row's name on a small plate under it ------------- */
-.btnrow { display: inline-flex; flex-direction: column; gap: 6px; padding: 8px; border-radius: 4px; background: var(--plate); box-shadow: inset 0 1px 0 #ffffff17, 0 0 0 1px #000, 0 1px 0 1px #ffffff26; }
-.btnrow__keys { display: flex; flex-wrap: wrap; gap: 6px; }
-.btnrow__caption { font: 400 9px/1 var(--font-display); letter-spacing: 0.16em; text-transform: uppercase; color: #8d95a0; text-align: center; }
-
 /* ---- gauges --------------------------------------------------------------- */
 .arc { position: relative; width: 100%; }
 .arc__dial { display: block; width: 100%; height: auto; overflow: visible; }
@@ -261,36 +213,44 @@
 .grid-lamps.is-booting { mask-image: linear-gradient(90deg, #000 40%, transparent 60%); mask-size: 260% 100%; mask-position: 100% 0; animation: grid-wipe 600ms var(--ease-in) forwards; animation-delay: var(--delay, 0ms); }
 @keyframes grid-wipe { to { mask-position: 0 0; } }
 
-/* ---- jellybean plate: a fan-shaped black plate of translucent lenses on the desk (SVG, aria-hidden). Set dressing,
-   so it holds still: some lenses lit, the rest dim. Yellow and red alert recolour it like every console light. ---- */
+/* ---- jellybean plate: a fan-shaped black plate of translucent lenses on the desk (SVG, aria-hidden) ------------
+   A lit lens keeps opacity 1 between blinks, so reduced motion leaves the pattern lit and still. */
 .jb { display: block; height: 100%; width: auto; flex: none; overflow: visible; }
 .jb__plate { fill: var(--plate); stroke: #ffffff26; stroke-width: 0.8; }
 .jb__gem { fill: color-mix(in oklab, var(--c) 30%, #050505); stroke: #000; stroke-width: 0.6; }
-.jb__lit { fill: var(--c); }
+.jb__lit { fill: var(--c); animation: jb-twinkle var(--d, 3s) steps(1) var(--o, 0s) infinite; }
 .jb__shine { fill: #fff; opacity: 0.45; }
+@keyframes jb-twinkle { 0% { opacity: 1; } 55% { opacity: 0; } }
 :root[data-condition='yellow'] .jb g:nth-of-type(2n) > * { --c: var(--lit-yellow) !important; }
 :root[data-condition='yellow'] .jb g:nth-of-type(2n+1) > * { --c: var(--lit-amber) !important; }
 :root[data-condition='red'] .jb g > * { --c: var(--lit-red) !important; }
+:root[data-condition='red'] .jb__lit { animation: jb-twinkle 1s steps(1) infinite; }
+:root[data-condition='red'] .jb g:nth-of-type(3n) > .jb__lit { animation-delay: -0.5s; }
 
-/* ---- station frame: you sit at the console facing the wall. Grey wall with a red line under the ceiling cove, the
-   station's label plate, the screens in their bays, then the desk (DESIGN.md, The 1966 set). ------------------- */
+/* ---- readout windows: the black band of small backlit panels under the screens (aria-hidden) ------------------ */
+.rw { display: flex; gap: 6px; align-items: center; min-width: 0; flex: 1; overflow: hidden; }
+.rw__win { flex: none; display: block; width: 34px; height: 30px; border-radius: 2px; background: #020203; box-shadow: 0 0 0 1px #000, 0 0 0 2px #ffffff14; }
+.rw__win .b { animation: jb-twinkle var(--d, 3s) steps(1) var(--o, 0s) infinite; }
+
+/* ---- station frame: you sit at the console facing the wall. Grey wall with a red line under the ceiling cove, a
+   black placard, the screens in their bays, then the desk (DESIGN.md, Layout frame). ---------------------------- */
 .st-station { display: flex; flex-direction: column; height: 100%; min-height: 0; color: var(--ink); }
-/* the grey wall, also behind a station's restricted panel; a hairline seam between wall panels */
+/* the grey wall, also behind a station's restricted panel; faint vertical seams between wall panels */
 .st-station, .restricted {
   background:
-    repeating-linear-gradient(90deg, #00000000 0 calc(16.666% - 1px), #0000001a calc(16.666% - 1px) 16.666%),
-    linear-gradient(180deg, var(--wall-hi) 0, var(--wall) 30%, var(--wall-lo) 100%);
+    repeating-linear-gradient(90deg, #00000000 0 calc(16.666% - 2px), #0000001f calc(16.666% - 2px) calc(16.666% - 1px), #ffffff1a calc(16.666% - 1px) 16.666%),
+    linear-gradient(180deg, var(--wall-hi) 0, var(--wall) 32%, var(--wall-lo) 100%);
 }
-.st-plate { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 10px 18px 0; }
+.st-plate { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 9px 18px 0; }
 .st-sign {
-  display: flex; align-items: center; gap: 10px; min-width: 0; padding: 7px 12px; border-radius: 2px;
-  background: var(--plate); box-shadow: 0 1px 0 #ffffff59;
+  display: flex; align-items: center; gap: 10px; min-width: 0; padding: 6px 12px; border-radius: 4px;
+  background: linear-gradient(180deg, #1b1d21, #08090a); box-shadow: 0 0 0 1px #000, 0 0 0 3px #b9bfc6, 0 2px 4px 3px #0000004d;
 }
 .st-sign h1 { margin: 0; font: 400 13px/1 var(--font-display); letter-spacing: 0.16em; text-transform: uppercase; color: #f4f6f8; white-space: nowrap; }
 .st-sign .st-ship { font: 400 11px/1 var(--font-display); letter-spacing: 0.12em; color: #aab2bc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .st-plate .st-plate-end {
-  margin-left: auto; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 2px; font: 400 11px/1 var(--font-mono); color: #c9d0d8; white-space: nowrap;
-  background: var(--plate); box-shadow: 0 1px 0 #ffffff59;
+  margin-left: auto; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 4px; font: 400 11px/1 var(--font-mono); color: #c9d0d8; white-space: nowrap;
+  background: #08090a; box-shadow: 0 0 0 1px #000, 0 0 0 3px #b9bfc6;
 }
 .st-grid {
   flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: var(--rows, none);
@@ -312,7 +272,8 @@
   background: #020203; box-shadow: 0 0 0 1px #000, 0 0 0 2px #ffffff14;
 }
 .cs-status__word { font-size: 9.5px; }
-.cs-readouts { display: flex; gap: 6px; margin: 0; flex: none; }
+/* readouts that do not fit wrap onto a hidden second row, so a narrow screen drops whole windows instead of slicing one */
+.cs-readouts { display: flex; flex-wrap: wrap; gap: 6px; height: 36px; padding: 2px; margin: 0; flex: 0 1 auto; min-width: 0; overflow: hidden; }
 .cs-readout { display: flex; flex-direction: column; justify-content: center; gap: 3px; height: 32px; padding: 0 8px; border-radius: 2px; background: #020203; box-shadow: 0 0 0 1px #000, 0 0 0 2px #ffffff14; }
 .cs-readout dt { font: 400 8.5px/1 var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; color: #a3abb5; white-space: nowrap; }
 .cs-readout dd { margin: 0; font: 700 13px/1 var(--font-mono); color: #ffd27a; white-space: nowrap; }
@@ -329,7 +290,7 @@
   background: var(--plate); box-shadow: inset 0 1px 0 #ffffff17, 0 0 0 1px #000, 0 2px 0 1px #ffffff0d;
 }
 .console-strip .lit { min-height: 42px; padding: 0 11px; gap: 7px; font-size: 10.5px; letter-spacing: 0.06em; }
-.cs-plates { flex: 1; min-width: 0; height: 62px; display: flex; gap: 2px; align-items: stretch; overflow: hidden; perspective: 420px; }
+.cs-plates { flex: 1; min-width: 0; height: 62px; display: flex; flex-wrap: wrap; gap: 0 2px; align-items: stretch; overflow: hidden; perspective: 420px; } /* a plate that does not fit wraps out of sight instead of being cut */
 .cs-plates .jb { transform: rotateX(26deg); transform-origin: 50% 100%; }
 .cs-edge { height: 6px; background: linear-gradient(180deg, color-mix(in oklab, var(--railing) 82%, #fff), var(--railing) 40%, color-mix(in oklab, var(--railing) 70%, #000)); }
 .cs-kick { display: flex; justify-content: space-around; align-items: center; height: 15px; padding: 0 6%; background: linear-gradient(180deg, #4c5258, var(--kick) 40%, #5d636a); }
@@ -345,12 +306,10 @@
   .st-grid { overflow: visible; grid-template-rows: none; padding: 10px 8px 12px; gap: 12px; }
   .st-grid > * { grid-column: 1 / -1 !important; grid-row: auto !important; }
   .st-grid > .monitor { height: var(--mh, auto); }
-  .monitor__bay { padding: 8px; border-radius: 14px; }
+  .monitor { padding: 0 8px 8px; border-radius: 14px; }
   /* a phone wraps the title bar: the description goes under the name instead of being cut */
-  .monitor__title { flex-wrap: wrap; row-gap: 4px; }
-  .monitor__meta { white-space: normal; line-height: 1.3; }
-  .monitor__overlay { padding: 8px; gap: 6px; }
-  .monitor__overlay span { font-size: 11px; }
+  .monitor__title { flex-wrap: wrap; row-gap: 3px; padding: 6px 6px 6px; }
+  .monitor__meta { margin-left: 0; flex: 1 1 100%; white-space: normal; line-height: 1.3; }
   .monitor:not([data-state='live']) .monitor__screen { min-height: 140px; } /* a stacked monitor with only its overlay has no content height */
   .cs-band, .cs-plates, .cs-kick { display: none; }
   .cs-desk { min-height: 0; padding: 8px 8px max(8px, env(safe-area-inset-bottom)); }

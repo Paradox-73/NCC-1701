@@ -27,6 +27,17 @@ export function fmt(v, dec = 0) {
 }
 export const decOf = (key) => { const s = meta(key)?.scale ?? 1; return s >= 100 ? 2 : s >= 10 ? 1 : 0; };
 
+/** uPlot y-range for a channel: the data's range, but never narrower than 5 % of the channel's span. */
+export const calmRange = (key) => {
+  const m = meta(key);
+  const min = m ? (m.max - m.min) * 0.05 : 0;
+  return (u, lo, hi) => {
+    if (lo == null) return [0, 1];
+    const mid = (lo + hi) / 2, half = Math.max((hi - lo) * 0.6, min / 2, 1e-6);
+    return [mid - half, mid + half];
+  };
+};
+
 /** Eases from the last shown value to `v` over `ms` in the shared frame loop, calling apply(x) each frame. */
 export function useTween(v, ms, apply) {
   const cur = useRef(null);

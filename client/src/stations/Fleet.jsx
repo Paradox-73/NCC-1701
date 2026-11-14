@@ -218,7 +218,7 @@ export default function Fleet({ onOpenShip }) {
   const lost = ids.filter((id) => linkOf(id) === 'lost').length;
   const desk = (
     <ConsoleStrip seed={59} cmd={cmd} jewels={ids.map((id) => J(shipCode(id), linkOf(id) === 'lost' ? 'crit' : alertFlagOf(id), linkOf(id) === 'unknown' ? 'off' : 'live'))}>
-      <LitButton color="red" label="Stop scenario" onClick={() => cmd.send('scenario.stop', {}, 'Stop the scenario').then((ok) => ok && setRunning(null))} pending={cmd.pending === 'scenario.stop'} disabled={!admin} />
+      <LitButton color="red" label="Stop scenario" onClick={() => cmd.send('scenario.stop', {}, 'Stop the scenario').then((ok) => ok && setRunning(null))} {...cmd.bind('scenario.stop')} />
       <LitButton color="white" label="Ack all yellow" onClick={() => state.alerts.filter((a) => isOpen(a) && a.severity === 'warn').slice(0, 50).forEach((a) => ackAlert(a.id))} disabled={!user?.canAck} />
     </ConsoleStrip>
   );

@@ -1,6 +1,6 @@
-/* Station panels. Tokens follow docs/DESIGN.md; the shell's @theme declares the same names and values, so
-   whichever loads last changes nothing. Classes are prefixed st- so they never collide with the shell's. */
-:root {
+/* Station panels. Tokens follow docs/DESIGN.md and are scoped to the station roots, so loading a station never changes
+   the shell's own variables. Classes are prefixed st- so they never collide with the shell's. */
+.st-station, .st-drawer {
   --color-void: #050608; --color-console: #0b0c0f; --color-panel: #14161a; --color-raised: #1e2127;
   --color-bulkhead: #56625e; --color-line: #ffffff14; --color-railing: #e0522a;
   --color-ink: #f1f3f5; --color-ink2: #b3b9c2; --color-mute: #8d95a0;
@@ -16,7 +16,7 @@
   --font-mono: 'Space Mono', ui-monospace, 'Cascadia Mono', monospace;
   --ease-in: cubic-bezier(0.2, 0, 0, 1); --ease-out: cubic-bezier(0.4, 0, 1, 1);
 }
-:root[data-condition='red'] { --color-void: #0a0204; --color-panel: #1a0b0e; }
+:root[data-condition='red'] :is(.st-station, .st-drawer) { --color-void: #0a0204; --color-panel: #1a0b0e; }
 
 /* ---- the console frame: a bulkhead wall with a placard, a recessed bank of screens and the desk below ---- */
 .st-station {
@@ -53,7 +53,7 @@
   box-shadow: inset 0 1px 0 #ffffff12, inset 0 0 0 1px #56625e4d, 0 2px 0 #000;
 }
 .st-mon-head { display: flex; align-items: center; gap: 8px; height: 30px; padding: 0 6px; min-width: 0; }
-.st-mon-head h2 { margin: 0; flex: 0 1 auto; font: 400 11px/1 var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.st-mon-head h2 { margin: 0; flex: 0 0 auto; max-width: 100%; font: 400 11px/1 var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--color-ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .st-mon-head .st-meta { margin-left: auto; flex: 0 100 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; font: 400 11px/1 var(--font-mono); color: var(--color-mute); white-space: nowrap; }
 .st-screen {
   position: relative; flex: 1; min-height: 0; border-radius: 9px; background: var(--color-void); overflow: hidden;
@@ -247,6 +247,8 @@
 
 .sb-beat { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--color-crit); box-shadow: 0 0 8px var(--color-crit); animation: sb-beat 1s var(--ease-in) infinite; }
 @keyframes sb-beat { 0% { transform: scale(1.35); opacity: 1; } 30% { transform: scale(1); opacity: 0.6; } 100% { transform: scale(0.9); opacity: 0.35; } }
+
+@media (max-width: 640px) { .st-plate { flex-wrap: wrap; row-gap: 4px; } .st-plate .st-plate-end { margin-left: 14px; } }
 
 /* a two-column monitor body that stacks on phones */
 @media (max-width: 640px) { .st-split { grid-template-columns: minmax(0, 1fr) !important; } .st-split > :first-child { min-height: 200px; } .st-split > * + * { border-left: 0 !important; } }

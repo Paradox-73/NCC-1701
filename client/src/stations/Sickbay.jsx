@@ -7,7 +7,7 @@ import { getRing } from '../lib/store.js';
 import { crewHubOf, crewLabel, deckOfCrew } from '@ncc/shared/schema.js';
 import { DECK_NAMES, canSee, levelOf, meta, monState, pad2, read, useCommand, useFeed, worst } from './parts/data.js';
 import { useHistory, useHistoryData } from './parts/history.js';
-import { C, Chip, ConsoleStrip, J, LevelChip, LitButton, Monitor, Num, Station, clamp, fmt, useCanvas } from './parts/ui.jsx';
+import { C, Chip, ConsoleStrip, J, LevelChip, LitButton, Monitor, Num, Station, calmRange, clamp, fmt, useCanvas } from './parts/ui.jsx';
 
 // DOMAIN.md section 4: crew 001-012 on deck 1, then 38 a deck; four vitals each, one group per deck on the crew hub
 const pad3 = (n) => String(n).padStart(3, '0');
@@ -100,7 +100,7 @@ function CrewGrid({ hub, base, sel, onSel }) {
     const b = e.currentTarget.getBoundingClientRect(), x = e.clientX - b.left, y = e.clientY - b.top;
     const d = Math.floor((y - g.top) / g.rowH), i = Math.floor((x - g.L) / (g.cell + g.gap));
     const n = BY_DECK[d]?.[i];
-    return n ? { n, x, y } : null;
+    return n ? { n, x, y, w: b.width } : null;
   };
   const move = (dn) => onSel(clamp((sel ?? 1) + dn, 1, 430));
   return (
@@ -112,7 +112,7 @@ function CrewGrid({ hub, base, sel, onSel }) {
       {tip && (() => {
         const s = crewStatus(hub, base.current, tip.n, isStale(hub));
         return (
-          <div className="chart-tip" style={{ display: 'block', left: Math.min(tip.x + 14, 9999), top: tip.y + 14, pointerEvents: 'none', minWidth: 190 }}>
+          <div className="chart-tip" style={{ display: 'block', left: tip.x > tip.w - 220 ? tip.x - 214 : tip.x + 14, top: tip.y + 14, pointerEvents: 'none', minWidth: 190 }}>
             <div className="t">{who(tip.n)}</div>
             {VITALS.map((x) => { const k = `${x.v}_${pad3(tip.n)}`, v = getRing(hub, BIO[DECK_OF(tip.n) - 1])?.last?.(k); return <div className="r" key={x.v}><span style={{ color: C.mute, minWidth: 110 }}>{x.label}</span><b style={{ color: levelOf(k, v) === 'crit' ? C.critInk : levelOf(k, v) === 'warn' ? C.warn : C.ink }}>{fmt(v, x.dec ?? 0)}</b><span>{x.unit}</span></div>; })}
             <div className="r"><span style={{ color: C.mute, minWidth: 110 }}>From baseline</span><b>{fmt(s.z, 1)}σ</b></div>
@@ -164,7 +164,7 @@ function Trend({ hub, k, label, unit, dec }) {
   const getData = useHistoryData(data, [hub, k]);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
-      <Chart key={k} fill x="time" title={`${label} (${unit})`} legend={false} sync="crew" unit={unit} getData={getData}
+      <Chart key={k} fill x="time" title={`${label} (${unit})`} legend={false} sync="crew" unit={unit} getData={getData} yRange={calmRange(k)}
         series={[{ label: 'Stored', color: C.mute, dec, unit }, { label: 'Live', color: C.chart1, dec, unit }]} />
     </div>
   );
@@ -191,8 +191,8 @@ export default function Sickbay({ shipId = 1 }) {
   const sumState = monState(user, shipId, ['crewsummary']);
   const desk = (
     <ConsoleStrip seed={43} cmd={cmd} jewels={[J('BIOSIGNS', counts[3] ? 'crit' : counts[2] ? 'warn' : null, stBio), J('CREW', worst(['crewWatch', 'crewCritical'].map((k) => levelOf(k, read(shipId, k)))), sumState)]}>
-      <LitButton color="green" label="Inoculate" onClick={() => cmd.send('medical.inoculate', {}, 'Inoculate the infected crew')} pending={cmd.pending === 'medical.inoculate'} />
-      <LitButton color="yellow" label={deckOfInterest ? `Quarantine deck ${pad2(deckOfInterest)}` : 'Quarantine deck'} disabled={!deckOfInterest} onClick={() => cmd.send('medical.quarantine', { deck: deckOfInterest }, `Quarantine deck ${deckOfInterest}`)} pending={cmd.pending === 'medical.quarantine'} />
+      <LitButton color="green" label="Inoculate" onClick={() => cmd.send('medical.inoculate', {}, 'Inoculate the infected crew')} {...cmd.bind('medical.inoculate')} />
+      <LitButton color="yellow" label={deckOfInterest ? `Quarantine deck ${pad2(deckOfInterest)}` : 'Quarantine deck'} onClick={() => cmd.send('medical.quarantine', { deck: deckOfInterest }, `Quarantine deck ${deckOfInterest}`)} {...cmd.bind('medical.quarantine')} disabled={!deckOfInterest || !cmd.can('medical.quarantine')} />
     </ConsoleStrip>
   );
 
@@ -237,9 +237,9 @@ export default function Sickbay({ shipId = 1 }) {
       <Monitor title="Biobed" meta={shown ? `crew ${pad3(shown)}${sel ? '' : ' · furthest from baseline'}` : 'no patient'} state={stBio} note={MEDICAL} className="st-c4" style={{ '--mh': '300px' }}>
         <Biobed hub={hub} n={shown} />
       </Monitor>
-      <Monitor title="Vital trends" meta={shown ? `crew ${pad3(shown)} · last 10 minutes · grey stored, blue live` : 'select a crew member'} state={stBio} note={MEDICAL} className="st-c8" style={{ '--mh': '420px' }}>
+      <Monitor title="Vital trends" meta={shown ? `crew ${pad3(shown)} · last 10 minutes · grey stored, blue live` : 'select a crew member'} state={stBio} note={MEDICAL} className="st-c8" style={{ '--mh': '680px' }}>
         {shown ? (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gridAutoRows: 'minmax(0, 1fr)', gap: 10, height: '100%', padding: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gridAutoRows: 'minmax(0, 1fr)', gap: 10, height: '100%', padding: 10 }}>
             {VITALS.map((x) => <Trend key={`${shown}${x.v}`} hub={hub} k={`${x.v}_${pad3(shown)}`} label={x.label} unit={x.unit} dec={x.dec ?? 0} />)}
           </div>
         ) : <div className="st-blank"><b>NO PATIENT</b><span>Trends load from history when you pick someone on the grid.</span></div>}

@@ -197,19 +197,18 @@ export default function Helm({ shipId = 1 }) {
   for (let d = 0; d <= 9; d++) keys[String(d)] = () => warpTo(d);
   useKeys(keys);
   const sys = (ks) => worst(ks.map((k) => levelOf(k, read(src, k))));
-  const p = (t) => cmd.pending === t;
 
   const desk = (
     <ConsoleStrip seed={7} cmd={cmd} jewels={[J('HELM', sys(['warpFactor', 'descentRate']), st('helm')), J('SHIELDS', sys(['shieldFore', 'shieldAft', 'shieldPort', 'shieldStbd', 'shieldLoad']), st('shields')), J('WEAPONS', sys(['phaserTemp']), st('weapons')), J('SENSORS', sys(['contactRange']), st('sensors'))]}>
-      <LitButton color="amber" label="Warp −" keyCap="↓" onClick={keys.ArrowDown} pending={p('helm.warp')} />
-      <LitButton color="amber" label="Warp +" keyCap="↑" onClick={keys.ArrowUp} pending={p('helm.warp')} lit={wf >= 1} />
-      <LitButton color="amber" label="Full impulse" keyCap="I" onClick={keys.i} pending={p('helm.impulse')} lit={imp >= 99} />
-      <LitButton color="red" label="All stop" keyCap="X" onClick={keys.x} pending={p('helm.stop')} />
-      <LitButton color="white" label="Port 5°" keyCap="←" onClick={keys.ArrowLeft} pending={p('helm.heading')} />
-      <LitButton color="white" label="Stbd 5°" keyCap="→" onClick={keys.ArrowRight} pending={p('helm.heading')} />
-      <LitButton color="green" label="Shields" keyCap="⇧ S" onClick={keys['Shift+S']} pending={p('tactical.shields')} pressed={up} />
-      <LitButton color="red" label="Phasers" keyCap="P" onClick={keys.p} pending={p('tactical.phasers')} />
-      <LitButton color="red" label="Torpedo" keyCap="⇧ P" onClick={keys['Shift+P']} pending={p('tactical.torpedo')} />
+      <LitButton color="amber" label="Warp −" keyCap="↓" onClick={keys.ArrowDown} {...cmd.bind('helm.warp')} />
+      <LitButton color="amber" label="Warp +" keyCap="↑" onClick={keys.ArrowUp} {...cmd.bind('helm.warp')} lit={wf >= 1} />
+      <LitButton color="amber" label="Full impulse" keyCap="I" onClick={keys.i} {...cmd.bind('helm.impulse')} lit={imp >= 99} />
+      <LitButton color="red" label="All stop" keyCap="X" onClick={keys.x} {...cmd.bind('helm.stop')} />
+      <LitButton color="white" label="Port 5°" keyCap="←" onClick={keys.ArrowLeft} {...cmd.bind('helm.heading')} />
+      <LitButton color="white" label="Stbd 5°" keyCap="→" onClick={keys.ArrowRight} {...cmd.bind('helm.heading')} />
+      <LitButton color="green" label="Shields" keyCap="⇧ S" onClick={keys['Shift+S']} {...cmd.bind('tactical.shields')} pressed={up} />
+      <LitButton color="red" label="Phasers" keyCap="P" onClick={keys.p} {...cmd.bind('tactical.phasers')} />
+      <LitButton color="red" label="Torpedo" keyCap="⇧ P" onClick={keys['Shift+P']} {...cmd.bind('tactical.torpedo')} />
     </ConsoleStrip>
   );
 

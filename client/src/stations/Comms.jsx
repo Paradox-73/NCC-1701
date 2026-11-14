@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import VirtualList from '../components/VirtualList.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import { useTick } from '../lib/hooks.js';
@@ -10,15 +10,34 @@ const CARRIER_SLOTS = [0.16, 0.3, 0.44, 0.58, 0.72, 0.86]; // where open channel
 
 /** Subspace waterfall: newest row on top, one bright line per open channel, noise floor from interference, gaps from loss. */
 function Waterfall({ src }) {
+  const painted = useRef(0); // canvas width the history was painted for
   const ref = useCanvas((ctx, w, h, t) => {
     const cv = ctx.canvas, k = Math.round(2 * (cv.width / w));
+    const carrier = read(src, 'carrier') ?? 0, noise = (read(src, 'interference') ?? 0) / 100, loss = (read(src, 'loss') ?? 0) / 100;
+    const open = clamp(Math.round(read(src, 'channelsOpen') ?? 0), 0, CARRIER_SLOTS.length);
+    if (painted.current !== cv.width) {
+      painted.current = cv.width;
+      for (let y = h; y > 0; y -= 2) row(ctx, w, y, t - (h - y) * 40, carrier, noise, loss, open);
+    }
     // scroll the old rows down; 'copy' replaces pixels instead of stacking translucent rows into a solid block
     ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.globalCompositeOperation = 'copy';
     ctx.drawImage(cv, 0, 0, cv.width, cv.height - k, 0, k, cv.width, cv.height - k);
     ctx.restore();
-    const carrier = read(src, 'carrier') ?? 0, noise = (read(src, 'interference') ?? 0) / 100, loss = (read(src, 'loss') ?? 0) / 100;
-    const open = clamp(Math.round(read(src, 'channelsOpen') ?? 0), 0, CARRIER_SLOTS.length);
-    ctx.clearRect(0, 0, w, 2);
+    row(ctx, w, 0, t, carrier, noise, loss, open);
+  }, [src], 80);
+  const open = clamp(Math.round(read(src, 'channelsOpen') ?? 0), 0, CARRIER_SLOTS.length);
+  return (
+    <div style={{ position: 'absolute', inset: 0 }}>
+      <canvas ref={ref} className="st-canvas" role="img" aria-label={`Subspace waterfall: ${open} open channel${open === 1 ? '' : 's'}, newest at the top`} />
+      {CARRIER_SLOTS.slice(0, open).map((x, i) => <span key={i} style={{ position: 'absolute', top: 6, left: `${x * 100}%`, transform: 'translateX(-50%)', font: '400 10px var(--font-mono)', color: C.ink2, textShadow: '0 1px 2px #000' }}>CH {i + 1}</span>)}
+      <span style={{ position: 'absolute', left: 8, bottom: 6, font: '400 10px var(--font-mono)', color: C.mute }}>newest on top · older below</span>
+    </div>
+  );
+}
+
+/** One 2 px row of the waterfall at height y. */
+function row(ctx, w, y, t, carrier, noise, loss, open) {
+    ctx.clearRect(0, y, w, 2);
     for (let x = 0; x < w; x += 2) {
       const r = Math.sin(x * 12.9898 + t * 0.0137) * 43758.5;
       let v = (r - Math.floor(r)) * (0.08 + noise * 0.9);
@@ -29,17 +48,8 @@ function Waterfall({ src }) {
       }
       v = clamp(v);
       ctx.fillStyle = v > 0.75 ? `rgba(235,248,255,${v})` : `rgba(88,196,255,${v * 0.95})`;
-      ctx.fillRect(x, 0, 2, 2);
+      ctx.fillRect(x, y, 2, 2);
     }
-  }, [src], 80);
-  const open = clamp(Math.round(read(src, 'channelsOpen') ?? 0), 0, CARRIER_SLOTS.length);
-  return (
-    <div style={{ position: 'absolute', inset: 0 }}>
-      <canvas ref={ref} className="st-canvas" role="img" aria-label={`Subspace waterfall: ${open} open channel${open === 1 ? '' : 's'}, newest at the top`} />
-      {CARRIER_SLOTS.slice(0, open).map((x, i) => <span key={i} style={{ position: 'absolute', top: 6, left: `${x * 100}%`, transform: 'translateX(-50%)', font: '400 10px var(--font-mono)', color: C.ink2, textShadow: '0 1px 2px #000' }}>CH {i + 1}</span>)}
-      <span style={{ position: 'absolute', left: 8, bottom: 6, font: '400 10px var(--font-mono)', color: C.mute }}>newest on top · older below</span>
-    </div>
-  );
 }
 
 /** Oscilloscope trace of the carrier: amplitude from carrier strength, noise from interference, with phosphor persistence. */
@@ -126,20 +136,18 @@ export default function Comms({ shipId = 1 }) {
   const note = (text, sev) => setLocal((l) => [{ id: `l${Date.now()}`, ts: Date.now(), sev, from: shipCode(src), text }, ...l].slice(0, 50));
   const tgt = TARGETS.find((x) => x.id === target);
   const hail = async (priority) => {
-    const say = `${priority ? 'Priority one message to' : 'Hailing'} ${tgt.name}`;
-    await cmd.send('comms.hail', { target: priority ? 'command' : target }, say);
-    note(say);
+    const say = `${priority ? 'Priority one message to' : 'Hailing'} ${priority ? 'Starfleet Command' : tgt.name}`;
+    if (await cmd.send('comms.hail', { target: priority ? 'command' : target }, say)) note(say);
   };
-  const close = async () => { await cmd.send('comms.close', {}, 'Close channel'); note('Channel closed'); };
+  const close = async () => { if (await cmd.send('comms.close', {}, 'Close channel')) note('Channel closed'); };
   const hailing = read(src, 'hailing') >= 0.5;
   useKeys({ h: () => (hailing ? close() : hail(false)) });
   const sys = (ks) => worst(ks.map((k) => levelOf(k, read(src, k))));
-  const p = (t) => cmd.pending === t;
   const desk = (
     <ConsoleStrip seed={31} cmd={cmd} jewels={[J('CARRIER', sys(['carrier']), st('comms')), J('DELAY', sys(['delay']), st('comms')), J('LOSS', sys(['loss']), st('comms')), J('NOISE', sys(['interference']), st('comms'))]}>
-      <LitButton color="blue" label={`Hail ${tgt.code}`} keyCap="H" onClick={() => hail(false)} pending={p('comms.hail')} lit={hailing} />
-      <LitButton color="white" label="Close channel" onClick={close} pending={p('comms.close')} />
-      <LitButton color="red" label="Priority one" onClick={() => hail(true)} pending={p('comms.hail')} />
+      <LitButton color="blue" label={`Hail ${tgt.code}`} keyCap="H" onClick={() => hail(false)} {...cmd.bind('comms.hail')} lit={hailing} />
+      <LitButton color="white" label="Close channel" onClick={close} {...cmd.bind('comms.close')} />
+      <LitButton color="red" label="Priority one" onClick={() => hail(true)} {...cmd.bind('comms.hail')} />
       <LitButton color="yellow" label="Intercom" pressed={intercom} onClick={() => { setIntercom(!intercom); note(intercom ? 'Intercom closed' : 'Intercom open to all decks'); }} title="Ship-wide announcement channel, local to this console" />
     </ConsoleStrip>
   );

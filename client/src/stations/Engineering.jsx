@@ -4,7 +4,7 @@ import { useAuth } from '../lib/auth.jsx';
 import { useTick } from '../lib/hooks.js';
 import { DECK_NAMES, levelOf, meta, monState, pad2, read, useCommand, useFeed, worst } from './parts/data.js';
 import { useHistory, useHistoryData } from './parts/history.js';
-import { ArcGauge, J, Station, BarGauge, C, Chip, ConsoleStrip, HBar, LevelChip, LitButton, Monitor, Num, Readout, Val, clamp, decOf, fmt, useCanvas } from './parts/ui.jsx';
+import { ArcGauge, J, Station, BarGauge, C, Chip, ConsoleStrip, HBar, LevelChip, LitButton, Monitor, Num, Readout, Val, calmRange, clamp, decOf, fmt, useCanvas } from './parts/ui.jsx';
 
 // the hull profile each deck band draws, saucer then engineering hull
 const PROFILE = [0.2, 0.52, 0.84, 1, 0.94, 0.72, 0.18, 0.36, 0.58, 0.62, 0.58, 0.44];
@@ -78,9 +78,9 @@ function PowerBar({ src }) {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'center' }}>
         <div className="st-ro"><span className="st-label">Preset</span><span className="st-num st-xs" style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 12, letterSpacing: '0.08em' }}>{preset ? preset.toUpperCase() : 'CUSTOM'}</span></div>
         <div style={{ width: 150 }}><Readout src={src} k="powerTotal" label="Total output" unit="% rated" sparkH={22} /></div>
-        <div style={{ width: 110 }} className="st-ro">
-          <div className="st-ro-top"><span className="st-label">Battery</span><LevelChip level={levelOf('battery', read(src, 'battery'))} /></div>
-          <span><Num v={read(src, 'battery')} dec={0} className="st-num st-sm" level={levelOf('battery', read(src, 'battery'))} /><span className="st-unit">%</span></span>
+        <div style={{ width: 130 }} className="st-ro">
+          <span className="st-label">Battery</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Num v={read(src, 'battery')} dec={0} className="st-num st-sm" level={levelOf('battery', read(src, 'battery'))} /><span className="st-unit">%</span><LevelChip level={levelOf('battery', read(src, 'battery'))} /></span>
           <HBar v={read(src, 'battery')} k="battery" label="Emergency battery charge" />
         </div>
       </div>
@@ -164,7 +164,7 @@ function DeckDetail({ src, deck }) {
       </div>
       <div style={{ flex: 1, minHeight: 120, display: 'flex', flexDirection: 'column' }}>
         {m ? (
-          <Chart key={key} fill x="time" title={`${m.label}, last 10 minutes · stored then live`} unit={m.unit} getData={getData}
+          <Chart key={key} fill x="time" title={`${m.label}, last 10 minutes · stored then live`} unit={m.unit} getData={getData} yRange={calmRange(key)}
             series={[{ label: 'Stored', color: C.mute, dec: decOf(key), unit: m.unit }, { label: 'Live', color: C.chart1, dec: decOf(key), unit: m.unit }]} />
         ) : <p className="st-label">This channel is not in the registry yet.</p>}
         <span className="st-label" style={{ marginTop: 4 }}>{hm.status === 'ready' ? `${hm.count.toLocaleString()} stored readings · ${hm.live.toLocaleString()} live since${hm.downsampled ? ' · thinned by the server' : ''}` : hm.status === 'error' ? `History unavailable: ${hm.error}` : 'Loading stored readings…'}</span>
@@ -191,11 +191,11 @@ export default function Engineering({ shipId = 1 }) {
 
   const desk = (
     <ConsoleStrip seed={11} cmd={cmd} jewels={[J('WARP', warpLv, st('warp')), J('IMPULSE', sys(['impulseReactor', 'impulseTemp']), st('impulse')), J('POWER', sys(['powerTotal', 'battery']), st('power')), J('DECKS', decksLv, st('lifesupport')), J('TRANSPORT', xp === 3 ? 'crit' : sys(['xpEnergy', 'xpLock', 'xpPattern']), st('transporter'))]}>
-      <LitButton color="amber" label="Cruise" onClick={() => preset('cruise')} lit={presetOn('cruise')} pending={cmd.pending === 'engineering.allocate'} />
-      <LitButton color="red" label="Combat" onClick={() => preset('combat')} lit={presetOn('combat')} pending={cmd.pending === 'engineering.allocate'} />
-      <LitButton color="yellow" label="Emergency power" onClick={() => preset('emergency')} lit={presetOn('emergency')} pending={cmd.pending === 'engineering.allocate'} />
-      <LitButton color="green" label="Energize" onClick={() => cmd.send('transporter.energize', {}, 'Energize')} lit={xp === 1 || xp === 2} pending={cmd.pending === 'transporter.energize'} />
-      <LitButton color="red" label="Cold restart" onClick={() => cmd.send('engineering.coldRestart', {}, 'Cold restart')} pending={cmd.pending === 'engineering.coldRestart'} title="Only when a scenario asks for it" />
+      <LitButton color="amber" label="Cruise" onClick={() => preset('cruise')} lit={presetOn('cruise')} {...cmd.bind('engineering.allocate')} />
+      <LitButton color="red" label="Combat" onClick={() => preset('combat')} lit={presetOn('combat')} {...cmd.bind('engineering.allocate')} />
+      <LitButton color="yellow" label="Emergency power" onClick={() => preset('emergency')} lit={presetOn('emergency')} {...cmd.bind('engineering.allocate')} />
+      <LitButton color="green" label="Energize" onClick={() => cmd.send('transporter.energize', {}, 'Energize')} lit={xp === 1 || xp === 2} {...cmd.bind('transporter.energize')} />
+      <LitButton color="red" label="Cold restart" onClick={() => cmd.send('engineering.coldRestart', {}, 'Cold restart')} {...cmd.bind('engineering.coldRestart')} />
     </ConsoleStrip>
   );
 
@@ -255,7 +255,7 @@ export default function Engineering({ shipId = 1 }) {
         <Monitor title="Deck stack" meta="life support · gravity" state={st('lifesupport', 'gravity')} className="st-c5">
           <DeckStack src={src} sel={deck} onSel={setDeck} />
         </Monitor>
-        <Monitor title={`Deck ${pad2(deck)} · ${DECK_NAMES[deck - 1]}`} meta="history and live" state={st('lifesupport', 'gravity')} className="st-c7" style={{ '--mh': '470px' }}>
+        <Monitor title={`Deck ${pad2(deck)} · ${DECK_NAMES[deck - 1]}`} meta="history and live" state={st('lifesupport', 'gravity')} className="st-c7" style={{ '--mh': '620px' }}>
           <DeckDetail src={src} deck={deck} />
         </Monitor>
     </Station>

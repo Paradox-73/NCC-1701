@@ -240,13 +240,14 @@ export default function Science({ shipId = 1 }) {
   const cmd = useCommand(shipId);
   const st = (...g) => monState(user, src, g);
   const scan = (m, say) => cmd.send('science.scan', { mode: m }, say);
-  const range = (m) => { setMode(m); scan(m, m === 'long' ? 'Long-range scan' : 'Short-range scan'); };
+  // the scope's scale is local to this console; the scan pass goes to the ship only when the role may order one
+  const range = (m) => { setMode(m); if (cmd.can('science.scan')) scan(m, m === 'long' ? 'Long-range scan' : 'Short-range scan'); };
   const sys = (ks) => worst(ks.map((k) => levelOf(k, read(src, k))));
   const p = cmd.pending === 'science.scan';
   const desk = (
     <ConsoleStrip seed={23} cmd={cmd} jewels={[J('LONG RANGE', sys(['lrSensor']), st('sensors')), J('SHORT RANGE', sys(['srSensor']), st('sensors')), J('ION FLUX', sys(['ionFlux']), st('sensors')), J('LIFE-FORMS', sys(['lifeforms']), st('sensors'))]}>
-      <LitButton color="blue" label="Scan" onClick={() => scan(mode, 'Sensor sweep')} pending={p} />
-      <LitButton color="blue" label="Focus contact" onClick={() => scan('focus', 'Focus sensors on the contact')} pending={p} disabled={!(read(src, 'contacts') >= 1 || read(src, 'contactSnr') >= NOISE_DB)} />
+      <LitButton color="blue" label="Scan" onClick={() => scan(mode, 'Sensor sweep')} {...cmd.bind('science.scan')} />
+      <LitButton color="blue" label="Focus contact" onClick={() => scan('focus', 'Focus sensors on the contact')} {...cmd.bind('science.scan')} disabled={!cmd.can('science.scan') || !(read(src, 'contacts') >= 1 || read(src, 'contactSnr') >= NOISE_DB)} />
       <LitButton color="white" label="Long range" onClick={() => range('long')} pressed={mode === 'long'} pending={p} />
       <LitButton color="white" label="Short range" onClick={() => range('short')} pressed={mode === 'short'} pending={p} />
     </ConsoleStrip>

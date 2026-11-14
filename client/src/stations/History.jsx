@@ -5,7 +5,7 @@ import { useAuth } from '../lib/auth.jsx';
 import { useTick } from '../lib/hooks.js';
 import { canSee, levelOf, monState, shipCode } from './parts/data.js';
 import { useHistory, useHistoryData } from './parts/history.js';
-import { C, ConsoleStrip, J, LitButton, LevelChip, Monitor, Num, Station, decOf, fmt } from './parts/ui.jsx';
+import { C, ConsoleStrip, J, LitButton, LevelChip, Monitor, Num, Station, calmRange, decOf, fmt } from './parts/ui.jsx';
 
 const RANGES = [['1 min', 60], ['5 min', 300], ['15 min', 900], ['1 hour', 3600]];
 
@@ -17,8 +17,8 @@ export default function History({ shipId = 1 }) {
   const [src, setSrc] = useState(sources.some((s) => s.id === shipId) ? shipId : sources[0]?.id);
   const source = SOURCES.find((s) => s.id === src);
   const groups = GROUP_DEFS.filter((g) => canSee(user, g.key) && (!g.kind || g.kind === kindOf(src)) && GROUP_CHANNELS[g.key]?.length);
-  const first = groups.find((g) => g.key === 'warp' || g.key === 'helm') ?? groups[0];
-  const [channel, setChannel] = useState(GROUP_CHANNELS[first?.key]?.[0]);
+  const first = groups.find((g) => g.key === 'warp') ?? groups.find((g) => g.key === 'helm') ?? groups[0];
+  const [channel, setChannel] = useState(GROUP_CHANNELS[first?.key]?.includes('reactionRate') ? 'reactionRate' : GROUP_CHANNELS[first?.key]?.[0]);
   const ch = CHANNEL_BY_KEY[channel] && groups.some((g) => g.key === CHANNEL_BY_KEY[channel].group) ? channel : GROUP_CHANNELS[first?.key]?.[0];
   const [range, setRange] = useState(300);
   const m = CHANNEL_BY_KEY[ch];
@@ -65,21 +65,20 @@ export default function History({ shipId = 1 }) {
       <Monitor title={m ? `${m.label}${m.unit ? ` (${m.unit})` : ''}` : 'Reading'} meta="grey stored · blue live" state={state} className="st-c12" style={{ '--mh': '380px' }}>
         {meta.status === 'error' ? <div className="st-blank"><b>HISTORY UNAVAILABLE</b><span>{meta.error}. Pick another range or try again in a moment.</span></div> : (
           <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px 12px 10px' }}>
-            <Chart key={`${src}-${ch}-${range}`} fill x="time" unit={m?.unit} getData={getData}
+            <Chart key={`${src}-${ch}-${range}`} fill x="time" unit={m?.unit} getData={getData} yRange={calmRange(ch)}
               series={[{ label: 'Stored', color: C.mute, dec: decOf(ch), unit: m?.unit }, { label: 'Live', color: C.chart1, dec: decOf(ch), unit: m?.unit }]} />
             {meta.status === 'loading' && <div className="st-blank" style={{ background: '#050608cc' }}><b className="st-blink-slow">LOADING STORED READINGS</b></div>}
           </div>
         )}
       </Monitor>
       <Monitor title="Merge" meta="history and live by sequence number" className="st-c12">
-        <dl className="st-kv" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(150px, auto) minmax(90px, 1fr))', gap: '8px 14px', padding: '10px 12px' }}>
-          <dt>Stored samples</dt><dd>{fmt(meta.count, 0)}{meta.downsampled ? <span className="st-unit">thinned</span> : null}</dd>
-          <dt>Last stored seq</dt><dd>{d.joinSeq ? fmt(d.joinSeq, 0) : '—'}</dd>
-          <dt>First live seq</dt><dd>{firstLive ? fmt(firstLive, 0) : '—'}</dd>
-          <dt>Live samples since</dt><dd>{fmt(meta.live, 0)}</dd>
-          <dt>Overlap dropped</dt><dd>{fmt(meta.dropped, 0)}</dd>
-          <dt>Filled after reconnect</dt><dd>{fmt(meta.filled, 0)}</dd>
-        </dl>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10, padding: '10px 12px' }}>
+          {[
+            ['Stored samples', `${fmt(meta.count, 0)}${meta.downsampled ? ' (thinned)' : ''}`], ['Last stored seq', d.joinSeq ? fmt(d.joinSeq, 0) : '—'],
+            ['First live seq', firstLive ? fmt(firstLive, 0) : '—'], ['Live samples since', fmt(meta.live, 0)],
+            ['Overlap dropped', fmt(meta.dropped, 0)], ['Filled after reconnect', fmt(meta.filled, 0)],
+          ].map(([l, v]) => <div key={l} className="st-ro"><span className="st-label">{l}</span><span style={{ font: '700 15px var(--font-mono)' }}>{v}</span></div>)}
+        </div>
       </Monitor>
     </Station>
   );

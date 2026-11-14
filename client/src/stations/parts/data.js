@@ -134,7 +134,9 @@ export function useCommand(shipId) {
       setPending(null);
     }
   };
-  return { send, pending, last, can };
+  /** Props for the LitButton that sends `type`: blinks while in flight, disabled when the role may not send it. */
+  const bind = (type) => ({ pending: pending === type, disabled: !can(type), title: can(type) ? undefined : 'Not an order this role may give' });
+  return { send, pending, last, can, bind };
 }
 
 /** Alerts the role can see for one source, newest first (the store keeps them newest first). */

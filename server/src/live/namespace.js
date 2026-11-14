@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
-import { EVENTS, GROUPS, LIMITS, ROLES, roleGroups } from '@ncc/shared/schema.js';
-import { alertRoom } from '../alerts.js';
+import { EVENTS, GROUPS, GROUP_KIND, LIMITS, ROLES, SOURCES, isCrewSource, kindOf, roleGroups } from '@ncc/shared/schema.js';
+import { alertRoom, denyRoom } from '../alerts.js';
 import { TokenBucket } from '../ingest/tokenBucket.js';
 
 const sourceIds = z.array(z.number().int().min(1).max(LIMITS.maxSourceId)).max(LIMITS.maxSourceId);
@@ -33,7 +33,9 @@ export function setupLive({ io, config, metrics, alerts, log }) {
     const allowed = roleGroups(user.role);
     const bucket = new TokenBucket(20, 40); // protects against subscribe storms
     socket.conn.on('packetCreate', (p) => metrics.inc('bytesOut', p.data?.length ?? 0));
-    socket.join(['overview', 'alerts', ...allowed.map(alertRoom)]);
+    const ships = ROLES[user.role].ships;
+    // ship:<id> carries condition, log, scenario and command acks of the ships the role sees; deny:<id> marks the sources it does not, so alerts skip it
+    socket.join(['overview', 'alerts', ...allowed.map(alertRoom), ...ships.filter((id) => !isCrewSource(id)).map((id) => `ship:${id}`), ...SOURCES.filter((s) => !ships.includes(s.id)).map((s) => denyRoom(s.id))]);
     if (ROLES[user.role].admin) socket.join('admin');
 
     const guard = (fn) => async (payload, ack) => {
@@ -55,15 +57,17 @@ export function setupLive({ io, config, metrics, alerts, log }) {
       guard((payload, reply) => {
         const { sourceIds: ids, groups = allowed } = subscribeSchema.parse(payload);
         const denied = groups.filter((g) => !allowed.includes(g));
+        const deniedSources = ids.filter((id) => !ships.includes(id));
         const rooms = [];
         for (const id of ids) {
+          if (deniedSources.includes(id)) continue;
           for (const g of groups) {
-            if (denied.includes(g)) continue;
+            if (denied.includes(g) || GROUP_KIND[g] !== kindOf(id)) continue; // a ship has no biosign groups and a sickbay no ship groups
             rooms.push(`src:${id}:${g}`);
             socket.join(`src:${id}:${g}`);
           }
         }
-        reply({ ok: true, rooms, denied });
+        reply({ ok: true, rooms, denied, deniedSources });
       }),
     );
 

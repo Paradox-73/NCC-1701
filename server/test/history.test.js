@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import mongoose from 'mongoose';
 import { io as connect } from 'socket.io-client';
 import parser from 'socket.io-msgpack-parser';
-import { CHANNELS, EVENTS, GROUP_CHANNELS, packSample } from '@ncc/shared/schema.js';
+import { ROLES, channelsOf, EVENTS, GROUP_CHANNELS, packSample } from '@ncc/shared/schema.js';
 import { createServer } from '../src/app.js';
 
 const KEY = 'history-device-key';
@@ -33,7 +33,7 @@ const api = async (path, token, opts = {}) => {
   return { status: r.status, body: await r.json().catch(() => null) };
 };
 const token = async (username, password) => (await api('/api/auth/login', null, { method: 'POST', body: JSON.stringify({ username, password }) })).body.token;
-const values = (i) => Object.fromEntries(CHANNELS.map((c) => [c.key, c.min + ((i % 10) * (c.max - c.min)) / 20]));
+const values = (i) => Object.fromEntries(channelsOf(1).map((c) => [c.key, c.min + ((i % 10) * (c.max - c.min)) / 20]));
 const source = async (sourceId) => {
   const s = connect(`${base}/ingest`, { parser, auth: { sourceId, key: KEY }, transports: ['websocket'], reconnection: false });
   sockets.push(s);
@@ -46,9 +46,9 @@ test('downsampled history keeps the newest samples: no blank before the live joi
   const N = 225;
   const STEP = 20;
   const t0 = Date.now() - N * STEP;
-  await mongoose.connection.db.collection('telemetry').insertMany(Array.from({ length: N }, (_, i) => ({ sourceId: 2, seq: i + 1, ts: new Date(t0 + i * STEP), plasmaTemp: 40 })));
-  const t = await token('captain', 'ncc-captain');
-  const h = (await api(`/api/telemetry?sourceId=2&from=${t0 - 1000}&to=${Date.now() + 1000}&maxPoints=100&keys=plasmaTemp`, t)).body;
+  await mongoose.connection.db.collection('telemetry').insertMany(Array.from({ length: N }, (_, i) => ({ sourceId: 2, seq: i + 1, ts: new Date(t0 + i * STEP), chamberTemp: 40 })));
+  const t = await token('command', 'ncc-command');
+  const h = (await api(`/api/telemetry?sourceId=2&from=${t0 - 1000}&to=${Date.now() + 1000}&maxPoints=100&keys=chamberTemp`, t)).body;
   assert.equal(h.downsampled, true);
   assert.ok(h.samples.length <= 100, `got ${h.samples.length} points`);
   assert.equal(h.lastSeq, N);
@@ -86,14 +86,16 @@ test('history merges stored and still-queued samples, and the live frames after 
 });
 
 test('history is limited to the groups of the caller role, and refuses spans over one hour', async () => {
-  const eng = await token('engineer', 'ncc-engineer'); // warp and shields
+  const eng = await token('engineer', 'ncc-engineer'); // every ship group except helm, sensors, comms
   const now = Date.now();
   const all = (await api(`/api/telemetry?sourceId=1&from=${now - 60_000}&to=${now}`, eng)).body;
-  assert.deepEqual(all.keys, [...GROUP_CHANNELS.warp, ...GROUP_CHANNELS.shields]);
-  const mixed = (await api(`/api/telemetry?sourceId=1&from=${now - 60_000}&to=${now}&keys=plasmaTemp,o2Level`, eng)).body;
-  assert.deepEqual(mixed.keys, ['plasmaTemp']);
-  assert.equal((await api(`/api/telemetry?sourceId=1&group=lifesupport`, eng)).status, 403);
-  assert.equal((await api(`/api/telemetry?sourceId=1&keys=o2Level`, eng)).status, 403);
+  assert.deepEqual(all.keys, channelsOf(1).filter((c) => ROLES.chief_engineer.groups.includes(c.group)).map((c) => c.key));
+  const mixed = (await api(`/api/telemetry?sourceId=1&from=${now - 60_000}&to=${now}&keys=chamberTemp,carrier`, eng)).body;
+  assert.deepEqual(mixed.keys, ['chamberTemp']);
+  assert.equal((await api(`/api/telemetry?sourceId=1&group=sensors`, eng)).status, 403);
+  assert.equal((await api(`/api/telemetry?sourceId=1&keys=carrier`, eng)).status, 403);
+  assert.equal((await api(`/api/telemetry?sourceId=2`, eng)).status, 403); // the engineer does not see ship 2
+  assert.equal((await api(`/api/telemetry?sourceId=11`, eng)).status, 403); // nor the sickbay
   assert.equal((await api(`/api/telemetry?sourceId=1&keys=nonsense`, eng)).status, 400);
   assert.equal((await api(`/api/telemetry?sourceId=1&from=0`, eng)).status, 400);
   assert.equal((await api(`/api/telemetry?sourceId=1&from=${now - 3600_000}&to=${now}`, eng)).status, 200);
@@ -102,9 +104,9 @@ test('history is limited to the groups of the caller role, and refuses spans ove
 });
 
 test('the sources list shows registry sources and which are sending', async () => {
-  const t = await token('comms', 'ncc-comms');
+  const t = await token('command', 'ncc-command');
   const { sources } = (await api('/api/sources', t)).body;
-  assert.deepEqual(sources.map((s) => s.sourceId), [1, 2, 3]);
+  assert.deepEqual(sources.map((s) => s.sourceId), [1, 2, 3, 4]);
   assert.equal(sources.find((s) => s.sourceId === 1).online, true);
   assert.equal(sources.find((s) => s.sourceId === 3).online, false);
 });

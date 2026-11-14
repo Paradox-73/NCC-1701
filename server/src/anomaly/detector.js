@@ -1,4 +1,4 @@
-import { CHANNEL_BY_KEY, RULES } from '@ncc/shared/schema.js';
+import { CHANNEL_BY_KEY, GROUP_KIND, RULES, kindOf } from '@ncc/shared/schema.js';
 
 const RANK = { info: 1, warn: 2, critical: 3 };
 const Z_LIMIT = 4;
@@ -13,6 +13,11 @@ const fmt = (key, v) => {
   const c = CHANNEL_BY_KEY[key];
   return `${c.label} ${Number(v.toFixed(2))}${c.unit ? ' ' + c.unit : ''}`;
 };
+
+// Each source kind has its own channels, so each has its own rules: a ship's rules never run on a sickbay sample.
+const BY_KIND = { ship: { rules: [], z: [] }, crew: { rules: [], z: [] } };
+for (const r of RULES.thresholds) BY_KIND[GROUP_KIND[CHANNEL_BY_KEY[r.channel].group]].rules.push({ ...r, id: `${r.type}:${r.channel}` });
+for (const k of RULES.zChannels) BY_KIND[GROUP_KIND[CHANNEL_BY_KEY[k].group]].z.push(k);
 
 /** Which side of the limits a value is on, as a severity or null. */
 const severity = (rule, v) => {
@@ -55,18 +60,19 @@ export class Detector {
     src.lastRx = t;
     src.firstRx ||= t;
 
-    for (const rule of RULES.thresholds) {
+    const kind = BY_KIND[kindOf(sourceId)];
+    for (const rule of kind.rules) {
       const v = s[rule.channel];
       const sev = severity(rule, v);
       const limit = sev === 'critical' ? rule.critical : rule.warn;
-      this._cond(sourceId, `${rule.type}:${rule.channel}`, sev, { type: rule.type, channel: rule.channel, value: v, threshold: limit, message: fmt(rule.channel, v) }, t, 0);
+      this._cond(sourceId, rule.id, sev, { type: rule.type, channel: rule.channel, value: v, threshold: limit, message: fmt(rule.channel, v) }, t, 0);
     }
 
     if (src.zFrom > t) return;
     // weight each sample by the time it stands for, so the window and warm-up are the same at 5 Hz as at 50 Hz
     const zw = src.zTs ? Math.min(50, Math.max(1, (s.ts - src.zTs) / Z_REF_MS)) : 1;
     src.zTs = s.ts;
-    for (const key of RULES.zChannels) this._z(sourceId, src, key, s[key], t, zw);
+    for (const key of kind.z) this._z(sourceId, src, key, s[key], t, zw);
   }
 
   _z(sourceId, src, key, v, t, w) {
@@ -75,7 +81,8 @@ export class Detector {
     if (!st) st = src.z[key] = { mean: v, varr: 0, n: 0 };
     const sd = Math.max(Math.sqrt(st.varr), zFloor(key));
     const z = (v - st.mean) / sd;
-    const anomalous = st.n >= Z_WARMUP && Math.abs(z) > Z_LIMIT;
+    // while a settle window runs (the operating point was changed on purpose) nothing is anomalous and the statistics follow the values
+    const anomalous = t >= (src.settleUntil ?? 0) && st.n >= Z_WARMUP && Math.abs(z) > Z_LIMIT;
     this._cond(sourceId, 'zscore:' + key, anomalous ? 'warn' : null, { type: 'zscore', channel: key, value: v, threshold: Z_LIMIT, message: `${CHANNEL_BY_KEY[key].label} is ${Math.abs(z).toFixed(1)} standard deviations ${z < 0 ? 'below' : 'above'} its recent mean` }, t, Z_HOLD_MS);
     if (!anomalous) {
       // statistics are frozen during an anomaly so it cannot become the new normal
@@ -105,6 +112,15 @@ export class Detector {
   }
 
   /**
+   * The operating point of a source is about to change on purpose (a new warp order, a scenario restoring normal
+   * running): for `ms` its statistics follow the values instead of flagging them, and keep their warm-up.
+   */
+  settle(sourceId, ms = 20_000) {
+    const src = this.sources.get(sourceId);
+    if (src) src.settleUntil = this.now() + ms;
+  }
+
+  /**
    * A repaired source (the clear command) starts from a new normal: statistics are learned again, so the jump back to
    * normal is not read as an anomaly. Without this, statistics frozen during a long fault never accept the repaired
    * value and a z-score warning stays open. Open alerts close as usual.
@@ -112,6 +128,14 @@ export class Detector {
   reset(sourceId) {
     const src = this.sources.get(sourceId);
     if (src) Object.assign(src, { z: {}, zFrom: this.now() + 1000 });
+  }
+
+  /**
+   * An alert condition raised by something other than a channel rule (the server's ingest counters): same open,
+   * escalate and debounce behaviour as a threshold. `sev` is 'warn', 'critical' or null for clear.
+   */
+  condition(sourceId, type, sev, info, holdMs = 0) {
+    this._cond(sourceId, type, sev, { type, channel: info.channel ?? 'ingest', ...info }, this.now(), holdMs);
   }
 
   /** 0 none, 1 info, 2 warn, 3 critical: worst open alert for a source. */

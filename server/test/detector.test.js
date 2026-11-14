@@ -1,9 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { channelsOf } from '@ncc/shared/schema.js';
 import { Detector } from '../src/anomaly/detector.js';
 
 // every channel the rules read, at a calm value
-const calm = { plasmaTemp: 40, corePower: 80, antimatterFlow: 200, shieldFore: 90, shieldAft: 90, shieldPort: 90, shieldStbd: 90, o2Level: 21, co2Level: 600, cabinTemp: 22, cabinPressure: 101, heartRate: 70, stressIndex: 20 };
+const calm = Object.fromEntries(channelsOf(1).map((c) => [c.key, c.nominal]));
 
 function rig() {
   let now = 1_000_000;
@@ -17,27 +18,27 @@ function rig() {
 }
 const jitter = (i) => (i % 3) * 0.1;
 
-test('threshold: plasma temperature over 70 warns once, 85 escalates, debounce keeps it to one open alert', () => {
+test('threshold: reaction chamber temperature over 70 warns once, 85 escalates, debounce keeps it to one open alert', () => {
   const { alerts, step } = rig();
   for (let i = 0; i < 10; i++) step(1, {});
-  for (let i = 0; i < 50; i++) step(1, { plasmaTemp: 75 });
-  assert.equal(alerts.filter((a) => a.type === 'core-temp').length, 1);
+  for (let i = 0; i < 50; i++) step(1, { chamberTemp: 75 });
+  assert.equal(alerts.filter((a) => a.type === 'chamber-temp').length, 1);
   assert.equal(alerts[0].severity, 'warn');
   assert.equal(alerts[0].group, 'warp');
-  for (let i = 0; i < 5; i++) step(1, { plasmaTemp: 90 });
-  assert.deepEqual(alerts.filter((a) => a.type === 'core-temp').map((a) => a.severity), ['warn', 'critical']);
+  for (let i = 0; i < 5; i++) step(1, { chamberTemp: 90 });
+  assert.deepEqual(alerts.filter((a) => a.type === 'chamber-temp').map((a) => a.severity), ['warn', 'critical']);
   // clear for under 3 s then back: still the same open alert, no new one
   for (let i = 0; i < 20; i++) step(1, {});
-  for (let i = 0; i < 5; i++) step(1, { plasmaTemp: 90 });
-  assert.equal(alerts.filter((a) => a.type === 'core-temp').length, 2);
+  for (let i = 0; i < 5; i++) step(1, { chamberTemp: 90 });
+  assert.equal(alerts.filter((a) => a.type === 'chamber-temp').length, 2);
 });
 
 test('threshold: alert reopens after the condition was clear for 3 s', () => {
   const { alerts, step } = rig();
-  for (let i = 0; i < 5; i++) step(2, { corePower: 110 });
+  for (let i = 0; i < 5; i++) step(2, { powerTotal: 110 });
   for (let i = 0; i < 200; i++) step(2, {}); // 4 s clear
-  for (let i = 0; i < 5; i++) step(2, { corePower: 110 });
-  assert.equal(alerts.filter((a) => a.type === 'core-power').length, 2);
+  for (let i = 0; i < 5; i++) step(2, { powerTotal: 110 });
+  assert.equal(alerts.filter((a) => a.type === 'power-overload').length, 2);
 });
 
 test('threshold: a low-side rule alerts below its limits and names the shield that dropped', () => {
@@ -46,44 +47,44 @@ test('threshold: a low-side rule alerts below its limits and names the shield th
   for (let i = 0; i < 5; i++) step(3, { shieldAft: 5 });
   const s = alerts.filter((a) => a.type === 'shield-low');
   assert.deepEqual(s.map((a) => [a.severity, a.channel, a.group]), [['warn', 'shieldAft', 'shields'], ['critical', 'shieldAft', 'shields']]);
-  assert.match(s[0].message, /^Shield aft 25 %$/);
-  step(3, { o2Level: 16 });
+  assert.match(s[0].message, /^Shield strength, aft 25 %$/);
+  step(3, { o2_01: 16 });
   assert.equal(alerts.find((a) => a.type === 'oxygen-low').severity, 'critical');
 });
 
 test('z-score: a sudden jump held for 0.5 s is flagged, a one-sample blip is not', () => {
   const { alerts, step } = rig();
-  for (let i = 0; i < 1600; i++) step(4, { cabinTemp: 22 + jitter(i) });
-  step(4, { cabinTemp: 35 });
-  for (let i = 0; i < 5; i++) step(4, { cabinTemp: 22 });
+  for (let i = 0; i < 1600; i++) step(4, { chamberTemp: 22 + jitter(i) });
+  step(4, { chamberTemp: 35 });
+  for (let i = 0; i < 5; i++) step(4, { chamberTemp: 22 });
   assert.equal(alerts.filter((a) => a.type === 'zscore').length, 0);
-  for (let i = 0; i < 40; i++) step(4, { cabinTemp: 35 });
+  for (let i = 0; i < 40; i++) step(4, { chamberTemp: 35 });
   const z = alerts.filter((a) => a.type === 'zscore');
   assert.equal(z.length, 1);
-  assert.deepEqual([z[0].channel, z[0].group], ['cabinTemp', 'lifesupport']);
-  assert.match(z[0].message, /^Cabin temperature is \d+\.\d standard deviations above its recent mean$/);
+  assert.deepEqual([z[0].channel, z[0].group], ['chamberTemp', 'warp']);
+  assert.match(z[0].message, /^Reaction chamber temperature is \d+\.\d standard deviations above its recent mean$/);
 });
 
 test('z-score: warm-up and window follow sample time, so a 10 Hz source is watched after 30 s like a 50 Hz one', () => {
   const { alerts, step } = rig();
-  for (let i = 0; i < 160; i++) step(4, { cabinTemp: 22 + jitter(i) }, 200);
-  for (let i = 0; i < 10; i++) step(4, { cabinTemp: 35 }, 200);
+  for (let i = 0; i < 160; i++) step(4, { chamberTemp: 22 + jitter(i) }, 200);
+  for (let i = 0; i < 10; i++) step(4, { chamberTemp: 35 }, 200);
   assert.equal(alerts.filter((a) => a.type === 'zscore').length, 1);
 });
 
 test('after a silence the source is relearned: other values raise no z-score warning, real faults still alert', () => {
   const { alerts, step, advance, tick } = rig();
-  for (let i = 0; i < 400; i++) step(4, { cabinTemp: 22 + jitter(i), heartRate: 70 + jitter(i) });
+  for (let i = 0; i < 400; i++) step(4, { chamberTemp: 22 + jitter(i), crewMeanHr: 70 + jitter(i) });
   advance(3000);
   tick();
-  for (let i = 0; i < 100; i++) step(4, { cabinTemp: 30, heartRate: 95 });
+  for (let i = 0; i < 100; i++) step(4, { chamberTemp: 30, crewMeanHr: 95 });
   assert.equal(alerts.filter((a) => a.type === 'zscore').length, 0);
   assert.equal(alerts.filter((a) => a.type === 'link-loss').length, 1); // the silence itself is still reported
-  for (let i = 0; i < 100; i++) step(4, { cabinTemp: 30 + jitter(i), plasmaTemp: 90 });
-  assert.equal(alerts.filter((a) => a.type === 'core-temp' && a.severity === 'critical').length, 1);
-  for (let i = 0; i < 1400; i++) step(4, { cabinTemp: 30 + jitter(i) });
-  for (let i = 0; i < 40; i++) step(4, { cabinTemp: 42 });
-  assert.equal(alerts.filter((a) => a.type === 'zscore' && a.channel === 'cabinTemp').length, 1);
+  for (let i = 0; i < 100; i++) step(4, { chamberTemp: 30 + jitter(i), powerTotal: 120 });
+  assert.equal(alerts.filter((a) => a.type === 'power-overload' && a.severity === 'critical').length, 1);
+  for (let i = 0; i < 1400; i++) step(4, { chamberTemp: 30 + jitter(i) });
+  for (let i = 0; i < 40; i++) step(4, { chamberTemp: 42 });
+  assert.equal(alerts.filter((a) => a.type === 'zscore' && a.channel === 'chamberTemp').length, 1);
 });
 
 test('no link-loss alert in the first seconds after the server starts or a source first reports, then it works as before', () => {
@@ -119,12 +120,12 @@ function run(repair) {
   let now = 0;
   const alerts = [];
   const d = new Detector({ onAlert: (a) => alerts.push(a), now: () => now });
-  const feed = (fromMs, ms, v) => { for (let t = 0; t < ms; t += 20) { now = fromMs + t; d.push(1, { ...calm, cabinPressure: v(t) + 0.01 * Math.sin(t) }); } };
-  feed(0, 12000, () => 101);
-  feed(12000, 90000, (t) => Math.max(0, 101 - 4 * (t / 1000))); // a leak left until the cabin is empty
+  const feed = (fromMs, ms, v) => { for (let t = 0; t < ms; t += 20) { now = fromMs + t; d.push(1, { ...calm, reactionRate: v(t) + 0.01 * Math.sin(t) }); } };
+  feed(0, 12000, () => 64);
+  feed(12000, 90000, (t) => Math.max(0, 64 - 2.5 * (t / 1000))); // a leak left until the cabin is empty
   const atRepair = alerts.length;
   repair(d);
-  feed(102000, 30000, () => 101); // repaired
+  feed(102000, 30000, () => 64); // repaired
   return { after: alerts.slice(atRepair), open: d.openSeverity(1) };
 }
 

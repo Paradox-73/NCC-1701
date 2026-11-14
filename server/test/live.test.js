@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import mongoose from 'mongoose';
 import { io as connect } from 'socket.io-client';
 import parser from 'socket.io-msgpack-parser';
-import { CHANNELS, EVENTS, GROUP_CHANNELS, GROUPS, packSample } from '@ncc/shared/schema.js';
+import { channelsOf, EVENTS, GROUP_CHANNELS, KINDS, packSample } from '@ncc/shared/schema.js';
 import { createServer } from '../src/app.js';
 
 const KEY = 'test-device-key';
@@ -12,7 +12,7 @@ const server = createServer({ port: 0, mongoUri: MONGO, logLevel: 'silent', devi
 let base;
 const sockets = [];
 
-const values = (i) => Object.fromEntries(CHANNELS.map((c) => [c.key, c.min + ((i % 10) * (c.max - c.min)) / 20]));
+const values = (i) => Object.fromEntries(channelsOf(1).map((c) => [c.key, c.min + ((i % 10) * (c.max - c.min)) / 20]));
 const sample = (seq) => packSample(seq, Date.now(), values(seq));
 const open = (ns, auth) => {
   const s = connect(`${base}${ns}`, { parser, auth, transports: ['websocket'], reconnection: false });
@@ -62,12 +62,16 @@ test('a dashboard without a valid token is refused', async () => {
 });
 
 test('subscriptions follow the role: only permitted groups join, and frames carry only the subscribed group', async () => {
-  const eng = await dash('engineer'); // warp and shields
-  const sub = await emitAck(eng.s, EVENTS.SUBSCRIBE, { sourceIds: [1], groups: ['warp', 'lifesupport'] });
-  assert.deepEqual(sub, { ok: true, rooms: ['src:1:warp'], denied: ['lifesupport'] });
+  const eng = await dash('engineer'); // every ship group except helm, sensors and comms
+  const sub = await emitAck(eng.s, EVENTS.SUBSCRIBE, { sourceIds: [1], groups: ['warp', 'sensors'] });
+  assert.deepEqual(sub, { ok: true, rooms: ['src:1:warp'], denied: ['sensors'], deniedSources: [] });
+  const wrongKind = await emitAck(eng.s, EVENTS.SUBSCRIBE, { sourceIds: [1, 2, 11], groups: ['warp'] });
+  assert.deepEqual([wrongKind.rooms, wrongKind.deniedSources], [['src:1:warp'], [2, 11]]); // the engineer sees neither ship 2 nor the sickbay
   const cap = await dash('captain');
   const all = await emitAck(cap.s, EVENTS.SUBSCRIBE, { sourceIds: [1] }); // no groups: every group the role may see
-  assert.deepEqual(all.rooms, GROUPS.map((g) => `src:1:${g}`));
+  assert.deepEqual(all.rooms, KINDS.ship.groups.map((g) => `src:1:${g}`)); // a ship has no biosign groups
+  const hub = await emitAck(cap.s, EVENTS.SUBSCRIBE, { sourceIds: [11] });
+  assert.deepEqual(hub.rooms, KINDS.crew.groups.map((g) => `src:11:${g}`));
   const bad = await emitAck(cap.s, EVENTS.SUBSCRIBE, { sourceIds: [1], groups: ['bridge'] });
   assert.deepEqual(bad, { ok: false, error: 'invalid payload' });
 
@@ -79,7 +83,7 @@ test('subscriptions follow the role: only permitted groups join, and frames carr
   assert.ok(eng.got.frames.every((f) => f.group === 'warp' && f.sourceId === 1));
   assert.deepEqual(eng.got.frames[0].keys, GROUP_CHANNELS.warp);
   assert.deepEqual(eng.got.frames.flatMap((f) => f.samples.map((s) => s[0])).sort(), [1, 2, 3]);
-  assert.deepEqual(new Set(cap.got.frames.map((f) => f.group)), new Set(GROUPS));
+  assert.deepEqual(new Set(cap.got.frames.map((f) => f.group)), new Set(KINDS.ship.groups));
 
   await emitAck(eng.s, EVENTS.UNSUBSCRIBE, { sourceIds: [1] });
   const before = eng.got.frames.length;
@@ -90,21 +94,21 @@ test('subscriptions follow the role: only permitted groups join, and frames carr
 
 test('alerts reach only roles that may see their group; link loss reaches everyone', async () => {
   const [eng, med, comms] = await Promise.all(['engineer', 'medical', 'comms'].map(dash));
-  const alert = { sourceId: 1, ts: Date.now(), type: 'core-temp', channel: 'plasmaTemp', value: 80, threshold: 70, severity: 'warn', message: 'x' };
+  const alert = { sourceId: 1, ts: Date.now(), type: 'chamber-temp', channel: 'chamberTemp', value: 80, threshold: 70, severity: 'warn', message: 'x' };
   server.alerts.raise({ ...alert, group: 'warp' });
   server.alerts.raise({ ...alert, type: 'link-loss', channel: 'samples', group: null });
   await sleep(200);
-  assert.deepEqual(eng.got.alerts.map((a) => a.type).sort(), ['core-temp', 'link-loss']);
+  assert.deepEqual(eng.got.alerts.map((a) => a.type).sort(), ['chamber-temp', 'link-loss']);
   assert.deepEqual(med.got.alerts.map((a) => a.type), ['link-loss']);
   assert.deepEqual(comms.got.alerts.map((a) => a.type), ['link-loss']);
 });
 
 test('acknowledging needs a role with canAck and the alert group; the ack is broadcast to that group only', async () => {
   const [eng, med, comms, cap] = await Promise.all(['engineer', 'medical', 'comms', 'captain'].map(dash));
-  server.alerts.raise({ sourceId: 2, ts: Date.now(), type: 'core-temp', group: 'warp', channel: 'plasmaTemp', value: 80, threshold: 70, severity: 'warn', message: 'x' });
+  server.alerts.raise({ sourceId: 1, ts: Date.now(), type: 'chamber-temp', group: 'warp', channel: 'chamberTemp', value: 80, threshold: 70, severity: 'warn', message: 'x' });
   await sleep(200);
   const id = eng.got.alerts.at(-1).id;
-  assert.deepEqual(await emitAck(comms.s, EVENTS.ALERT_ACK, { id }), { ok: false, error: 'read only' });
+  assert.deepEqual(await emitAck(comms.s, EVENTS.ALERT_ACK, { id }), { ok: false }); // may acknowledge, but not warp alerts
   assert.deepEqual(await emitAck(med.s, EVENTS.ALERT_ACK, { id }), { ok: false }); // may acknowledge, but not warp alerts
   assert.deepEqual(await emitAck(eng.s, EVENTS.ALERT_ACK, { id }), { ok: true });
   assert.deepEqual(await emitAck(cap.s, EVENTS.ALERT_ACK, { id }), { ok: false }); // already acknowledged

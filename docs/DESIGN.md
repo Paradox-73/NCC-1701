@@ -376,7 +376,7 @@ Shortcuts are ignored while the focus is in a text field or a dialog, and a held
 | `Y` | Yellow alert | Captain |
 | `N` | Stand down to normal | Captain |
 | `H` | Open or close hailing frequencies | Captain, communications officer |
-| `V` | Next viewscreen mode: forward, aft, tactical, magnify | Everyone, local view only |
+| `V` | Next viewscreen mode: forward, tactical, exterior (the ship and its shields); a sensor contact switches to tactical by itself | Everyone, local view only |
 | `+` `-` | Magnification ×1, ×2, ×4, ×8 | Everyone |
 | `G` then `B` `H` `E` `S` `C` `M` `F` | Go to Bridge, Helm, Engineering, Science, Comms, Medical, Fleet | Everyone; restricted monitors stay restricted |
 | `Ctrl`+`K` | Turbolift: station picker | Everyone |

@@ -32,6 +32,7 @@
 .viewscreen__glass > .viewscreen__zoom { width: 100%; height: 100%; border-radius: 14px; overflow: hidden; background: #020308; }
 .viewscreen__zoom > * { transform: scale(var(--zoom, 1)); transition: transform 400ms var(--ease-in); }
 .viewscreen__slot, .viewer-host { width: 100%; height: 100%; }
+.viewer-host { position: relative; } /* the exterior view lies over the paused viewscreen */
 :root[data-condition='red'] .viewscreen__glass { animation: frame-pulse 1s ease-in-out infinite; }
 @keyframes frame-pulse { 50% { box-shadow: 0 0 0 3px #0b0c0f, 0 0 60px 6px #ff2a3d99, 0 24px 50px -10px #000; } }
 .viewscreen__caption { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 6px 0; color: var(--ink2); }

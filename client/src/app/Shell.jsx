@@ -16,7 +16,7 @@ import { TopBar } from './TopBar.jsx';
 import './shell.css';
 
 const MAGNIFY = [1, 2, 4, 8];
-const VIEW_MODES = ['forward', 'tactical'];
+const VIEW_MODES = ['forward', 'tactical', 'exterior'];
 
 /** The signed-in frame: top bar, alert bars, the station views and every keyboard shortcut. */
 export default function Shell({ powered, aboard }) {
@@ -48,6 +48,14 @@ export default function Shell({ powered, aboard }) {
     return undefined;
   }, [condition]);
   useEffect(() => () => { delete document.documentElement.dataset.condition; delete document.documentElement.dataset.attention; }, []);
+
+  // a contact appearing on sensors (Balance of Terror's Romulan ship) puts the tactical view on the main viewer
+  const contact = getRing(1, 'sensors')?.last('contacts') > 0;
+  const hadContact = useRef(contact);
+  useEffect(() => {
+    if (contact && !hadContact.current) setViewer((v) => ({ ...v, mode: 'tactical' }));
+    hadContact.current = contact;
+  }, [contact]);
 
   // ---- feedback line for commands and refusals --------------------------------------------------------
   const say = useCallback((text, tone = 'info') => setToast({ text, tone, id: Math.random() }), []);

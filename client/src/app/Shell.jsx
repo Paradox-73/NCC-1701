@@ -8,6 +8,9 @@ import { conditionOf, loadShip } from '../lib/ship.js';
 import { play, toggleSound } from '../lib/sound.js';
 import { ackAlert, getRing, state } from '../lib/store.js';
 import Bridge from '../pages/Bridge.jsx';
+import { reducedMotion } from '../lib/chartTheme.js';
+import { hasWebGL } from '../three/StarshipView.jsx';
+import MainViewer from './MainViewer.jsx';
 import { ShortcutSheet, Turbolift } from './Overlays.jsx';
 import StationRoute from './StationRoute.jsx';
 import { PAGES, STATIONS, stationAt } from './stations.js';
@@ -30,6 +33,8 @@ export default function Shell({ powered, aboard }) {
   const [lift, setLift] = useState(0); // bumps on every station change: replays the turbolift light
 
   useEffect(() => { loadShip(); }, []); // condition, scenario and the last log lines for a bridge that joins late
+  // the ship model, fetched and decoded before the first 3D view needs it (the tactical viewer)
+  useEffect(() => { if (hasWebGL() && !reducedMotion()) import('../three/Starship.jsx').then((m) => m.preloadShip()).catch(() => {}); }, []);
 
   // ---- condition: the server's, reflected on <html> so every surface follows it --------------------
   const condition = conditionOf(1);
@@ -137,13 +142,14 @@ export default function Shell({ powered, aboard }) {
       <i key={lift} className="lift-light" aria-hidden="true" />
       <div key={location.pathname} className={`view ${location.pathname === '/bridge' ? 'view--bridge' : 'view--station'}`}>
         <Routes location={location}>
-          <Route path="/bridge" element={<Bridge powered={powered} aboard={aboard} viewer={viewer} onViewer={nextView} onGo={go} onLift={() => setOverlay('lift')} user={user} />} />
+          <Route path="/bridge" element={<Bridge powered={powered} viewer={viewer} onViewer={nextView} onGo={go} onLift={() => setOverlay('lift')} user={user} />} />
           {[...STATIONS.slice(1), ...PAGES].map((st) => (
             <Route key={st.id} path={`${st.path}/*`} element={<StationRoute station={st} onBack={back} />} />
           ))}
           <Route path="*" element={<Navigate to="/bridge" replace />} />
         </Routes>
       </div>
+      <MainViewer viewer={viewer} condition={condition} threeD={aboard} />
       {overlay === 'lift' && <Turbolift user={user} current={current} onGo={go} onClose={() => setOverlay(null)} />}
       {overlay === 'keys' && <ShortcutSheet onClose={() => setOverlay(null)} />}
       <div className="toast-slot" role="status" aria-live="polite">

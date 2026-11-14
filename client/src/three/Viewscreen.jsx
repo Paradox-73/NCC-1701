@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { Preload } from '@react-three/drei';
 import * as THREE from 'three';
 import { Starship } from './Starship.jsx';
 import { ViewscreenOverlay } from './ViewscreenOverlay.jsx';
@@ -10,6 +11,7 @@ import { ViewscreenOverlay } from './ViewscreenOverlay.jsx';
 //   alert  'green' | 'yellow' | 'red'      tint over the screen
 //   hit    boolean                         static + flicker + a camera shake while true (and a moment after)
 //   contact { x, z }                       tactical only: where the sensor blip sits, ship-relative (default ahead-right)
+//   paused boolean                         stop drawing (the shell parks the bridge's viewer while a station is open)
 
 const N = 1400;
 const FAR = 220;
@@ -27,7 +29,7 @@ function placeStar(s, i, z) {
 
 // Stars fly toward the camera along -z. Each star is a point (its head) and a line segment behind it whose
 // length grows with speed, so at impulse they read as dots and at warp as streaks.
-function Starfield({ warp, mode }) {
+function Starfield({ warp, mode, on }) {
   const stars = useMemo(() => {
     const s = new Float32Array(N * 3);
     for (let i = 0; i < N; i++) placeStar(s, i, -Math.random() * FAR);
@@ -48,6 +50,7 @@ function Starfield({ warp, mode }) {
   const speed = useRef(1);
 
   useFrame((_, dt) => {
+    if (!on) return; // tactical hides the starfield: no point moving 1,400 stars nobody sees
     dt = Math.min(dt, 0.1); // a hidden tab shouldn't teleport every star on return
     const w = clamp(warp, 0, 9);
     const target = mode === 'orbit' ? 0.6 : 1.5 + w * w * 9;
@@ -213,14 +216,17 @@ function Rig({ mode, hit }) {
   return null;
 }
 
-export default function Viewscreen({ warp = 0, mode = 'space', alert = 'green', hit = false, contact, className, style }) {
+export default function Viewscreen({ warp = 0, mode = 'space', alert = 'green', hit = false, contact, paused = false, className, style }) {
   return (
     <div className={className} style={{ position: 'relative', width: '100%', height: '100%', overflow: 'hidden', borderRadius: 14, background: '#020308', ...style }}>
-      <Canvas dpr={[1, 1.5]} resize={{ offsetSize: true }} camera={{ fov: 60, near: 0.1, far: 400 }} gl={{ antialias: true, powerPreference: 'low-power' }}>
+      <Canvas frameloop={paused ? 'never' : 'always'} dpr={[1, 1.5]} resize={{ offsetSize: true }} camera={{ fov: 60, near: 0.1, far: 400 }} gl={{ antialias: true, powerPreference: 'low-power' }}>
         <color attach="background" args={['#020308']} />
         <Rig mode={mode} hit={hit} />
-        {mode === 'tactical' ? <Tactical alert={alert} contact={contact} /> : <Starfield warp={warp} mode={mode} />}
-        {mode === 'orbit' && <Planet />}
+        {/* every scene stays mounted and the mode only shows one, compiled up front by Preload: a switch costs nothing */}
+        <group visible={mode !== 'tactical'}><Starfield warp={warp} mode={mode} on={mode !== 'tactical'} /></group>
+        <group visible={mode === 'orbit'}><Planet /></group>
+        <group visible={mode === 'tactical'}><Tactical alert={alert} contact={contact} /></group>
+        <Preload all />
       </Canvas>
       <ViewscreenOverlay alert={alert} hit={hit} />
     </div>

@@ -3,9 +3,9 @@ import { CHANNEL_BY_KEY, GROUPS, GROUP_CHANNELS, SOURCES } from '@ncc/shared/sch
 import { stationById, canEnter } from '../app/stations.js';
 import { useSubscription, useTick } from '../lib/hooks.js';
 import { bandOf, levelOf, worst } from '../lib/limits.js';
-import { conditionOf, hitOn, ship, shipLog, stardate } from '../lib/ship.js';
+import { conditionOf, ship, shipLog, stardate } from '../lib/ship.js';
 import { backfill, getRing, state } from '../lib/store.js';
-import ViewscreenView from '../three/ViewscreenView.jsx';
+import { viewerSlot } from '../app/MainViewer.jsx';
 import { ArcGauge, ButtonGrid, DivisionPill, Icon, Jewel, KeyCap, LevelChip, LitButton, Monitor, Num, Readout, SweepScope, mayCommand, useCommand } from '../ui/index.js';
 import Tour from '../app/Tour.jsx';
 import { ScenarioPicker, ScenarioStrip, Ticker } from './Scenario.jsx';
@@ -17,7 +17,6 @@ const has = (key) => !!CHANNEL_BY_KEY[key];
 const last = (group, key) => (has(key) ? getRing(SHIP, group)?.last(key) : undefined);
 const spark = (group, key) => (has(key) ? getRing(SHIP, group)?.window(60_000, [key]) : null);
 const decOf = (key) => Math.min(2, Math.max(0, Math.round(Math.log10(CHANNEL_BY_KEY[key]?.scale ?? 1))));
-const CONDITION_ALERT = { normal: 'green', yellow: 'yellow', red: 'red' };
 const FLAG_STATUS = (f) => (!(f & 1) ? 'off' : f & 4 ? 'crit' : f & 2 ? 'warn' : 'ok');
 const COND_STATUS = { normal: 'ok', yellow: 'warn', red: 'crit' };
 const SEV_LEVEL = { warning: 'warn', warn: 'warn', critical: 'crit' };
@@ -278,16 +277,14 @@ function Turbolift({ onLift }) {
   );
 }
 
-function Viewscreen({ ov, condition, viewer, threeD, user }) {
-  const hit = hitOn(SHIP); // the scenario's hit fx: static and a shake on the main viewer
+// The glass and its captions; the viewer inside is the shell's MainViewer, which lives on between visits.
+function Viewscreen({ ov, viewer, user }) {
   const orbit = last('helm', 'orbitAlt') > 0 || !!ship.scene;
-  const mode = viewer.mode === 'tactical' ? 'tactical' : orbit ? 'orbit' : 'space';
-  const timewarp = performance.now() < ship.warpFx;
   return (
     <figure className="viewscreen" data-tour="viewscreen">
       <div className="viewscreen__glass" style={{ '--zoom': viewer.zoom }}>
         <div className="viewscreen__zoom">
-          <ViewscreenView mode3d={threeD ? 'auto' : '2d'} warp={timewarp ? 9 : ov?.warp ?? 0} mode={mode} scene={ship.scene} alert={CONDITION_ALERT[condition]} hit={hit} />
+          <div ref={viewerSlot} className="viewscreen__slot" />
         </div>
         <ScenarioStrip user={user} />
       </div>
@@ -303,7 +300,7 @@ function Viewscreen({ ov, condition, viewer, threeD, user }) {
 const W = 1600, H = 900;
 const SUBSCRIBE = ['helm', 'warp', 'sensors', 'comms', 'lifesupport', 'crewsummary', 'shields'];
 
-export default function Bridge({ powered, aboard, viewer, onViewer, onGo, onLift, user }) {
+export default function Bridge({ powered, viewer, onViewer, onGo, onLift, user }) {
   useTick();
   const list = useMedia('(max-width: 899px)');
   const groups = SUBSCRIBE.filter((g) => GROUPS.includes(g) && user.groups.includes(g));
@@ -355,7 +352,7 @@ export default function Bridge({ powered, aboard, viewer, onViewer, onGo, onLift
   };
 
   const parts = {
-    viewscreen: <Viewscreen ov={ov} condition={condition} viewer={viewer} threeD={aboard} user={user} />,
+    viewscreen: <Viewscreen ov={ov} viewer={viewer} user={user} />,
     helm: <HelmConsole ov={ov} />,
     chair: <Chair user={user} condition={condition} viewer={viewer} onViewer={onViewer} onScenarios={() => setPicker(true)} />,
     log: <CaptainsLog onOpen={() => onGo(stationById.alerts)} />,

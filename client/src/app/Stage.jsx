@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { reducedMotion } from '../lib/chartTheme.js';
 import { stardate } from '../lib/ship.js';
-import { play, setSound, soundChosen, soundOn, toggleSound, useSound } from '../lib/sound.js';
+import { play, soundOn, toggleSound, useSound } from '../lib/sound.js';
 import Login from '../pages/Login.jsx';
 import StarshipView, { hasWebGL } from '../three/StarshipView.jsx';
 import { FLIGHT_MS, NARRATION_AT, THEME_AT } from '../three/rig.js';
@@ -78,7 +78,6 @@ function ColdOpen({ intro, onStart, onDone }) {
   const alive = useRef(true);
   useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []); // set again on remount (StrictMode runs effects twice)
   const engage = async () => {
-    if (!soundChosen()) setSound(true); // the Engage click is the gesture browsers need; a chosen mute stays muted
     const t0 = performance.now();
     setT(0);
     const a = await intro.start();

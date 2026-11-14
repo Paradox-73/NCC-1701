@@ -203,7 +203,7 @@ Reduced motion, from `prefers-reduced-motion: reduce` or the Help toggle (`data-
 
 ## Sound
 
-Muted by default. The speaker button in the top bar, or `M`, turns sound on; that click is the user gesture browsers require before audio can play. Sound runs on the Web Audio API: one `AudioContext` created on first unmute, every clip fetched and decoded into an `AudioBuffer` at that moment, one master gain at -12 dB, at most 4 voices at once, and a cooldown per cue so a 50 Hz stream never machine-guns beeps. The choice is remembered in the browser.
+On by default. The speaker button (top bar, Engage gate, cold open) or `M` mutes it; a mute lasts for the tab session only, so a forgotten mute never silences a later visit. Browsers start audio only after a user gesture, so the first click, tap or key press anywhere creates the one `AudioContext` and fetches and decodes every clip into an `AudioBuffer`. Sound runs on the Web Audio API: one master gain at -12 dB, at most 4 voices at once, and a cooldown per cue so a 50 Hz stream never machine-guns beeps.
 
 The team lead approved original-series sound effects with credits (see Assets and credits). The clips below are from the TrekCore audio archive; sizes are the downloaded files, before trimming. Trim each to the length given, mono, 64 kbps:
 

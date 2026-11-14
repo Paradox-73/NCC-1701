@@ -1,15 +1,18 @@
-// Bridge sound (DESIGN.md, Sound). Muted by default; the first unmute is the user gesture browsers need, and it
-// creates the one AudioContext and loads every clip. A clip is /sfx/<cue>.mp3 when the sound kit ships it, else a
-// few lines of oscillator code stand in. Master gain -12 dB, at most 4 voices, a cooldown per cue.
+// Bridge sound (DESIGN.md, Sound). On unless the user mutes it, and a mute lasts for the tab session only. Browsers
+// start audio only after a user gesture, so the first pointer or key press anywhere creates the one AudioContext
+// and loads every clip; later presses resume it if the browser suspended it. A clip is /sfx/<cue>.mp3 when the
+// sound kit ships it, else a few lines of oscillator code stand in. Master gain -12 dB, at most 4 voices, a cooldown per cue.
 import { useSyncExternalStore } from 'react';
 
-const KEY = 'ncc.sound';
+const MUTED = 'ncc.muted'; // sessionStorage, '1' once the user mutes
 const CUES = ['press', 'ack', 'hail', 'intercom', 'yellow', 'red', 'station', 'lift', 'warp', 'chirp', 'phaser', 'torpedo', 'boom', 'transport', 'reactor', 'heartbeat'];
 const COOLDOWN = { press: 60, ack: 150, red: 4500, yellow: 2500, station: 300, lift: 1000 };
 
-let enabled = false;
-let chosen = false; // the user has turned sound on or off at least once
-try { const v = localStorage.getItem(KEY); enabled = v === '1'; chosen = v != null; } catch { /* private mode */ }
+let enabled = true;
+try {
+  localStorage.removeItem('ncc.sound'); // the old switch, kept forever: a stale '0' there silenced every later visit
+  enabled = sessionStorage.getItem(MUTED) !== '1';
+} catch { /* private mode */ }
 let ctx = null;
 let master = null;
 let voices = 0;
@@ -34,12 +37,13 @@ function ensureContext() {
   }
 }
 
+// pointerdown is a mouse's activation, pointerup a finger's: either may be the first gesture
+if (typeof window !== 'undefined') for (const type of ['pointerdown', 'pointerup', 'keydown']) window.addEventListener(type, () => { if (enabled) ensureContext(); }, true);
+
 export const soundOn = () => enabled;
-export const soundChosen = () => chosen;
 export function setSound(on) {
   enabled = on;
-  chosen = true;
-  try { localStorage.setItem(KEY, on ? '1' : '0'); } catch { /* private mode */ }
+  try { if (on) sessionStorage.removeItem(MUTED); else sessionStorage.setItem(MUTED, '1'); } catch { /* private mode */ }
   if (on) ensureContext();
   listeners.forEach((fn) => fn());
 }

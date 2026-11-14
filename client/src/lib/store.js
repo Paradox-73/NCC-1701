@@ -135,6 +135,25 @@ export function ackAlert(id) {
   });
 }
 
+/**
+ * Acknowledges several alerts one after another, `perSecond` at most, so a long list stays under the server's rate
+ * limit; onProgress(done, total) after each reply. Resolves { ok, failed }; stops early once the socket is offline.
+ * shortcut: one socket event per alert; switch to the server's ack-all route once it exists.
+ */
+export async function ackAlerts(ids, onProgress, perSecond = 20) {
+  let ok = 0, failed = 0;
+  for (const id of ids) {
+    const t0 = Date.now();
+    let r = await ackAlert(id);
+    if (r?.error === 'rate limited') { await new Promise((res) => setTimeout(res, 1000)); r = await ackAlert(id); }
+    if (r?.ok) ok++; else failed++;
+    onProgress?.(ok + failed, ids.length);
+    if (r?.error === 'offline') { failed = ids.length - ok; break; }
+    await new Promise((res) => setTimeout(res, Math.max(0, 1000 / perSecond - (Date.now() - t0))));
+  }
+  return { ok, failed };
+}
+
 // ---- subscriptions (reference counted) ---------------------------------
 // A room is joined when its first user mounts and left when the last one unmounts. Each join or leave request
 // carries a number per room, so a late reply to an older request can never mark a room as joined.

@@ -12,6 +12,37 @@ Memory Alpha, the main fan wiki, answered every automated request during this re
 
 Used for: the palette (`railing`, `bulkhead`, black consoles, lit buttons), the round 14 px monitors, the station frame, the turbolift light on station change.
 
+## Bridge consoles
+
+"Seen" means the photo or screencap was downloaded and looked at; the files are in `mernify/design/ncc/consoles/refs/`, outside this repository.
+
+Sources:
+
+1. The original helm and navigation console, restored for the Museum of Pop Culture: 11 photos and the restorers' notes. Read and seen: https://www.startrek.com/news/restored-tos-navigation-helm-console-ready-for-spaceflight
+2. Original props at the Henry Ford Museum, photos by Joe Ross, CC BY-SA 2.0. Seen: the helm console with Kirk's chair, https://commons.wikimedia.org/wiki/File:Captain%27s_chair_and_Uniform_with_the_original_helm_and_navigation_console_-_Star_Trek_-_Exploring_New_Worlds_Exhibit_at_the_Henry_Ford_Museum.jpg, and four panels the museum labels "Bridge computer console", "Enterprise self-destruct panel", "Transmitter console" and "Bridge control panels", https://commons.wikimedia.org/wiki/File:Enterprise_bridge_consoles_and_panels_-_Star_Trek_-_Exploring_New_Worlds_Exhibit_at_the_Henry_Ford_Museum.jpg
+3. Kirk's chair, photo by Theresa Arzadon-Labajo, CC BY 2.0. Seen: https://commons.wikimedia.org/wiki/File:Icons_of_Science_Fiction_-_Star_Trek,_Captain_Kirk%27s_chair_(15631843099).jpg
+4. The licensed recreation of the Desilu stage 9 sets in Ticonderoga, NY. Seen: the bridge panorama by Mobilus In Mobili, CC BY-SA 2.0, https://commons.wikimedia.org/wiki/File:USS_Enterprise_NCC-1701_Bridge_Set.jpg; main engineering, https://commons.wikimedia.org/wiki/File:USS_Enterprise_NCC-1701_Main_Engineering_Set.jpeg; the TrekNews gallery (photos 10-18, 22, 23, 42, 89), https://treknews.net/2019/11/18/gallery-star-trek-original-series-set-tour/
+5. Screencaps. Seen: TrekCore's Blu-ray captures of "The Corbomite Maneuver" (frames 7, 13, 22, 106, 160, 247, 250, 286), https://tos.trekcore.com/gallery/thumbnails.php?album=186; Ex Astris Scientia's bridge, engineering and sickbay captures, http://www.ex-astris-scientia.org/articles/enterprise-issues.htm and http://www.ex-astris-scientia.org/inconsistencies/monitors_tos.htm
+6. Franz Joseph, *Star Fleet Technical Manual* (1975), the scan's OCR text on the Internet Archive. Read: https://archive.org/details/star-trek-star-fleet-technical-manual
+7. The sickbay bed monitor. Read: https://wrathofdhanprops.blogspot.com/2013/09/dammit-jim-imadoctornotamagician-how.html. Seen: a recreation on a small screen, https://hackaday.com/2019/07/05/an-arduino-sickbay-display-worthy-of-the-enterprise/
+
+What a station looks like, top to bottom (seen in sources 4 and 5):
+
+- **Wall.** Grey, with a red line where it meets the ceiling cove. Above each station the wall steps back into a darker rounded-rectangle bay that holds one or two screens. Each screen has rounded corners and a thin pale frame. On the show they carry soft colour fields and plain shapes, such as the green and blue swirls in "The Corbomite Maneuver"; the recreation adds star fields, grids and small captions along the bottom edge.
+- **Readout band.** Under the bays runs a black band of small square backlit windows: rows of coloured rectangles in yellow, green, orange and red, bar patterns, and a few yellow graph-paper panels crossed by a red line. The museum's original "Bridge computer console" panel is the same kind of thing: columns of copper and yellow-green gel rectangles on black (source 2).
+- **Desk.** A sloped near-black top with fan-shaped black plates of "jellybean" buttons: faceted translucent blocks and round domed lenses in red, amber, yellow, green, blue and clear. A red stripe runs along the desk's front edge. Below it, a grey kick panel with backlit perforated grilles in pink, amber, white and green.
+
+Station by station:
+
+- **Helm and navigation.** One long console in front of the captain's chair: black top, red front, pale grey trim. It is wood, repainted every season with a black coat between colours to stop light leaking through (source 1). In the middle sits the astrogator: a pale grey housing with a round backlit plotting disc, a polar grid of rings and rays, a yellow centre disc and red and green course lines (sources 1, 2), with a small translucent trapezoid lamp on top that is red in frame 13. The Technical Manual names its parts "view plate of cloud chamber", "coordinate grid system" and "ship's log and chronometer", and calls the bright spot that marks the destination the "flying point". The Sulu scope is a grey viewer on a folding arm that rises out of the helm side with a lit green or blue screen (sources 1, 2). The navigation side has the targeting scanner: an amber fan-shaped grid with a crosshair ring and red and green markers, the only 1960s graphic that survived on the console (source 1; the recreation in TrekNews photo 15).
+- **Science.** Spock bends into a hooded viewer that throws blue light onto his face (frame 247). In the recreation it is a pale grey wedge-shaped hood with a blue screen at its mouth (source 4, panorama). The Technical Manual calls the station "command intelligence" with a "library computer control panel" and a "ship's sensors and scanners complex control panel".
+- **Communications.** Uhura works a black panel of small gem buttons under rows of amber, green and red indicator windows, one hand at a silver ear receiver with a ribbed end (frames 160, 286). The Technical Manual files it as the "bridge ear receiver" in the communications station section.
+- **Engineering.** The main engineering control panel is pale grey with black sub-panels drawn as line schematics; its black desk carries slide levers with red knobs, yellow toggles and striped colour chips, and has a red front edge (TrekNews photo 22). Behind it the engine room's forced-perspective grille glows red, orange and magenta.
+- **Sickbay.** Above each bed hangs an angled grey box with a black screen: six vertical red scales, each with a lit segment and a small triangle pointer that moves with the patient, labels underneath (temperature, brain, lungs, cell rate, two blood readings), and two round lamps in the middle that flash for pulse and respiration (source 7; seen in "The Changeling" and TrekNews photo 42).
+- **Captain's chair.** Black leather seat on a grey box base and a round pedestal, walnut arm caps. The arm boxes carry small black plates of buttons: white push buttons on one side, coloured gem buttons and a small square intercom grille on the other (sources 2, 3).
+
+Used for: the station frame in `DESIGN.md` (wall bays, readout band, jellybean desk, red desk edge) and each station's signature piece: the astrogator and targeting scanner on Helm, the hooded viewer on Science, the ear receiver and switch panel on Communications, the readout wall and slide levers on Engineering, the bed monitor on Sickbay.
+
 ## Uniforms and insignia
 
 - Command wore gold, sciences and medical blue, operations, engineering and security red. "The gold uniforms were actually intended to be green, but read on camera as the color that we know today." Read: https://www.denofgeek.com/tv/star-trek-uniform-colors-change-original-series-next-generation/

@@ -14,25 +14,27 @@
   white-space: nowrap;
 }
 
-/* ---- lit button: a real control ------------------------------------------ */
+/* ---- lit button: a real control, a translucent jellybean block set into a black plate ------------------------
+   The facets are two gradients over the lens colour: a bright top bevel and darker side faces (RESEARCH.md). */
 .lit {
   --c: var(--lit-blue); --dim: var(--lit-blue-dim);
+  --facets: linear-gradient(180deg, #ffffff38 0, #ffffff14 34%, #ffffff00 36%, #ffffff00 78%, #0000002e 80%), linear-gradient(90deg, #00000038, #00000000 14%, #00000000 86%, #00000038);
   position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  min-height: 36px; padding: 0 12px; border: 0; border-radius: 3px;
-  background: linear-gradient(180deg, color-mix(in oklab, var(--dim) 82%, #fff 6%), var(--dim));
+  min-height: 36px; padding: 0 12px; border: 0; border-radius: 4px;
+  background: var(--facets), var(--dim);
   color: color-mix(in oklab, var(--c) 92%, #fff);
   font: 400 11px/1 var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap;
-  box-shadow: inset 0 1px 0 #ffffff1c, inset 0 -2px 0 #00000055, 0 1px 0 #000;
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--c) 30%, #000), 0 0 0 2px #000, 0 2px 1px 2px #ffffff12;
   transition: transform var(--t-press) var(--ease-in), background var(--t-press) steps(1), color var(--t-press) steps(1), box-shadow var(--t-press) steps(1);
   -webkit-tap-highlight-color: transparent;
 }
 .lit .keycap { color: inherit; border-color: color-mix(in oklab, currentColor 35%, transparent); background: #00000026; }
-.lit:hover:not(:disabled) { background: linear-gradient(180deg, color-mix(in oklab, var(--dim) 70%, var(--c) 14%), color-mix(in oklab, var(--dim) 88%, var(--c) 8%)); }
+.lit:hover:not(:disabled) { background: var(--facets), color-mix(in oklab, var(--dim) 78%, var(--c) 22%); }
 .lit:active:not(:disabled) { transform: translateY(1px) scale(0.985); }
 .lit.is-lit, .lit[aria-pressed='true'] {
-  background: linear-gradient(180deg, color-mix(in oklab, var(--c) 84%, #fff 16%), var(--c));
+  background: var(--facets), linear-gradient(180deg, color-mix(in oklab, var(--c) 80%, #fff 20%), var(--c));
   color: #07080a;
-  box-shadow: 0 0 6px 1px color-mix(in oklab, var(--c) 70%, transparent), 0 0 22px -4px color-mix(in oklab, var(--c) 60%, transparent), inset 0 0 4px #ffffff55;
+  box-shadow: inset 0 0 0 1px #ffffff55, 0 0 0 2px #000, 0 0 10px 2px color-mix(in oklab, var(--c) 60%, transparent), 0 0 26px -4px color-mix(in oklab, var(--c) 70%, transparent);
 }
 .lit.is-pending { animation: lit-blink 500ms steps(1) infinite; }
 .lit:disabled { cursor: not-allowed; filter: grayscale(1) brightness(0.7); opacity: 0.45; }
@@ -77,23 +79,28 @@
 .chip[data-level='off'] { color: var(--mute); background: var(--raised); }
 .chip[data-level='info'] { color: var(--accent); box-shadow: inset 0 0 0 1px #5cb8ff55; }
 
-/* ---- monitor: a rounded screen in a bezel -------------------------------- */
+/* ---- monitor: a wall screen. The wall steps back into a dark rounded bay; the screen sits in it behind a thin pale
+   frame, with scan lines and a glass sheen over the picture (RESEARCH.md, Bridge consoles). -------------------- */
 .monitor {
   position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0;
-  background: linear-gradient(180deg, color-mix(in oklab, var(--panel) 88%, #fff 4%), var(--panel)); border-radius: 14px; padding: 0 8px 8px;
-  box-shadow: inset 0 1px 0 #ffffff12, inset 0 0 0 1px color-mix(in oklab, var(--bulkhead) 30%, transparent), 0 2px 0 #000;
+  padding: 0 9px 9px; border-radius: 17px;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--bay) 70%, #000) 0, var(--bay) 30px);
+  box-shadow: inset 0 4px 10px #000000b0, inset 0 -1px 0 #ffffff26, 0 1px 0 #ffffff4d, 0 -1px 0 #0000004d;
 }
-.monitor__title { display: flex; align-items: center; gap: 8px; min-height: 30px; padding: 0 6px; min-width: 0; }
-.monitor__title h2 { margin: 0; flex: 0 0 auto; max-width: 100%; font: 400 11px/1.2 var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.monitor__meta { margin-left: auto; flex: 0 100 auto; min-width: 0; display: flex; align-items: center; gap: 8px; overflow: hidden; font: 400 11px/1 var(--font-mono); color: var(--mute); white-space: nowrap; }
+.monitor__title { display: flex; align-items: center; gap: 8px; min-height: 28px; padding: 2px 6px 0; min-width: 0; }
+.monitor__title h2 { margin: 0; flex: 0 0 auto; max-width: 100%; font: 400 10.5px/1.2 var(--font-display); letter-spacing: 0.12em; text-transform: uppercase; color: #dfe3e8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.monitor__meta { margin-left: auto; flex: 0 100 auto; min-width: 0; display: flex; align-items: center; gap: 8px; overflow: hidden; font: 400 11px/1 var(--font-mono); color: #a3abb5; white-space: nowrap; }
 .monitor__screen {
-  position: relative; flex: 1; min-height: 0; border-radius: 9px; background: var(--void); overflow: hidden;
-  box-shadow: inset 0 0 24px #000, inset 0 0 0 1px #ffffff0a;
+  position: relative; flex: 1; min-height: 0; border-radius: 12px; background: #030405; overflow: hidden;
+  box-shadow: 0 0 0 3px var(--bezel), 0 0 0 4px #00000099, 0 2px 6px 3px #00000066, inset 0 0 30px #000, inset 0 0 0 1px #ffffff0d;
+  margin: 3px;
   transform-origin: 50% 50%;
 }
 .monitor__screen::after {
   content: ''; position: absolute; inset: 0; z-index: 3; pointer-events: none; border-radius: inherit;
-  background: repeating-linear-gradient(0deg, #ffffff05 0 1px, transparent 1px 3px);
+  background:
+    linear-gradient(160deg, #ffffff0d 0, #ffffff00 34%),
+    repeating-linear-gradient(0deg, #ffffff07 0 1px, transparent 1px 3px);
 }
 /* the tube switches on when the monitor mounts and whenever its state changes */
 .monitor__in { position: relative; height: 100%; animation: tube-in 260ms var(--ease-in) both; transform-origin: 50% 50%; }
@@ -182,15 +189,16 @@
 .scope { position: relative; width: 100%; aspect-ratio: 1; max-height: 100%; margin: auto; border-radius: 50%; background: radial-gradient(circle, #061420 0%, #020509 70%); box-shadow: inset 0 0 0 1px #58c4ff33, inset 0 0 30px #000; }
 .scope canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; }
 
-/* ---- decorative button grid ----------------------------------------------- */
+/* ---- decorative button grid: rows of small jellybeans (the bridge's tile racks) ------------------------------ */
 .grid-lamps { display: grid; grid-auto-flow: column; grid-template-rows: repeat(var(--rows, 3), 10px); gap: 6px 5px; align-content: center; overflow: hidden; }
 .grid-lamps i {
-  position: relative; display: block; width: 16px; height: 10px; border-radius: 2px;
-  background: color-mix(in oklab, var(--c) 22%, #050505); box-shadow: inset 0 1px 0 #ffffff12, inset 0 -1px 0 #0008;
+  position: relative; display: block; width: 16px; height: 10px; border-radius: 3px;
+  background: linear-gradient(180deg, #ffffff1c 0 30%, #ffffff00 32%), color-mix(in oklab, var(--c) 24%, #050505);
+  box-shadow: inset 0 -1px 0 #0008, 0 0 0 1px #000;
 }
 .grid-lamps i::after {
   content: ''; position: absolute; inset: 0; border-radius: inherit; opacity: 0;
-  background: linear-gradient(180deg, color-mix(in oklab, var(--c) 80%, #fff 20%), var(--c));
+  background: linear-gradient(180deg, #ffffff66 0 28%, #ffffff00 30%), linear-gradient(180deg, color-mix(in oklab, var(--c) 80%, #fff 20%), var(--c));
   box-shadow: 0 0 6px 0 color-mix(in oklab, var(--c) 70%, transparent);
   animation: lamp var(--d, 3s) steps(1) var(--o, 0s) infinite;
 }
@@ -204,52 +212,111 @@
 .grid-lamps.is-booting { mask-image: linear-gradient(90deg, #000 40%, transparent 60%); mask-size: 260% 100%; mask-position: 100% 0; animation: grid-wipe 600ms var(--ease-in) forwards; animation-delay: var(--delay, 0ms); }
 @keyframes grid-wipe { to { mask-position: 0 0; } }
 
-/* ---- station frame: a bulkhead wall with a placard, a recessed bank of screens and the desk ---------------- */
+/* ---- jellybean plate: a fan-shaped black plate of translucent lenses on the desk (SVG, aria-hidden) ------------
+   A lit lens keeps opacity 1 between blinks, so reduced motion leaves the pattern lit and still. */
+.jb { display: block; height: 100%; width: auto; flex: none; overflow: visible; }
+.jb__plate { fill: var(--plate); stroke: #ffffff26; stroke-width: 0.8; }
+.jb__gem { fill: color-mix(in oklab, var(--c) 30%, #050505); stroke: #000; stroke-width: 0.6; }
+.jb__lit { fill: var(--c); animation: jb-twinkle var(--d, 3s) steps(1) var(--o, 0s) infinite; }
+.jb__shine { fill: #fff; opacity: 0.45; }
+@keyframes jb-twinkle { 0% { opacity: 1; } 55% { opacity: 0; } }
+:root[data-condition='yellow'] .jb g:nth-of-type(2n) > * { --c: var(--lit-yellow) !important; }
+:root[data-condition='yellow'] .jb g:nth-of-type(2n+1) > * { --c: var(--lit-amber) !important; }
+:root[data-condition='red'] .jb g > * { --c: var(--lit-red) !important; }
+:root[data-condition='red'] .jb__lit { animation: jb-twinkle 1s steps(1) infinite; }
+:root[data-condition='red'] .jb g:nth-of-type(3n) > .jb__lit { animation-delay: -0.5s; }
+
+/* ---- readout windows: the black band of small backlit panels under the screens (aria-hidden) ------------------ */
+.rw { display: flex; gap: 6px; align-items: center; min-width: 0; flex: 1; overflow: hidden; }
+.rw__win { flex: none; display: block; width: 34px; height: 30px; border-radius: 2px; background: #020203; box-shadow: 0 0 0 1px #000, 0 0 0 2px #ffffff14; }
+.rw__win .b { animation: jb-twinkle var(--d, 3s) steps(1) var(--o, 0s) infinite; }
+
+/* ---- station frame: you sit at the console facing the wall. Grey wall with a red line under the ceiling cove, a
+   black placard, the screens in their bays, then the desk (DESIGN.md, Layout frame). ---------------------------- */
 .st-station { display: flex; flex-direction: column; height: 100%; min-height: 0; color: var(--ink); }
-/* the bulkhead wall, also behind a station's restricted panel */
+/* the grey wall, also behind a station's restricted panel; faint vertical seams between wall panels */
 .st-station, .restricted {
   background:
-    repeating-linear-gradient(90deg, transparent 0 calc(25% - 1px), color-mix(in oklab, var(--bulkhead) 12%, transparent) calc(25% - 1px) 25%),
-    linear-gradient(180deg, color-mix(in oklab, var(--bulkhead) 22%, var(--void)) 0%, color-mix(in oklab, var(--bulkhead) 12%, var(--void)) 55%, color-mix(in oklab, var(--bulkhead) 6%, var(--void)) 100%);
+    repeating-linear-gradient(90deg, #00000000 0 calc(16.666% - 2px), #0000001f calc(16.666% - 2px) calc(16.666% - 1px), #ffffff1a calc(16.666% - 1px) 16.666%),
+    linear-gradient(180deg, var(--wall-hi) 0, var(--wall) 32%, var(--wall-lo) 100%);
 }
-.st-plate { display: flex; align-items: center; gap: 10px; min-height: 34px; padding: 6px 18px 0; }
-.st-plate h1 { margin: 0; font: 400 13px/1 var(--font-display); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink); white-space: nowrap; }
-.st-plate .st-ship { font: 400 11px/1 var(--font-display); letter-spacing: 0.12em; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.st-plate .st-plate-end { margin-left: auto; display: flex; align-items: center; gap: 8px; font: 400 11px/1 var(--font-mono); color: var(--mute); white-space: nowrap; }
+.st-plate { display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 9px 18px 0; }
+.st-sign {
+  display: flex; align-items: center; gap: 10px; min-width: 0; padding: 6px 12px; border-radius: 4px;
+  background: linear-gradient(180deg, #1b1d21, #08090a); box-shadow: 0 0 0 1px #000, 0 0 0 3px #b9bfc6, 0 2px 4px 3px #0000004d;
+}
+.st-sign h1 { margin: 0; font: 400 13px/1 var(--font-display); letter-spacing: 0.16em; text-transform: uppercase; color: #f4f6f8; white-space: nowrap; }
+.st-sign .st-ship { font: 400 11px/1 var(--font-display); letter-spacing: 0.12em; color: #aab2bc; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.st-plate .st-plate-end {
+  margin-left: auto; display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 4px; font: 400 11px/1 var(--font-mono); color: #c9d0d8; white-space: nowrap;
+  background: #08090a; box-shadow: 0 0 0 1px #000, 0 0 0 3px #b9bfc6;
+}
 .st-grid {
   flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: var(--rows, none);
-  gap: 10px; margin: 8px 12px 0; padding: 10px; border-radius: 18px 18px 0 0;
-  background: linear-gradient(180deg, color-mix(in oklab, var(--void) 70%, #0f1414), var(--void));
-  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--bulkhead) 35%, transparent), inset 0 3px 14px #000c;
+  gap: 14px; margin: 0; padding: 12px 18px 14px;
 }
 .st-c3 { grid-column: span 3; } .st-c4 { grid-column: span 4; } .st-c5 { grid-column: span 5; } .st-c6 { grid-column: span 6; }
 .st-c7 { grid-column: span 7; } .st-c8 { grid-column: span 8; } .st-c9 { grid-column: span 9; } .st-c12 { grid-column: span 12; }
 
-/* ---- console strip: the desk along the bottom of a station ------------------- */
-.console-strip {
-  position: sticky; bottom: 0; z-index: 10; display: flex; align-items: center; gap: 18px; min-height: var(--console-h); padding: 14px 18px 12px;
-  background: linear-gradient(180deg, color-mix(in oklab, var(--bulkhead) 30%, var(--console)) 0, var(--console) 26px);
-  border-top: 1px solid var(--bulkhead); box-shadow: 0 -10px 24px #0009, inset 0 1px 0 #ffffff1a;
+/* ---- console: the readout band, the sloped black desk with its jellybean plates, the red edge, the kick panel ---- */
+.console-strip { position: sticky; bottom: 0; z-index: 10; display: flex; flex-direction: column; background: var(--desk); box-shadow: 0 -12px 26px #0000008c; }
+.cs-band {
+  display: flex; align-items: center; gap: 10px; height: 42px; padding: 0 18px; overflow: hidden;
+  background: linear-gradient(180deg, #000 0, #0b0c0e 100%); border-top: 1px solid #ffffff2e; box-shadow: inset 0 -1px 0 #000, inset 0 2px 6px #000;
 }
-.console-strip__controls { display: flex; flex-wrap: wrap; align-items: center; align-content: center; gap: 8px; min-width: 0; max-width: 62%; }
-.console-strip .lit { min-height: 48px; padding: 0 16px; }
-.console-strip__grid { flex: 1; min-width: 0; grid-auto-columns: 16px; -webkit-mask-image: linear-gradient(90deg, #000 80%, transparent); mask-image: linear-gradient(90deg, #000 80%, transparent); }
-.jewel-row { display: flex; flex-wrap: wrap; align-content: center; gap: 10px 14px; margin-left: auto; min-width: 0; max-width: 36%; }
-.jewel-row__item { display: flex; align-items: center; gap: 6px; font: 400 10px/1 var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute); white-space: nowrap; }
+.cs-status { display: flex; gap: 6px; margin: 0; padding: 0; list-style: none; flex: none; }
+.cs-status__win {
+  display: flex; align-items: center; gap: 7px; height: 28px; padding: 0 10px 0 8px; border-radius: 2px;
+  font: 400 10px/1 var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; color: #cfd5dc; white-space: nowrap;
+  background: #020203; box-shadow: 0 0 0 1px #000, 0 0 0 2px #ffffff14;
+}
+.cs-status__word { font-size: 9.5px; }
+.cs-readouts { display: flex; gap: 6px; margin: 0; flex: none; }
+.cs-readout { display: flex; flex-direction: column; justify-content: center; gap: 3px; height: 32px; padding: 0 8px; border-radius: 2px; background: #020203; box-shadow: 0 0 0 1px #000, 0 0 0 2px #ffffff14; }
+.cs-readout dt { font: 400 8.5px/1 var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; color: #a3abb5; white-space: nowrap; }
+.cs-readout dd { margin: 0; font: 700 13px/1 var(--font-mono); color: #ffd27a; white-space: nowrap; }
+.cs-readout .unit { font-size: 10px; color: #c9b07a; margin-left: 3px; }
+.cs-status__win[data-status='warn'] .cs-status__word { color: var(--warn); }
+.cs-status__win[data-status='crit'] .cs-status__word { color: var(--crit-ink); }
+.cs-status__win[data-status='off'] .cs-status__word, .cs-status__win[data-status='info'] .cs-status__word { color: #aab2bc; }
+.cs-desk {
+  display: flex; align-items: center; gap: 18px; min-height: 72px; padding: 8px 18px;
+  background: linear-gradient(180deg, #1c1e21 0, var(--desk) 38%, #0b0c0d 100%);
+}
+.console-strip__controls {
+  display: flex; flex-wrap: wrap; align-items: center; align-content: center; gap: 8px; min-width: 0; max-width: 86%; padding: 7px 9px; border-radius: 6px;
+  background: var(--plate); box-shadow: inset 0 1px 0 #ffffff17, 0 0 0 1px #000, 0 2px 0 1px #ffffff0d;
+}
+.console-strip .lit { min-height: 42px; padding: 0 11px; gap: 7px; font-size: 10.5px; letter-spacing: 0.06em; }
+.cs-plates { flex: 1; min-width: 0; height: 62px; display: flex; gap: 2px; align-items: stretch; overflow: hidden; perspective: 420px; }
+.cs-plates .jb { transform: rotateX(26deg); transform-origin: 50% 100%; }
+.cs-edge { height: 6px; background: linear-gradient(180deg, color-mix(in oklab, var(--railing) 82%, #fff), var(--railing) 40%, color-mix(in oklab, var(--railing) 70%, #000)); }
+.cs-kick { display: flex; justify-content: space-around; align-items: center; height: 15px; padding: 0 6%; background: linear-gradient(180deg, #4c5258, var(--kick) 40%, #5d636a); }
+.cs-kick i {
+  display: block; width: 9%; height: 8px; border-radius: 1px; background-color: var(--g);
+  background-image: radial-gradient(circle, #00000000 0 0.9px, #0000008a 1.2px); background-size: 3px 3px;
+  box-shadow: 0 0 10px 1px color-mix(in oklab, var(--g) 55%, transparent), 0 0 0 1px #00000066;
+}
 
 @media (max-width: 1023px) {
   .st-station { height: auto; }
-  .st-plate { padding: 8px 12px 0; }
-  .st-grid { overflow: visible; grid-template-rows: none; margin: 6px 6px 0; padding: 6px; gap: 8px; border-radius: 14px 14px 0 0; }
+  .st-plate { padding: 10px 10px 0; }
+  .st-grid { overflow: visible; grid-template-rows: none; padding: 10px 8px 12px; gap: 12px; }
   .st-grid > * { grid-column: 1 / -1 !important; grid-row: auto !important; }
   .st-grid > .monitor { height: var(--mh, auto); }
+  .monitor { padding: 0 8px 8px; border-radius: 14px; }
+  /* a phone wraps the title bar: the description goes under the name instead of being cut */
+  .monitor__title { flex-wrap: wrap; row-gap: 3px; padding: 6px 6px 6px; }
+  .monitor__meta { margin-left: 0; flex: 1 1 100%; white-space: normal; line-height: 1.3; }
   .monitor:not([data-state='live']) .monitor__screen { min-height: 140px; } /* a stacked monitor with only its overlay has no content height */
-  .console-strip { min-height: 0; padding: 8px 8px max(8px, env(safe-area-inset-bottom)); gap: 8px; }
-  .console-strip__grid, .jewel-row { display: none; }
-  .console-strip__controls { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; max-width: none; width: 100%; }
-  .console-strip .lit { min-height: 44px; flex: none; }
+  .cs-band, .cs-plates, .cs-kick { display: none; }
+  .cs-desk { min-height: 0; padding: 8px 8px max(8px, env(safe-area-inset-bottom)); }
+  /* every control stays in view: a wrapping grid, labels on two lines, no key caps without a keyboard */
+  .console-strip__controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(104px, 1fr)); gap: 8px; width: 100%; max-width: none; padding: 7px; }
+  .console-strip .lit { min-height: 44px; padding: 4px 8px; white-space: normal; line-height: 1.25; text-align: center; font-size: 10px; }
+  .console-strip .lit .keycap { display: none; }
 }
-@media (max-width: 640px) { .st-plate { flex-wrap: wrap; row-gap: 4px; } .st-plate .st-plate-end { margin-left: 14px; } }
+@media (max-width: 640px) { .st-plate { flex-wrap: wrap; row-gap: 8px; } .st-plate .st-plate-end { margin-left: 0; } }
 
 /* ---- icons ---------------------------------------------------------------- */
 .icon { display: inline-block; flex: none; width: 18px; height: 18px; vertical-align: middle; }

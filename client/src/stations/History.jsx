@@ -44,13 +44,13 @@ export default function History({ shipId = 1 }) {
       end={kindOf(src) === 'ship' ? undefined : `${shipCode(src)} · ${source.name}`}>
       <Monitor title="Channel" meta="source · reading · range" className="st-c12">
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 18px', alignItems: 'center', padding: '10px 12px' }}>
-          <label className="st-label" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>Source
+          <label className="st-label st-field">Source
             <select className="st-select" value={src} onChange={(e) => setSrc(Number(e.target.value))}>
               {sources.map((s) => <option key={s.id} value={s.id}>{s.code} · {s.name}</option>)}
             </select>
           </label>
-          <label className="st-label" style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 0 }}>Reading
-            <select className="st-select" value={ch} onChange={(e) => setChannel(e.target.value)} style={{ maxWidth: 320 }}>
+          <label className="st-label st-field">Reading
+            <select className="st-select" value={ch} onChange={(e) => setChannel(e.target.value)}>
               {groups.map((g) => <optgroup key={g.key} label={g.label}>{GROUP_CHANNELS[g.key].map((k) => <option key={k} value={k}>{CHANNEL_BY_KEY[k].label}</option>)}</optgroup>)}
             </select>
           </label>
@@ -64,13 +64,11 @@ export default function History({ shipId = 1 }) {
         </div>
       </Monitor>
       <Monitor title={m ? `${m.label}${m.unit ? ` (${m.unit})` : ''}` : 'Reading'} meta="grey stored · blue live" state={state} className="st-c12" style={{ '--mh': '380px' }}>
-        {meta.status === 'error' ? <div className="st-blank"><b>HISTORY UNAVAILABLE</b><span>{meta.error}. Pick another range or try again in a moment.</span></div> : (
-          <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px 12px 10px' }}>
-            <Chart key={`${src}-${ch}-${range}`} fill x="time" unit={m?.unit} getData={getData} yRange={calmRange(ch)}
-              series={[{ label: 'Stored', color: C.mute, dec: decOf(ch), unit: m?.unit }, { label: 'Live', color: C.chart1, dec: decOf(ch), unit: m?.unit }]} />
-            {meta.status === 'loading' && <div className="st-blank" style={{ background: '#050608cc' }}><b className="st-blink-slow">LOADING STORED READINGS</b></div>}
-          </div>
-        )}
+        <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '8px 12px 10px' }}>
+          <Chart key={`${src}-${ch}-${range}`} fill x="time" unit={m?.unit} getData={getData} yRange={calmRange(ch)} wait={meta.status === 'error' ? 'Waiting for live readings' : 'Loading stored readings'}
+            series={[{ label: 'Stored', color: C.mute, dec: decOf(ch), unit: m?.unit }, { label: 'Live', color: C.chart1, dec: decOf(ch), unit: m?.unit }]} />
+          {meta.status === 'error' && <p className="st-label" role="status" style={{ margin: '6px 0 0' }}>Stored readings unavailable ({meta.error}); the chart shows the live stream only.</p>}
+        </div>
       </Monitor>
       <Monitor title="Merge" meta="history and live by sequence number" className="st-c12">
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 10, padding: '10px 12px' }}>

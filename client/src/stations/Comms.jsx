@@ -6,7 +6,7 @@ import { logOf } from '../lib/ship.js';
 import { play } from '../lib/sound.js';
 import { state } from '../lib/store.js';
 import { SHIPS, alertsFor, levelOf, linkOf, meta, monState, read, shipCode, stardate, useCommand, useFeed, worst } from './parts/data.js';
-import { Chip, ConsoleStrip, J, Jewel, LitButton, Monitor, Num, Station, useKeys } from '../ui/index.js';
+import { Chip, ConsoleStrip, J, LitButton, Monitor, Num, Station, useKeys } from '../ui/index.js';
 import { C, Readout, clamp, fmt, useCanvas } from './parts/ui.jsx';
 
 const CARRIER_SLOTS = [0.16, 0.3, 0.44, 0.58, 0.72, 0.86]; // where open channels sit across the band
@@ -77,24 +77,49 @@ function SignalScope({ src }) {
 
 const TARGETS = [{ id: 'command', code: 'SFC', name: 'Starfleet Command' }, ...SHIPS.filter((s) => s.id !== 1).map((s) => ({ id: s.id, code: s.code, name: s.name }))];
 
+/** Uhura's ear receiver: a silver ribbed earpiece in its cradle; its lamp lights while hailing frequencies are open. */
+function EarReceiver({ on }) {
+  return (
+    <svg className="ear" viewBox="0 0 120 44" aria-hidden="true" data-on={on || undefined}>
+      <defs>
+        <linearGradient id="ear-metal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#f2f4f6" /><stop offset="0.45" stopColor="#aeb4ba" /><stop offset="1" stopColor="#6c7279" /></linearGradient>
+      </defs>
+      <rect x="2" y="30" width="116" height="10" rx="3" className="ear__cradle" />
+      <rect x="22" y="12" width="70" height="18" rx="9" fill="url(#ear-metal)" stroke="#00000080" />
+      {[34, 40, 46, 52, 58, 64, 70].map((x) => <path key={x} d={'M' + x + ' 13.5V28.5'} stroke="#0000004d" strokeWidth="1.4" />)}
+      <rect x="88" y="15" width="16" height="12" rx="5" fill="#1a1c1f" />
+      <circle cx="14" cy="21" r="5" className="ear__lamp" />
+      {on && [0, 1, 2].map((i) => <path key={i} className="ear__wave" style={{ animationDelay: (i * 0.4) + 's' }} d={'M' + (108 + i * 4) + ' 10 q6 11 0 22'} />)}
+    </svg>
+  );
+}
+
 function Hail({ src, target, onTarget }) {
   const open = read(src, 'hailing') >= 0.5;
+  const channels = clamp(Math.round(read(src, 'channelsOpen') ?? 0), 0, CARRIER_SLOTS.length);
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: 12, gap: 10 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 12px', borderRadius: 6, background: open ? '#3edb6a14' : '#ffffff06', boxShadow: `inset 0 0 0 1px ${open ? '#3edb6a55' : '#ffffff10'}` }}>
-        <i aria-hidden="true" style={{ width: 34, height: 14, borderRadius: 3, flex: 'none', background: open ? 'var(--lit-green)' : 'var(--lit-green-dim)', boxShadow: open ? '0 0 10px 2px #3edb6a66, inset 0 0 4px #fff8' : 'inset 0 -3px 6px #0007' }} />
-        <span style={{ font: '400 11px/1.3 var(--font-display)', letterSpacing: '0.08em', color: open ? C.ready : C.mute }}>{open ? 'HAILING FREQUENCIES OPEN' : 'HAILING FREQUENCIES CLOSED'}</span>
-        <span style={{ marginLeft: 'auto', font: '700 14px var(--font-mono)' }}><Num value={read(src, 'channelsOpen')} dec={0} className="" /><span className="st-unit">open</span></span>
+    <div className="comm">
+      <div className="comm__top">
+        <EarReceiver on={open} />
+        <div className="comm__hail" data-open={open || undefined}>
+          <i className="comm__lamp" aria-hidden="true" />
+          <span>{open ? 'HAILING FREQUENCIES OPEN' : 'HAILING FREQUENCIES CLOSED'}</span>
+        </div>
       </div>
-      <div role="radiogroup" aria-label="Hail target" style={{ display: 'grid', gap: 4 }}>
+      <div className="comm__switches" role="img" aria-label={channels + ' of ' + CARRIER_SLOTS.length + ' subspace channels open'}>
+        {CARRIER_SLOTS.map((_, i) => (
+          <span key={i} className="comm__switch" data-on={i < channels || undefined}><i aria-hidden="true" /><b>CH {i + 1}</b></span>
+        ))}
+        <span className="comm__count"><Num value={read(src, 'channelsOpen')} dec={0} /><span className="st-unit">open</span></span>
+      </div>
+      <div role="radiogroup" aria-label="Hail target" className="comm__targets">
         {TARGETS.map((x) => {
           const link = x.id === 'command' ? (state.status === 'online' ? 'live' : 'lost') : linkOf(x.id);
           const sel = target === x.id;
           return (
-            <button key={x.id} type="button" role="radio" aria-checked={sel} onClick={() => onTarget(x.id)}
-              style={{ display: 'grid', gridTemplateColumns: '14px 74px minmax(0, 1fr) auto', alignItems: 'center', gap: 10, minHeight: 34, padding: '0 10px', border: 0, borderRadius: 4, cursor: 'pointer', textAlign: 'left', background: sel ? C.raised : 'transparent', boxShadow: sel ? `inset 0 0 0 1px ${C.accent}88` : 'none' }}>
-              <Jewel status={link === 'live' ? 'ok' : link === 'lost' ? 'off' : 'info'} />
-              <span style={{ font: '400 12px var(--font-mono)', color: C.ink2 }}>{x.code}</span>
+            <button key={x.id} type="button" role="radio" aria-checked={sel} onClick={() => onTarget(x.id)} className="comm__target">
+              <i className="comm__toggle" aria-hidden="true" />
+              <span className="mono" style={{ fontSize: 12, color: '#c9d0d8' }}>{x.code}</span>
               <span style={{ fontSize: 13, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{x.name}</span>
               <Chip level={link === 'live' ? 'ok' : link === 'lost' ? 'off' : 'info'}>{link === 'live' ? 'LINK' : link === 'lost' ? 'NO LINK' : 'UNKNOWN'}</Chip>
             </button>
@@ -170,7 +195,7 @@ export default function Comms({ shipId = 1 }) {
           </div>
         </div>
       </Monitor>
-      <Monitor title="Hail" meta="task force · Starfleet" state={st('comms')} className="st-c5">
+      <Monitor title="Hailing" meta="ear receiver · task force · Starfleet" state={st('comms')} className="st-c5 monitor--housing monitor--comm">
         <Hail src={src} target={target} onTarget={setTarget} />
       </Monitor>
       <Monitor title="Signal scope" meta={meta('carrier') ? 'carrier waveform' : ''} state={st('comms')} className="st-c6" style={{ '--mh': '220px' }}>

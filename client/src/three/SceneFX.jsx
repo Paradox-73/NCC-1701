@@ -207,7 +207,7 @@ function Rig({ mode, hold, onSteer, steerable = true }) {
   // space, clear of the console.
   return (
     <OrbitControls ref={controls} target={[LOGIN_LOOK.x, LOGIN_LOOK.y, LOGIN_LOOK.z]} enablePan={false} enableDamping dampingFactor={0.08}
-      rotateSpeed={0.6} zoomSpeed={0.7} minDistance={space.fit * ZOOM.near} maxDistance={space.fit * ZOOM.far} minPolarAngle={Math.PI * 0.12} maxPolarAngle={Math.PI * 0.62}
+      rotateSpeed={0.6} zoomSpeed={0.7} minDistance={space.fit * ZOOM.near} maxDistance={space.fit * ZOOM.far} minPolarAngle={0} maxPolarAngle={Math.PI}
       onStart={() => { hold.current = Infinity; onSteer(); }} onEnd={() => { hold.current = performance.now() + IDLE_AFTER_MS; }} />
   );
 }

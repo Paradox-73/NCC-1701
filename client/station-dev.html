@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en" data-condition="normal">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Station dev</title>
+    <!-- TEMPORARY dev page for the station panels (?s=engineering&as=captain). The app self-hosts these fonts from
+         @fontsource (DESIGN.md Typography); this page fetches them so the panels can be checked before the shell lands. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Michroma&family=Space+Grotesk:wght@300..700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+    <style>html, body { margin: 0; background: #050608; } #root { min-height: 100vh; }</style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/stations/dev/main.jsx"></script>
+  </body>
+</html>

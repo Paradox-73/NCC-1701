@@ -1,6 +1,6 @@
-/* "State your position": the login console (DESIGN.md, Login). */
+/* "State your position": the login console, centred on its own (DESIGN.md, Login). */
 .identify {
-  position: absolute; top: 50%; right: max(32px, 5vw); z-index: 2; width: min(500px, calc(100vw - 32px)); transform: translateY(-50%);
+  position: absolute; top: 50%; left: 50%; z-index: 2; width: min(500px, calc(100vw - 32px)); transform: translate(-50%, -50%);
   display: grid; gap: 18px; padding: 24px 24px 18px; border-radius: 14px;
   background: linear-gradient(180deg, #16181dee, #0b0c0ff2); backdrop-filter: blur(6px);
   box-shadow: 0 30px 80px -20px #000, inset 0 0 0 1px var(--line2), inset 0 2px 0 #ffffff10;
@@ -8,8 +8,8 @@
 }
 .identify::before { content: ''; position: absolute; left: 24px; right: 24px; top: -1px; height: 2px; border-radius: 2px; background: var(--railing); box-shadow: 0 0 16px var(--railing); }
 .identify[data-leaving] { animation: identify-out 420ms var(--ease-out) forwards; }
-@keyframes identify-in { from { opacity: 0; transform: translateY(calc(-50% + 30px)); } }
-@keyframes identify-out { to { opacity: 0; transform: translateY(-50%) translateX(60px); } }
+@keyframes identify-in { from { opacity: 0; transform: translate(-50%, calc(-50% + 30px)); } }
+@keyframes identify-out { to { opacity: 0; transform: translate(-50%, -50%) scale(0.96); } }
 .identify__head { display: flex; align-items: center; gap: 14px; }
 .identify__head .jewel { margin-left: auto; }
 .identify__delta { width: 34px; height: 40px; }
@@ -34,9 +34,9 @@
 .identify__grid { opacity: 0.85; }
 
 @media (max-width: 760px) {
-  .identify { position: relative; top: auto; right: auto; transform: none; margin: 42vh auto 24px; width: calc(100vw - 24px); padding: 18px 16px 14px; gap: 14px; }
+  .identify { position: relative; top: auto; left: auto; transform: none; margin: max(20px, 8vh) auto 24px; width: calc(100vw - 24px); padding: 18px 16px 14px; gap: 14px; }
   @keyframes identify-in { from { opacity: 0; transform: translateY(30px); } }
-  @keyframes identify-out { to { opacity: 0; transform: translateY(40px); } }
+  @keyframes identify-out { to { opacity: 0; transform: scale(0.96); } }
   .identify__title { font-size: 18px; }
   .positions { grid-template-columns: 1fr; gap: 8px; }
   .lit.position { min-height: 56px; }

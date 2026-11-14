@@ -13,7 +13,7 @@ const POSITIONS = [
   { username: 'command', password: 'ncc-command', label: 'Starfleet Command', emblem: 'fleet', color: 'white', post: 'Task force · all four ships' },
 ];
 
-/** "State your position": the login console over the ship. leaving: signed in, the console powers down. */
+/** "State your position": the login console. leaving: signed in, the console powers down. */
 export default function Login({ leaving }) {
   const { login, notice } = useAuth();
   const [busy, setBusy] = useState(null);

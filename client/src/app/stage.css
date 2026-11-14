@@ -41,11 +41,10 @@
 .stage-pill--sound[aria-pressed='true'] .icon { color: var(--accent); }
 @media (pointer: coarse) { .stage-pill { height: 44px; } }
 
-/* "State your position": the ship can be turned and zoomed; the hint fades out at the first touch */
-.ship-hint { position: absolute; left: 35%; bottom: 9vh; z-index: 3; margin: 0; transform: translateX(-50%); pointer-events: none; animation: fade 600ms 1400ms var(--ease-in) both; }
-.ship-hint span { display: block; padding: 7px 14px; border-radius: 16px; background: #020308b3; box-shadow: inset 0 0 0 1px var(--line2); font: 500 12px/1 var(--font-ui); color: var(--ink2); white-space: nowrap; transition: opacity 600ms var(--ease-out); }
-.ship-hint span[data-gone] { opacity: 0; }
-@media (max-aspect-ratio: 23/20) { .ship-hint { left: 50%; top: calc(42vh - 44px); bottom: auto; } }
+/* "State your position": the console alone, no ship behind it. The scene cuts out as the console comes in and fades
+   back for the boarding flight, so the ship is there again when the camera dives into its dome. */
+.stage[data-phase='identify'] .stage__ship { opacity: 0; transition: opacity 160ms var(--ease-out); pointer-events: none; }
+.stage[data-phase='boarding'] .stage__ship { transition: opacity 700ms var(--ease-in); }
 
 /* boarding */
 .stage__flash { position: absolute; inset: 0; pointer-events: none; opacity: 0;

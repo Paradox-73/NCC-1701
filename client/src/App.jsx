@@ -11,7 +11,7 @@ const onSignOut = () => { disconnect(); resetShip(); };
 
 // The way aboard, in order:
 //   coldopen  the ship glides in while the narration types (once per tab session)
-//   identify  "State your position": the login console, the ship holding behind it
+//   identify  "State your position": the login console on its own; the ship is out of sight
 //   boarding  signed in: the camera zooms into the ship and through the bridge dome
 //   fade      the scene cross-fades into the bridge, which powers up underneath
 //   aboard    the bridge alone

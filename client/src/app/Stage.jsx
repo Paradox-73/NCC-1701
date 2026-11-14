@@ -194,7 +194,7 @@ export default function Stage({ phase, onOpened, onBoarded, onFaded }) {
   return (
     <div className="stage" data-phase={phase} data-gliding={gliding || undefined} onClick={phase === 'boarding' ? () => skip.current() : undefined}>
       <div className="stage__ship" aria-hidden="true">
-        <StarshipView rig={rig} visible={rig !== 'wait'} spin={phase === 'identify'} warp={2} alert="green" shields={NO_SHIELDS} />
+        <StarshipView rig={rig} visible={rig !== 'wait'} spin={false} warp={2} alert="green" shields={NO_SHIELDS} />
       </div>
       <div className="stage__veil" aria-hidden="true" />
       {phase === 'coldopen' && <ColdOpen intro={intro} onStart={() => setGliding(true)} onDone={opened} />}

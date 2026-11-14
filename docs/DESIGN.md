@@ -195,7 +195,7 @@ Two tiers of animation:
 | Yellow alert | Bars slide in over 240 ms and stay; console grids shift to amber and yellow. |
 | Red alert | Bars pulse at 1 Hz; surfaces tint red; console grids blink red in step; the viewscreen frame turns red; RED ALERT in the top bar. |
 | Stand down | Bars slide out; CONDITION NORMAL shows for 1 s in `ready`. |
-| Login | The ship turns slowly on the viewscreen behind the "Identify" console with one lit button per demo role. |
+| Login | The "State your position" console alone in the dark, one lit button per demo role; no ship behind it. On sign-in the console powers down and the scene fades back for the flight into the bridge dome. |
 
 Flash safety: nothing flashes faster than twice a second. WCAG 2.3.1 sets the limit at three flashes per second. The red alert pulse is a smooth 1 Hz ramp on edge bars and a light tint, not a full-screen strobe.
 
@@ -354,7 +354,7 @@ The admin sees crew health only as counts per ship, never individual biosigns.
 
 ### Login (`/login`)
 
-The 3D ship turns slowly behind an "Identify" console: one lit button per demo account, coloured by division, plus a username and password form.
+A "State your position" console, centred, with nothing behind it: one lit button per demo account, coloured by division, plus a username and password form. The ship belongs to the cold open and the boarding flight.
 
 ## At the helm: keyboard
 

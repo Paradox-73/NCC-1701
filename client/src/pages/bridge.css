@@ -110,8 +110,15 @@
 .chair__seat { flex: none; width: 140px; height: 250px; }
 .chair__seat i { position: absolute; left: 50%; bottom: 0; width: 64px; height: 78px; margin-left: -32px; border-radius: 10px 10px 4px 4px; background: linear-gradient(180deg, #2a2d33, #121418); }
 .chair__back { position: absolute; left: 0; top: 14px; width: 140px; height: 160px; border-radius: 64px 64px 26px 26px; background: radial-gradient(120% 90% at 50% 15%, #3a3d44, #17191d 70%); box-shadow: inset 0 2px 0 #ffffff22, inset 0 -10px 20px #0008, 0 20px 30px -10px #000; }
-.chair__back::after { content: ''; position: absolute; left: 22px; right: 22px; top: 22px; bottom: 30px; border-radius: 50px 50px 18px 18px; background: linear-gradient(180deg, #4a2c1e, #2b1a12); box-shadow: inset 0 0 0 2px #0006; }
-.chair__arm { margin-top: 74px; display: grid; gap: 6px; width: 178px; padding: 10px; border-radius: 12px; background: linear-gradient(180deg, #1c1f24, #0c0d10); box-shadow: inset 0 1px 0 #ffffff1a, inset 0 0 0 1px var(--line), 0 18px 30px -12px #000; }
+.chair__back::after { content: ''; position: absolute; left: 22px; right: 22px; top: 22px; bottom: 30px; border-radius: 50px 50px 18px 18px; background: linear-gradient(180deg, #2c2e33, #111215); box-shadow: inset 0 0 0 2px #0006, inset 0 10px 14px -8px #ffffff1f; }
+/* the arms of the real chair (RESEARCH.md, Bridge consoles): grey boxes under walnut caps, the buttons on black plates */
+.chair__arm {
+  margin-top: 74px; display: grid; gap: 6px; width: 178px; padding: 20px 12px 12px; border-radius: 6px;
+  background: linear-gradient(180deg, #7a4428 0, #5a3019 8px, #2d170b 10px, #00000000 11px), linear-gradient(180deg, #a2a8af, #6f757c);
+  box-shadow: inset 0 1px 0 #ffffff40, 0 18px 30px -12px #000;
+}
+.chair__arm::before { content: ''; position: absolute; inset: 15px 7px 7px; border-radius: 4px; background: var(--plate); box-shadow: inset 0 1px 2px #000, 0 1px 0 #ffffff33; }
+.chair__arm > * { position: relative; }
 .chair__arm--l { border-top-right-radius: 4px; }
 .chair__arm--r { border-top-left-radius: 4px; }
 .chair__arm .lit { justify-content: space-between; width: 100%; }
@@ -172,7 +179,7 @@
 .bridge--list .helm__shield-num { font-size: 30px; }
 .bridge--list .chair { height: auto; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .bridge--list .chair__seat { display: none; }
-.bridge--list .chair__arm { width: auto; margin: 0; padding: 8px; border-radius: 12px; }
+.bridge--list .chair__arm { width: auto; margin: 0; padding: 18px 10px 10px; border-radius: 6px; }
 .bridge--list .chair__arm .lit { padding: 0 10px; }
 .bridge--list .log { height: auto; }
 .bridge--list .log .monitor__screen { min-height: 120px; }

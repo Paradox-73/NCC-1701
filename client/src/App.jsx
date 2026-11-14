@@ -12,7 +12,8 @@ const onSignOut = () => { disconnect(); resetShip(); };
 // The way aboard, in order:
 //   coldopen  the Engage gate, then the ship glides in while the narration types; Skip goes to identify. Every
 //             visit and every sign-out starts here
-//   identify  "State your position": the login console on its own; the ship is out of sight
+//   identify  "State your position": the ship in the left half, turning slowly, to drag round and zoom; the login
+//             console in the right half. Below 1024 px wide the ship sits above the console
 //   boarding  signed in: the camera zooms into the ship and through the bridge dome
 //   fade      the scene cross-fades into the bridge, which powers up underneath
 //   aboard    the bridge alone

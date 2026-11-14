@@ -218,7 +218,7 @@ Two tiers of animation:
 | Yellow alert | Bars slide in over 240 ms and stay; console grids shift to amber and yellow. |
 | Red alert | Bars pulse at 1 Hz; surfaces tint red; console grids blink red in step; the viewscreen frame turns red; RED ALERT in the top bar. |
 | Stand down | Bars slide out; CONDITION NORMAL shows for 1 s in `ready`. |
-| Login | The "State your position" console alone in the dark, one lit button per demo role; no ship behind it. On sign-in the console powers down and the scene fades back for the flight into the bridge dome. |
+| Login | The ship turns slowly in the left half of the screen beside the "State your position" console, one lit button per demo role. Dragging turns the ship and the wheel or a pinch zooms it; its turn comes back 3 s after the last touch. On sign-in the console powers down and the camera flies from there into the bridge dome. |
 
 Flash safety: nothing flashes faster than twice a second. WCAG 2.3.1 sets the limit at three flashes per second. The red alert pulse is a smooth 1 Hz ramp on edge bars and a light tint, not a full-screen strobe.
 
@@ -379,7 +379,7 @@ The admin sees crew health only as counts per ship, never individual biosigns.
 
 ### Login (`/login`)
 
-A "State your position" console, centred, with nothing behind it: one lit button per demo account, coloured by division, plus a username and password form. The ship belongs to the cold open and the boarding flight.
+The 3D ship fills the left half of the screen and the "State your position" console the right half: one lit button per demo account, coloured by division, plus a username and password form. Drag turns the ship and the wheel or a pinch zooms it, never so close that it reaches the console; a hint says so until the first touch. Below 1024 px wide (phones, tablets) the ship sits above the console and the page scrolls to it.
 
 ## At the helm: keyboard
 

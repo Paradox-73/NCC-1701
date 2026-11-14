@@ -1,4 +1,4 @@
-# NCC-1701 Bridge telemetry domain
+# Subspace telemetry domain
 
 What streams, how fast, what counts as normal, what raises an alert, who may see what, and the six episode scenarios that drive the demo. The engine's `shared/registry.js` (branch `feat/engine`) holds this content as data; its placeholder gets replaced from this file. Names here match the registry's exports: `SOURCES`, `GROUP_DEFS`, `CHANNELS`, `ROLES`, `RULES`. How it looks is in `DESIGN.md`; sources are in `RESEARCH.md`.
 

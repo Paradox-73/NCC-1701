@@ -1,9 +1,10 @@
-import { Component, Suspense, useMemo, useRef, useState } from 'react';
+import { Suspense, useCallback, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Stars, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 import { reducedMotion } from '../lib/chartTheme.js';
 import SceneFX from './SceneFX.jsx';
+import { ErrorBoundary } from './StarshipView.jsx';
 
 // The ship: the TOS Enterprise model from client/public/models/enterprise.glb, with a low-poly ship built
 // from three.js primitives as the fallback (if the model fails to load, or with model={null}).
@@ -320,20 +321,6 @@ function EnterpriseHull({ url, warp, damage }) {
   );
 }
 
-// If the glb can't be fetched or decoded, show the primitives ship instead of an empty scene.
-class ModelBoundary extends Component {
-  state = { failed: false };
-  static getDerivedStateFromError() {
-    return { failed: true };
-  }
-  componentDidCatch(err) {
-    console.warn('[starship] model failed to load, using the primitives ship', err);
-  }
-  render() {
-    return this.state.failed ? this.props.fallback : this.props.children;
-  }
-}
-
 // ---------------------------------------------------------------------------------------------------
 // The hand-built ship: fallback if the model fails to load, and the `model={null}` option.
 function PrimitiveHull({ warp, damage, shields }) {
@@ -375,10 +362,11 @@ function PrimitiveHull({ warp, damage, shields }) {
 }
 
 // model: URL of the glb (default the TOS Enterprise), or null for the primitives ship only.
-export function Starship({ warp = 0, shields, damage, alert = 'green', spin = true, visible = true, model = MODEL_URL }) {
+// hold: a ref holding the performance.now() until which the idle turn waits (someone is steering the camera).
+export function Starship({ warp = 0, shields, damage, alert = 'green', spin = true, visible = true, hold, model = MODEL_URL }) {
   const root = useRef();
   useFrame((_, dt) => {
-    if (spin && root.current) root.current.rotation.y += Math.min(dt, 0.1) * 0.12;
+    if (spin && root.current && !(hold?.current > performance.now())) root.current.rotation.y += Math.min(dt, 0.1) * 0.12;
   });
   const primitives = <PrimitiveHull warp={warp} damage={damage} shields={shields} />;
   return (
@@ -387,12 +375,13 @@ export function Starship({ warp = 0, shields, damage, alert = 'green', spin = tr
       <Lights alert={alert} />
       <group ref={root} visible={visible}>
         {model ? (
-          <ModelBoundary fallback={primitives}>
+          // if the glb can't be fetched or decoded, the primitives ship instead of an empty scene
+          <ErrorBoundary fallback={primitives}>
             <Suspense fallback={null}>
               <EnterpriseHull url={model} warp={warp} damage={damage} />
               <Shields shields={shields} position={[0, 0, 0.1]} scale={[3.0, 1.9, 6.3]} />
             </Suspense>
-          </ModelBoundary>
+          </ErrorBoundary>
         ) : (
           primitives
         )}
@@ -404,17 +393,25 @@ export function Starship({ warp = 0, shields, damage, alert = 'green', spin = tr
 // Drop-in view: canvas, stars and orbit controls around the ship. Pixel ratio is capped so a big screen
 // doesn't cost more GPU than the rest of the bridge.
 // `rig` hands the camera to SceneFX's camera moves ('wait', 'flyby', 'login', 'board') instead of the orbit controls.
+// On 'login' the visitor can turn and zoom the ship; a hint says how until they first do.
 export default function StarshipCanvas({ className, style, rig, spin = true, ...ship }) {
+  const hold = useRef(0);
+  const [steered, setSteered] = useState(false);
+  const onSteer = useCallback(() => setSteered(true), []);
   const [still] = useState(reducedMotion);
+  const [touch] = useState(() => matchMedia('(pointer: coarse)').matches);
   return (
     <div className={className} style={{ position: 'relative', width: '100%', height: '100%', ...style }}>
       <Canvas dpr={[1, 1.5]} resize={{ offsetSize: true }} camera={{ position: [10, 5, 10], fov: 40 }} gl={{ antialias: true, powerPreference: 'low-power' }}>
         <color attach="background" args={['#04060c']} />
         <Stars radius={80} depth={40} count={1500} factor={3} fade speed={0.4} />
-        <Starship {...ship} spin={spin && !still} />
-        <SceneFX rig={rig} />
+        <Starship {...ship} spin={spin && !still} hold={hold} />
+        <SceneFX rig={rig} hold={hold} onSteer={onSteer} />
         {!rig && <OrbitControls enablePan={false} minDistance={6} maxDistance={28} />}
       </Canvas>
+      {rig === 'login' && (
+        <p className="ship-hint" aria-hidden="true"><span data-gone={steered || undefined}>{touch ? 'Drag to turn · pinch to zoom' : 'Drag to turn · scroll to zoom'}</span></p>
+      )}
     </div>
   );
 }

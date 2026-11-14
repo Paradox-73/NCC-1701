@@ -1,9 +1,16 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { Component, lazy, Suspense, useEffect, useState } from 'react';
 import Starship2D from './Starship2D.jsx';
 
 // What the rest of the app imports. The 3D code (three, r3f, drei) is a separate chunk that only loads
 // when this component renders in 3D mode, so pages without the ship don't pay for it.
 const Starship3D = lazy(() => import('./Starship.jsx'));
+
+/** Shows `fallback` in place of its children once one of them throws: a 3D file that failed to load, a model that failed to decode. */
+export class ErrorBoundary extends Component {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  render() { return this.state.failed ? this.props.fallback : this.props.children; }
+}
 
 export function hasWebGL() {
   try {
@@ -33,10 +40,13 @@ export default function StarshipView({ mode = 'auto', ...props }) {
   const [webgl] = useState(hasWebGL);
   const reduced = useReducedMotion();
   const use3D = webgl && (mode === '3d' || (mode === 'auto' && !reduced));
-  if (!use3D) return <Starship2D {...props} />;
+  const flat = <Starship2D {...props} />;
+  if (!use3D) return flat;
   return (
-    <Suspense fallback={<Starship2D {...props} />}>
-      <Starship3D {...props} />
-    </Suspense>
+    <ErrorBoundary fallback={flat}>
+      <Suspense fallback={flat}>
+        <Starship3D {...props} />
+      </Suspense>
+    </ErrorBoundary>
   );
 }

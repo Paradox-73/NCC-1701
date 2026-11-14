@@ -1,4 +1,4 @@
-/* NCC-1701 Bridge: design tokens and base styles (docs/DESIGN.md). Component styles live in ui/ui.css. */
+/* Subspace: design tokens and base styles (docs/DESIGN.md). Component styles live in ui/ui.css. */
 :root {
   color-scheme: dark;
   /* surfaces */
@@ -11,16 +11,18 @@
   --line2: #ffffff24;
   --railing: #e0522a;
   --frame: var(--railing); /* the viewscreen frame; follows the condition */
-  /* the station set (RESEARCH.md, Bridge consoles): grey wall, recessed bays, pale screen frames, black desk */
-  --wall-hi: #a4aab1;
-  --wall: #878d94;
-  --wall-lo: #646a71;
-  --wall-ink: #0b0c0f;
-  --bay: #2a2f37;
-  --bezel: #c3c9cf;
+  /* the 1966 set (DESIGN.md, The 1966 set): a grey-blue wall, slate recesses holding flush screens with a thin pale
+     rim, black label plates and desks, a carpet floor. Flat colours: depth comes from the recess, not from gloss. */
+  --wall-hi: #b9c0c7;
+  --wall: #a3abb3;
+  --wall-lo: #8c949d;
+  --bay: #505965;
+  --glass: #04070b;
+  --rim: #c9cfd5;
   --desk: #121315;
   --plate: #050506;
   --kick: #7b8188;
+  --floor: #36383d;
   /* text */
   --ink: #f1f3f5;
   --ink2: #b3b9c2;
@@ -83,11 +85,12 @@
   --line2: #ff6a7a30;
   --frame: var(--red-alert);
   /* the set under red alert lighting */
-  --wall-hi: #a08e92;
-  --wall: #85727a;
-  --wall-lo: #5f4c53;
-  --bay: #2e2025;
+  --wall-hi: #b8a3a8;
+  --wall: #a08a90;
+  --wall-lo: #85707a;
+  --bay: #563f47;
   --kick: #7a646b;
+  --floor: #2f2427;
 }
 :root[data-condition='yellow'] { --frame: var(--warn); }
 

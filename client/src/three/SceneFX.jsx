@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Environment, Lightformer, Stars } from '@react-three/drei';
+import { Environment, Lightformer, OrbitControls, Stars } from '@react-three/drei';
 import { Bloom, EffectComposer, ToneMapping, Vignette } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
 import * as THREE from 'three';
@@ -111,17 +111,34 @@ const SETTLE_MS = 1100;
 const bezier = (out, p0, c1, c2, p3, u) => out.copy(p0).multiplyScalar((1 - u) ** 3)
   .addScaledVector(c1, 3 * (1 - u) ** 2 * u).addScaledVector(c2, 3 * (1 - u) * u * u).addScaledVector(p3, u ** 3);
 
-// mode: 'wait' (before the cold open starts), 'flyby' (the ship glides in and holds), 'login' (settles on the hero
-// shot, where the boarding flight starts; the stage hides the scene meanwhile), 'board' (into the dome)
-function Rig({ mode }) {
+const IDLE_AFTER_MS = 3000; // the ship's idle turn comes back this long after the visitor lets go
+const SHIP_RADIUS = 6; // round the look point; the glb's mesh bounds reach 5.85 from the ship's centre
+const ZOOM = { near: 1, rest: 1.1, far: 2 }; // login camera distances, in multiples of the one where the ship just fits
+
+// "State your position": the space the ship has to itself beside the console of login.css, the left half of the screen
+// or, below 1024 px, the top 42 % above the console. x, y: the view offset that centres the ship there; fit: the camera
+// distance at which the ship, turned any way, just fits inside it.
+function loginSpace({ width, height }, fov) {
+  const side = !matchMedia('(max-width: 1023px)').matches; // the CSS's own test: the canvas width here is rounded
+  const half = ((side ? Math.min(width / 2, height) : Math.min(width, height * 0.42)) / 2) * 0.95; // px, with a margin
+  const k = (half / (height / 2)) * Math.tan((fov * Math.PI) / 360); // tan of the angle that half subtends at the camera
+  return { x: side ? width / 4 : 0, y: side ? 0 : height * 0.29, fit: SHIP_RADIUS * Math.sqrt(1 + 1 / (k * k)) };
+}
+
+// mode: 'wait' (before the cold open starts), 'flyby' (the ship glides in and holds), 'login' (settles in its space
+// beside the console, then the visitor may orbit and zoom it), 'board' (into the dome, from wherever the camera was left)
+function Rig({ mode, hold, onSteer }) {
   const { camera, scene, size } = useThree();
   const move = useRef(null);
+  const controls = useRef(null);
   const look = useRef(LOGIN_LOOK.clone());
   const offset = useRef({ x: 0, y: 0 });
   const wide = size.width / size.height > 1.15;
-  // where the ship rests at the end of the fly-by: left of centre on wide screens, high on phones, clear of the narration
-  const rest = () => (wide ? { x: size.width * 0.15, y: size.height * 0.02 } : { x: 0, y: size.height * 0.24 });
   const restFov = wide ? 32 : 70; // a tall phone screen needs a wide lens to fit the ship across
+  const space = loginSpace(size, restFov);
+  // where the ship rests: after the fly-by left of centre on wide screens and high on phones, clear of the narration;
+  // at the login in its own space beside the console
+  const rest = () => (mode === 'login' ? space : wide ? { x: size.width * 0.15, y: size.height * 0.02 } : { x: 0, y: size.height * 0.24 });
 
   useEffect(() => {
     const base = { t0: performance.now(), from: camera.position.clone(), fromLook: look.current.clone(), fov0: camera.fov, off0: { ...offset.current } };
@@ -138,7 +155,8 @@ function Rig({ mode }) {
       camera.fov = restFov;
       move.current = { ...base, kind: 'flyby', ms: FLYBY_MS, from: FLY_FROM.clone(), fromLook: new THREE.Vector3(), fov0: restFov, off0: { x: 0, y: 0 } };
     } else if (mode === 'login') {
-      move.current = { ...base, kind: 'settle', ms: SETTLE_MS };
+      const to = LOGIN_POS.clone().sub(LOGIN_LOOK).setLength(space.fit * ZOOM.rest).add(LOGIN_LOOK); // the hero shot's angle
+      move.current = { ...base, kind: 'settle', ms: SETTLE_MS, to };
     } else if (mode === 'board') {
       const found = findDome(scene);
       move.current = found ? { ...base, kind: 'board', ms: FLIGHT_MS, ...found } : null;
@@ -148,6 +166,7 @@ function Rig({ mode }) {
   const tmp = useMemo(() => ({ a: new THREE.Vector3(), b: new THREE.Vector3(), c: new THREE.Vector3(), up: new THREE.Vector3(0, 1, 0) }), []);
   useFrame(() => {
     const m = move.current;
+    if (controls.current) controls.current.enabled = !m; // the visitor steers only once the settle move is done
     const target = rest();
     if (!m) offset.current = mode === 'board' || mode === 'wait' ? offset.current : target;
     else {
@@ -155,7 +174,7 @@ function Rig({ mode }) {
       if (m.kind === 'flyby' || m.kind === 'settle') {
         const u = m.kind === 'flyby' ? t * t * (3 - 2 * t) : easeInOut(t); // the glide starts and ends gently, holding as the theme starts
         if (m.kind === 'flyby') bezier(camera.position, m.from, FLY_C1, FLY_C2, LOGIN_POS, u);
-        else camera.position.copy(m.from).lerp(LOGIN_POS, u);
+        else camera.position.copy(m.from).lerp(m.to, u);
         look.current.copy(m.fromLook).lerp(LOGIN_LOOK, m.kind === 'flyby' ? smooth(0.1, 0.9, t) : u);
         camera.fov = m.fov0 + (restFov - m.fov0) * u;
         const k = m.kind === 'flyby' ? smooth(0.55, 1, t) : u;
@@ -180,11 +199,19 @@ function Rig({ mode }) {
     else camera.clearViewOffset();
     camera.updateProjectionMatrix();
   });
-  return null;
+  if (mode !== 'login') return null;
+  // Orbit round the look point. The polar limits keep the camera off the poles and out from under the hull, so the
+  // boarding flight from wherever it was left never passes through the ship; the distance limits keep the ship in its
+  // space, clear of the console.
+  return (
+    <OrbitControls ref={controls} target={[LOGIN_LOOK.x, LOGIN_LOOK.y, LOGIN_LOOK.z]} enablePan={false} enableDamping dampingFactor={0.08}
+      rotateSpeed={0.6} zoomSpeed={0.7} minDistance={space.fit * ZOOM.near} maxDistance={space.fit * ZOOM.far} minPolarAngle={Math.PI * 0.12} maxPolarAngle={Math.PI * 0.62}
+      onStart={() => { hold.current = Infinity; onSteer(); }} onEnd={() => { hold.current = performance.now() + IDLE_AFTER_MS; }} />
+  );
 }
 
 // ---- the effects ---------------------------------------------------------------------------------------------
-export default function SceneFX({ rig }) {
+export default function SceneFX({ rig, hold, onSteer }) {
   return (
     <>
       <Environment resolution={256} frames={1}>
@@ -195,7 +222,7 @@ export default function SceneFX({ rig }) {
       </Environment>
       <Backdrop />
       <Stars radius={150} depth={90} count={4000} factor={2.4} saturation={0.35} fade speed={0.15} />
-      {rig && <Rig mode={rig} />}
+      {rig && <Rig mode={rig} hold={hold} onSteer={onSteer} />}
       <EffectComposer multisampling={4}>
         <Bloom mipmapBlur luminanceThreshold={0.82} luminanceSmoothing={0.18} intensity={1.15} radius={0.72} />
         <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />

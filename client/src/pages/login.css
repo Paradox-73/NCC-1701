@@ -1,6 +1,6 @@
-/* "State your position": the login console, centred on its own (DESIGN.md, Login). */
+/* "State your position": the login console, centred in the right half beside the ship (DESIGN.md, Login). */
 .identify {
-  position: absolute; top: 50%; left: 50%; z-index: 2; width: min(500px, calc(100vw - 32px)); transform: translate(-50%, -50%);
+  position: absolute; top: 50%; left: 75%; z-index: 2; width: min(500px, calc(50vw - 48px)); transform: translate(-50%, -50%);
   display: grid; gap: 18px; padding: 24px 24px 18px; border-radius: 14px;
   background: linear-gradient(180deg, #16181dee, #0b0c0ff2); backdrop-filter: blur(6px);
   box-shadow: 0 30px 80px -20px #000, inset 0 0 0 1px var(--line2), inset 0 2px 0 #ffffff10;
@@ -40,10 +40,14 @@
 .identify__error { color: var(--crit-ink); font-size: 13px; }
 .identify__grid { opacity: 0.85; }
 
-@media (max-width: 760px) {
-  .identify { position: relative; top: auto; left: auto; transform: none; margin: max(20px, 8vh) auto 24px; width: calc(100vw - 24px); padding: 18px 16px 14px; gap: 14px; }
+/* below 1024 px the right half is too narrow for the console: it goes under the ship, and the page scrolls (stage.css) */
+@media (max-width: 1023px) {
+  .identify { position: relative; top: auto; left: auto; transform: none; margin: 42vh auto 24px; width: min(500px, calc(100vw - 24px)); }
   @keyframes identify-in { from { opacity: 0; transform: scale(0.9); } 55% { opacity: 1; transform: scale(1.015); } }
   @keyframes identify-out { to { opacity: 0; transform: scale(0.96); } }
+}
+@media (max-width: 760px) {
+  .identify { padding: 18px 16px 14px; gap: 14px; }
   .identify__title { font-size: 18px; }
   .positions { grid-template-columns: 1fr; gap: 8px; }
   .lit.position { min-height: 56px; }

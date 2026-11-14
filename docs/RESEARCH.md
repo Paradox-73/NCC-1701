@@ -1,4 +1,4 @@
-# NCC-1701 Bridge research notes
+# Subspace research notes
 
 The facts behind `DESIGN.md` and `DOMAIN.md`, with sources. "Read" means the page was opened and the fact read on it. "Search summary" means the fact came from a search result whose page could not be opened. "General knowledge" means no page was checked; treat those as unconfirmed.
 

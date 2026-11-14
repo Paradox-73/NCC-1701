@@ -121,7 +121,7 @@ sequenceDiagram
 ```mermaid
 flowchart TB
   F["telemetry:frame<br/>sourceId 1, group shields"] --> R1["room src:1:shields"]
-  O["overview, 5 Hz"] --> R2["room overview"]
+  O["overview, 5 Hz"] --> R2["room overview:role"]
   AL["alert in group bio-d05"] --> R3["room alerts:bio-d05"]
   EV["condition, log, scenario, fx"] --> R4["room ship:1"]
   MET["metrics, 1 Hz"] --> R5["room admin"]

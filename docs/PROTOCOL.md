@@ -45,7 +45,7 @@ A sample is a flat array of integers `[seq, ts, v0, v1, ...]`. `seq` is a per-so
 ### `/live` (server to dashboards)
 
 - Handshake `auth: { token }` with the JWT from `POST /api/auth/login`.
-- On connect the server joins the socket to `overview`, `alerts` and `alerts:<group>` for each group of its role, `ship:<id>` for each ship of its role, plus `admin` when the role has `admin`.
+- On connect the server joins the socket to `overview:<role>`, `alerts` and `alerts:<group>` for each group of its role, `ship:<id>` for each ship of its role, plus `admin` when the role has `admin`.
 - `subscribe { sourceIds, groups? }` acks `{ ok, rooms, denied, deniedSources }`. Rooms are `src:<id>:<group>`. Without `groups` the role's groups are used. Groups the role may not see are listed in `denied`, sources it may not see in `deniedSources`; neither is joined. A group of the other kind (`bio-d07` on a ship) is skipped silently. `unsubscribe { sourceIds, groups? }` leaves them.
 - Every `FRAME_MS` (50) the server emits one `telemetry:frame` per non-empty room: `{ sourceId, group, keys, samples }` with `[seq, ts, ...values for keys]`, in `seq` order.
 - Every 200 ms the server emits `overview` (volatile, dropped for slow clients): `{ ts, sources: [[sourceId, flags, condition, warp*100, weakestShield*10, posX*10, posY*10, heading*10]], rx }`, one row per ship; see Ship rooms and events. `rx` is readings accepted per second.
@@ -70,6 +70,7 @@ A sample is a flat array of integers `[seq, ts, v0, v1, ...]`. `seq` is a per-so
 | `GET /api/alerts?sourceId=&since=&unacked=&limit=` | alert history for the caller's groups and ships |
 | `GET /api/ships`, `GET /api/ships/:id/state`, `POST /api/ships/:id/command`, `GET /api/scenarios` | ship state, shipboard commands and scenarios, see Ship routes |
 | `POST /api/alerts/:id/ack` | acknowledge (role with `canAck`, alert in its groups) |
+| `POST /api/alerts/ack-all` | acknowledge every open alert the caller's role may see and ack; returns `{ acked }` |
 | `GET /api/metrics` | server counters (role with `admin`) |
 | `POST /api/sim/:sourceId/command` | `{ type, args }` relayed as `sim:command` (role with `admin`); `clear` also resets the detector |
 
@@ -123,7 +124,7 @@ On connect a socket joins `ship:<id>` for each ship its role sees. These events 
 | `scenario` | `{ state, id, title, shipIds, t, step, steps, duration, awaiting, ts }` | scenario progress: on every step, every second, on a resolution. `state` is `running`, `awaiting`, `ended` or `stopped`; `awaiting` is `null` or `{ type, ...payload, shipId, timeout, secondsLeft }`, the command the scenario waits for |
 | `fx` | `{ shipId, ts, name, ...fields }` | a visual cue. `timewarp` has `stardateDelta` (about -29.58: the ship's stardate shifts by that); `viewscreen` has `scene` (`psi-2000`, `planet-closing`, `halkan`); `forecast` has `channel`; `sound` has `sound`; `hit` has `quad` (`fore`, `aft`, `port`, `stbd` or `all`), `amount` and maybe `hull`, sent with every scenario `hit` so the bridges flare the quadrant that took it |
 
-`overview` rows are `[sourceId, flags, condition, warp*100, weakestShield*10, posX*10, posY*10, heading*10]`, one per registry ship the server has heard from, 5 Hz, volatile. `flags`: bit 0 online, bit 1 a warn alert is open, bit 2 a critical alert is open. `condition`: 0 normal, 1 yellow, 2 red. A ship that stopped sending keeps its row with the online bit off and its last values, so the fleet map can show it as lost. Crew hubs have no row.
+`overview` rows are `[sourceId, flags, condition, warp*100, weakestShield*10, posX*10, posY*10, heading*10]`, one per registry ship of the caller's role that the server has heard from, 5 Hz, volatile. Roles without the `helm` group get 0 in the warp, position and heading columns, and roles without `shields` get 0 in the shield column. `flags`: bit 0 online, bit 1 a warn alert is open, bit 2 a critical alert is open. `condition`: 0 normal, 1 yellow, 2 red. A ship that stopped sending keeps its row with the online bit off and its last values, so the fleet map can show it as lost. Crew hubs have no row.
 
 Alerts about a source go only to roles that list it in `ships`, in addition to the group rule: an engineer never receives an alert about ship 2. Alerts of a source outside the registry (the rogue source 99) and alerts with no group go to everyone.
 
@@ -196,7 +197,7 @@ Six episode scripts in `shared/scenarios/` (listed in `index.js`): `balance-of-t
 | `await` | `{ type, ...match }`, with `timeout` seconds (and `issue`) | the clock stops until the named command arrives from a dashboard (every field in `match` must equal), or `timeout` seconds pass and the runner sends the command itself |
 | `end` | `true` | finishes the scenario |
 
-When a scenario ends or is stopped, the simulator releases every override over 10 s and returns the state to calm running: warp 6, hull and shields full, condition normal, no contacts, the crew healthy. The detector is told to relearn its statistics for 30 s (`Detector.settle`) so the move back is not read as an anomaly.
+When a scenario ends or is stopped, the simulator releases every override over 10 s and returns the state to calm running: the ship's own cruise warp, hull and shields full, condition normal, no contacts, the crew healthy. The detector is told to relearn its statistics for 30 s (`Detector.settle`) so the move back is not read as an anomaly. At start and at end the server also closes and acknowledges, as `system`, the open warn and critical alerts of the scenario's ships, so each run starts from a clean list, and at end it sends a second `timewarp` fx that undoes any stardate offset the scenario left.
 
 ### Measured lengths and what each shows
 

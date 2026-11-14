@@ -1,4 +1,5 @@
 import { Component, lazy, Suspense, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { CHANNEL_BY_KEY, GROUPS, GROUP_CHANNELS } from '@ncc/shared/schema.js';
 import { useAuth } from '../lib/auth.jsx';
 import { useSubscription, useTick } from '../lib/hooks.js';
@@ -78,13 +79,17 @@ function Placeholder({ station }) {
 
 export default function StationRoute({ station, onBack }) {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  // a ship picked elsewhere (a Starfleet fleet card) arrives as router state; stations default to the Enterprise
+  const shipId = useLocation().state?.shipId;
+  const onOpenShip = (id) => navigate('/history', { state: { shipId: id } });
   if (!PAGES.includes(station) && !canEnter(user, station)) return <Restricted station={station} onBack={onBack} />;
   const Screen = SCREENS[station.id];
   if (!Screen) return <Placeholder station={station} />;
   return (
     <Boundary>
       <Suspense fallback={<div className="station-msg"><Delta emblem="command" /><span className="display">Powering up {station.label}</span></div>}>
-        <Screen station={station} />
+        <Screen key={shipId ?? 'own'} station={station} {...(shipId ? { shipId } : {})} onOpenShip={onOpenShip} />
       </Suspense>
     </Boundary>
   );

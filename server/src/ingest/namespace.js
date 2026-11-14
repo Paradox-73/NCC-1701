@@ -1,6 +1,6 @@
 import { timingSafeEqual } from 'node:crypto';
 import { z } from 'zod';
-import { CHANNELS, EVENTS, LIMITS, checkPacked, unpackSample } from '@ncc/shared/schema.js';
+import { EVENTS, KINDS, LIMITS, channelsOf, checkPacked, kindOf, unpackSample } from '@ncc/shared/schema.js';
 import { Device } from '../models/index.js';
 import { DUPLICATE, OK, SeqWindow, STALE } from './dedup.js';
 import { TokenBucket } from './tokenBucket.js';
@@ -26,7 +26,7 @@ class Peer {
   }
 }
 
-export function setupIngest({ io, config, metrics, writer, states, detector, broadcaster, log }) {
+export function setupIngest({ io, config, metrics, writer, states, detector, broadcaster, watch, onConnect = () => {}, log }) {
   const nsp = io.of('/ingest');
   const sockets = new Map(); // sourceId -> socket (one live connection per source)
   const peers = new Map(); // sourceId -> Peer
@@ -40,7 +40,11 @@ export function setupIngest({ io, config, metrics, writer, states, detector, bro
   nsp.use((socket, next) => {
     const { sourceId, key } = socket.handshake.auth ?? {};
     if (!Number.isInteger(sourceId) || sourceId < 1 || sourceId > LIMITS.maxSourceId) return next(new Error('bad sourceId'));
-    if (!sameKey(key ?? '', config.deviceKey)) return next(new Error('unauthorized'));
+    if (!sameKey(key ?? '', config.deviceKey)) {
+      watch.note(sourceId, { refused: 1 }); // counted against the source the caller claimed to be
+      metrics.inc('refused');
+      return next(new Error('unauthorized'));
+    }
     socket.data.sourceId = sourceId;
     next();
   });
@@ -49,6 +53,7 @@ export function setupIngest({ io, config, metrics, writer, states, detector, bro
     const sourceId = socket.data.sourceId;
     sockets.get(sourceId)?.disconnect(true); // a new connection replaces the old one
     sockets.set(sourceId, socket);
+    onConnect(sourceId);
     const dev = peer(sourceId);
     const eventBucket = new TokenBucket(40, 80); // batches per second, far above the 10/s a source sends
     socket.on('disconnect', () => {
@@ -65,19 +70,22 @@ export function setupIngest({ io, config, metrics, writer, states, detector, bro
       if (!eventBucket.take(1)) {
         r.throttled = claimed;
         metrics.inc('throttled', claimed);
+        watch.note(sourceId, { throttled: claimed });
         return reply(r);
       }
       const parsed = envelope.safeParse(payload);
       if (!parsed.success || parsed.data.sourceId !== sourceId) {
         r.invalid = claimed;
         metrics.inc('invalid', claimed);
+        watch.note(sourceId, { invalid: claimed });
         return reply(r);
       }
 
       // 1. per-sample validation
       const valid = [];
+      const now = Date.now();
       for (const s of parsed.data.samples) {
-        if (checkPacked(s)) r.invalid++;
+        if (checkPacked(s, now, sourceId)) r.invalid++;
         else valid.push(s);
       }
       // 2. token bucket: samples over the allowance are dropped, and so are samples that would grow the write
@@ -105,9 +113,10 @@ export function setupIngest({ io, config, metrics, writer, states, detector, bro
 
       if (fresh.length) {
         const docs = [];
+        const storeEvery = kindOf(sourceId) === 'crew' ? KINDS.crew.storeEvery * config.crewStoreEvery : KINDS.ship.storeEvery;
         for (const p of fresh) {
-          const s = unpackSample(p);
-          docs.push({ ts: new Date(s.ts), sourceId, ...pick(s) });
+          const s = unpackSample(p, sourceId);
+          if (s.seq % storeEvery === 0) docs.push({ ts: new Date(s.ts), sourceId, ...pick(s, sourceId) });
           // 4. live state and anomaly detection only follow the newest order
           if (states.update(sourceId, s, p)) detector.push(sourceId, s);
           // 6. broadcast queue
@@ -119,6 +128,7 @@ export function setupIngest({ io, config, metrics, writer, states, detector, bro
         dev.dirty = true;
       }
 
+      watch.note(sourceId, { invalid: r.invalid, throttled: r.throttled });
       metrics.inc('accepted', r.accepted);
       metrics.inc('duplicates', r.duplicates);
       metrics.inc('stale', r.stale);
@@ -162,8 +172,8 @@ export function setupIngest({ io, config, metrics, writer, states, detector, bro
 }
 
 // Channel values only: the stored document keeps seq plus every channel key in real units.
-function pick(s) {
+function pick(s, sourceId) {
   const out = { seq: s.seq };
-  for (const c of CHANNELS) out[c.key] = s[c.key];
+  for (const c of channelsOf(sourceId)) out[c.key] = s[c.key];
   return out;
 }

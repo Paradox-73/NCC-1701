@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import mongoose from 'mongoose';
 import { io as connect } from 'socket.io-client';
 import parser from 'socket.io-msgpack-parser';
-import { CHANNELS, EVENTS, packSample } from '@ncc/shared/schema.js';
+import { channelsOf, EVENTS, packSample } from '@ncc/shared/schema.js';
 import { createServer } from '../src/app.js';
 
 const KEY = 'test-device-key';
@@ -15,7 +15,7 @@ let base;
 const sockets = [];
 const T0 = Date.now() - 10_000;
 
-const values = (i) => Object.fromEntries(CHANNELS.map((c) => [c.key, Math.min(c.max, c.min + (((i * 7) % 50) * (c.max - c.min)) / 100)]));
+const values = (i) => Object.fromEntries(channelsOf(1).map((c) => [c.key, Math.min(c.max, c.min + (((i * 7) % 50) * (c.max - c.min)) / 100)]));
 const sample = (seq, ts = T0 + seq * 5) => packSample(seq, ts, values(seq));
 const freshSeq = () => Math.round(Date.now() / 20); // above anything an earlier test sent
 const open = (ns, auth) => {

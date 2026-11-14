@@ -496,3 +496,16 @@ The Enterprise finds a ship of sleepers from the 20th century, wakes their leade
 | 4:30 | End |
 
 The Tribbles and Space Seed scenarios go in the README with screenshots.
+
+## 10. Where the build differs from this spec
+
+The registry, simulator and scenarios follow the tables above. These are the deliberate differences, all recorded in `docs/PROTOCOL.md` and the tests:
+
+- `await` stops the scenario clock until the command arrives or the timeout passes, so the steps after it keep their spacing. The timeouts in the scripts are 4 to 8 seconds, shorter than the 10 to 15 in the tables, so each episode runs unattended in 75 to 114 s.
+- Scenario steps that the tables leave loose were tuned so the promised alerts fire: Balance of Terror hits fore for 45 and then 50 (plus 8 to the hull), crew 001 in Space Seed goes to heart rate 155 and respiration 36 (140 and 32 only reach YELLOW under the crew limits), and the battery in The Naked Time ramps by override because the natural drain of 1 percent a second cannot reach 50 percent before the restart.
+- Space Seed's stolen-key phases use source 99, which is on no roster, and the wrong-key handshakes claim source 1; ingest alerts have no channel group, so every role sees them. The flood's accepted samples (about 120 a second) are stored under source 99 until the 24 h expiry.
+- A sickbay hub counts as lost after 3.5 s of silence, not 1.5 s, because it sends once a second.
+- The Constellation is silent from its explosion until 30 s after the scenario ends, then restarts in calm running. Hull, shields, torpedoes, battery, orders, condition and crew return to calm running when a scenario ends or is stopped.
+- Every role may acknowledge alerts of the groups and ships it sees (the communications officer too).
+- `Detector.settle()` was added: the statistics follow the values for 20 to 30 s after a real change of warp or impulse level, because statistics that freeze during an anomaly would otherwise keep a new warp order flagged for good.
+- The viewscreen, forecast and sound cues are `fx` and `log` events with a cue name; the client decides how to show them.

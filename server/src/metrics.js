@@ -1,6 +1,6 @@
 import { monitorEventLoopDelay } from 'node:perf_hooks';
 
-const COUNTERS = ['received', 'accepted', 'duplicates', 'stale', 'invalid', 'throttled', 'framesOut', 'framesDelivered', 'bytesOut', 'alerts', 'batches'];
+const COUNTERS = ['received', 'accepted', 'duplicates', 'stale', 'invalid', 'throttled', 'framesOut', 'framesDelivered', 'bytesOut', 'alerts', 'batches', 'refused'];
 const LAT_SIZE = 8192;
 
 /** Counters with per-second rates, ingest-to-emit latency percentiles and event-loop lag. */

@@ -2,7 +2,9 @@
 import { parentPort, workerData } from 'node:worker_threads';
 import { io } from 'socket.io-client';
 import parser from 'socket.io-msgpack-parser';
-import { packSample, CHANNELS, EVENTS } from '@ncc/shared/schema.js';
+import { packSample, channelsOf, EVENTS } from '@ncc/shared/schema.js';
+
+const CHANNELS = channelsOf(1); // load-test sources have ids above the registry, so they are ships
 import { Sender } from '@ncc/simulator/sender.js';
 import { Hist } from './hist.js';
 
@@ -39,9 +41,9 @@ async function runSources() {
         const s = base.slice();
         s[0] = ++c.slot;
         s[1] = ts;
-        // every channel swings 10% of its range around nominal, so the frames carry changing values
+        // every channel swings a little around nominal, so the frames carry changing values but calm sources raise no alerts (the swing is 1% of the range, and at most 2% of the nominal plus 0.5)
         CHANNELS.forEach((ch, k) => {
-          s[k + 2] = Math.round(Math.min(ch.max, Math.max(ch.min, ch.nominal + 0.1 * (ch.max - ch.min) * Math.sin(c.phase + k + ts / 3000))) * ch.scale);
+          s[k + 2] = Math.round(Math.min(ch.max, Math.max(ch.min, ch.nominal + Math.min(0.01 * (ch.max - ch.min), 0.02 * Math.abs(ch.nominal) + 0.5) * Math.sin(c.phase + k + ts / 3000))) * ch.scale);
         });
         const r = Math.random();
         if (r < inject.invalid) {

@@ -20,7 +20,6 @@ export const shipCode = (id) => SOURCES.find((s) => s.id === id)?.code ?? `#${id
 /** 'crit', 'warn' or null for a reading against its threshold rules; limitsOf gives the rules by side. */
 export { alarmOf as levelOf, limitsOf } from '../../lib/limits.js';
 export const worst = (levels) => (levels.includes('crit') ? 'crit' : levels.includes('warn') ? 'warn' : null);
-export const WORD = { crit: 'RED', warn: 'YELLOW' };
 
 export const ringOf = (src, key) => { const c = CHANNEL_BY_KEY[key]; return c ? getRing(src, c.group) : undefined; };
 /** Latest value of a channel, or undefined while nothing has arrived (or the registry lacks the channel). */

@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
+import { inField } from '../lib/keys.js';
 import { KeyCap, LitButton } from '../ui/index.js';
 
 const KEY = 'ncc.toured';
@@ -34,6 +35,7 @@ export default function Tour() {
   useEffect(() => {
     if (!s) return undefined;
     const onKey = (e) => {
+      if (inField(e.target) && !e.target.closest('.tour')) return; // keys typed into the turbolift or a form stay theirs
       if (e.key === 'Escape') done();
       else if (e.key === 'ArrowRight' || e.key === 'Enter') setStep((n) => (n + 1 < STEPS.length ? n + 1 : (done(), -1)));
       else if (e.key === 'ArrowLeft') setStep((n) => Math.max(0, n - 1));

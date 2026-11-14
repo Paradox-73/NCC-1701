@@ -65,10 +65,12 @@ Telemetry dashboards tend to be one of two things: a demo with fake numbers, or 
 
 | | |
 |---|---|
-| ![Red alert: shields at 30 %, a torpedo hit fuzzing the viewscreen](docs/screenshots/app-red-alert.png) | ![Engineering: reaction chamber, dilithium, nacelles, power, transporter, decks](docs/screenshots/app-engineering.png) |
-| **Red alert.** A torpedo hit takes the fore shield to 30 % and the alerts reach the log. | **Engineering.** Monitors are live channels and the desk buttons are real commands. |
-| ![Sickbay during The Naked Time: the infection spreading through deck 7](docs/screenshots/app-sickbay.png) | ![Starfleet Command: sector map, fleet log, server metrics, scenarios](docs/screenshots/app-starfleet-command.png) |
+| ![Red alert during Balance of Terror: the weakest shield down to 25 %, tactical viewscreen, shield alerts in the captain's log](docs/screenshots/app-red-alert.png) | ![Engineering: reaction chamber, dilithium, nacelles, power, transporter, decks](docs/screenshots/app-engineering.png) |
+| **Red alert.** A plasma torpedo takes the weakest shield to 25 % and the alerts reach the log. | **Engineering.** Monitors are live channels and the desk buttons are real commands. |
+| ![Sickbay during The Naked Time: the biosigns grid with red crew across decks 6 and 7, watch list and biobed](docs/screenshots/app-sickbay.png) | ![Starfleet Command: sector map, fleet log, server metrics, scenarios](docs/screenshots/app-starfleet-command.png) |
 | **Sickbay.** Each crew member is measured against their own baseline. | **Starfleet Command.** The task force on a sector map, fleet alerts, server latency, the scenario launcher. |
+| ![Login console: the 3D ship on the left, the six crew positions on the right](docs/screenshots/app-login.png) | ![Phone: the login console at 390 by 844 pixels with the ship above the positions](docs/screenshots/app-phone.png) |
+| **Login.** State your position; the ship turns on the left. | **Phone.** The console stacks into one column. |
 
 ## Tech stack
 

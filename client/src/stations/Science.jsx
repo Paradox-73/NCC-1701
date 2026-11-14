@@ -184,7 +184,11 @@ function Lifeforms({ src, showCo2 }) {
 function Viewer({ src }) {
   const ref = useCanvas((ctx, w, h, t) => {
     ctx.clearRect(0, 0, w, h);
+    // the viewer's own blue light, brighter with a stronger return
     const flux = read(src, 'ionFlux') ?? 0, snr = read(src, 'contactSnr') ?? 0;
+    const lamp = ctx.createRadialGradient(w / 2, h * 0.55, 4, w / 2, h * 0.55, Math.max(w, h) * 0.7);
+    lamp.addColorStop(0, `rgba(63,163,255,${0.34 + clamp(snr / 40) * 0.4})`); lamp.addColorStop(1, 'rgba(14,44,74,0.15)');
+    ctx.fillStyle = lamp; ctx.fillRect(0, 0, w, h);
     const bins = 40, bw = w / bins, peak = bins * 0.62;
     for (let i = 0; i < bins; i++) {
       const s = Math.sin(i * 12.9898 + Math.floor(t / 90) * 4.1) * 43758.5;
@@ -203,6 +207,16 @@ function Viewer({ src }) {
     ctx.fillText(`floor ${fmt(flux, 1)} ion flux`, 8, h - 5); ctx.textAlign = 'right'; ctx.fillText(`peak ${fmt(snr, 1)} dB`, w - 8, h - 5);
   }, [src], 90);
   return <canvas ref={ref} className="st-canvas" role="img" aria-label="Viewer: sensor return spectrum" />;
+}
+
+/** Spock's hooded viewer: a pale wedge-shaped hood over the scanner screen, its blue light spilling out of the mouth. */
+function HoodedViewer({ src }) {
+  return (
+    <div className="hood">
+      <div className="hood__shell" aria-hidden="true" />
+      <div className="hood__mouth"><Viewer src={src} /></div>
+    </div>
+  );
 }
 
 function Anomalies({ src }) {
@@ -255,7 +269,7 @@ export default function Science({ shipId = 1 }) {
   );
 
   return (
-    <Station name="Science" division="science" ship={src} rows="minmax(170px, 1fr) minmax(200px, 1.15fr) minmax(200px, 1.15fr)" desk={desk}>
+    <Station name="Science" division="science" ship={src} rows="minmax(160px, 0.9fr) minmax(180px, 1fr) minmax(220px, 1.2fr)" desk={desk}>
       <Monitor title="Sensor scope" meta={`${mode === 'long' ? 'long' : 'short'} range · fore up`} state={st('sensors')} className="st-c5" style={{ gridRow: 'span 2', '--mh': '380px' }}>
         <Scope src={src} mode={mode} />
       </Monitor>
@@ -265,8 +279,8 @@ export default function Science({ shipId = 1 }) {
       <Monitor title="Life-forms aboard" meta="stored · live · forecast" state={st('sensors')} className="st-c7">
         <Lifeforms src={src} showCo2={canSee(user, 'lifesupport')} />
       </Monitor>
-      <Monitor title="Viewer" meta="return spectrum" state={st('sensors')} className="st-c3" style={{ '--mh': '200px' }}>
-        <Viewer src={src} />
+      <Monitor title="Viewer" meta="return spectrum" state={st('sensors')} className="st-c3 monitor--housing monitor--hood" style={{ '--mh': '260px' }}>
+        <HoodedViewer src={src} />
       </Monitor>
       <Monitor title="Sensor arrays" meta="health" state={st('sensors')} className="st-c4" style={{ '--mh': '220px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'auto auto minmax(0, 1fr)', gap: 16, height: '100%', padding: 12 }}>

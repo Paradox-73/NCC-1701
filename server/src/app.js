@@ -15,6 +15,8 @@ import { setupLive } from './live/namespace.js';
 import { makeLogger } from './logger.js';
 import { Metrics } from './metrics.js';
 import { authRoutes } from './routes/auth.js';
+import { sourceRoutes } from './routes/sources.js';
+import { telemetryRoutes } from './routes/telemetry.js';
 import { errorHandler, limiter, requireAuth } from './middleware/index.js';
 import { seed } from './seed.js';
 import { SourceStates } from './state/sourceState.js';
@@ -70,6 +72,8 @@ export function createServer(overrides = {}) {
   app.use('/api', limiter(config.apiRateLimit));
   app.use('/api', authRoutes({ config })); // login, me and health
   app.use('/api', requireAuth(config.jwtSecret));
+  const deps = { config, states, detector, alerts, metrics, ingest, getTelemetry, writer };
+  app.use('/api', sourceRoutes(deps), telemetryRoutes(deps));
   app.use('/api', (_req, res) => res.status(404).json({ error: 'not found' }));
   app.use(errorHandler(log));
 

@@ -1,6 +1,6 @@
-import { useRef } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useSubscription, useTick } from '../lib/hooks.js';
+import { hitOn } from '../lib/ship.js';
 import { SHIPS, eachSlot, levelOf, monState, read, ringOf, shipCode, useCommand, useFeed, worst } from './parts/data.js';
 import { ArcGauge, BarGauge, Chip, ConsoleStrip, HBar, J, LitButton, Monitor, Num, Station, useKeys } from '../ui/index.js';
 import { C, Readout, Val, clamp, fmt, levelColor, useCanvas } from './parts/ui.jsx';
@@ -89,15 +89,13 @@ function NavPlot({ src, others }) {
   return <canvas ref={ref} className="st-canvas" role="img" aria-label="Navigation plot: own ship at the centre, north up, grid in sector units" />;
 }
 
-const QUADS = [['shieldFore', 'Fore', 0], ['shieldStbd', 'Starboard', 90], ['shieldAft', 'Aft', 180], ['shieldPort', 'Port', 270]];
+const QUADS = [['shieldFore', 'Fore', 0, 'fore'], ['shieldStbd', 'Starboard', 90, 'stbd'], ['shieldAft', 'Aft', 180, 'aft'], ['shieldPort', 'Port', 270, 'port']];
 const polar = (deg, r) => [120 + r * Math.sin((deg * Math.PI) / 180), 120 - r * Math.cos((deg * Math.PI) / 180)];
 const arc = (a0, a1, r) => { const [x0, y0] = polar(a0, r), [x1, y1] = polar(a1, r); return `M${x0} ${y0} A${r} ${r} 0 0 1 ${x1} ${y1}`; };
 
-/** Top-down ship with an arc per quadrant, coloured by strength; an arc flares white for 300 ms when it takes a hit. */
+/** Top-down ship with an arc per quadrant, coloured by strength; an arc flares white when the scenario's hit fx lands on it. */
 function ShieldRing({ src }) {
-  const prev = useRef({}), flare = useRef({});
   const up = read(src, 'shieldsUp') >= 0.5;
-  const now = performance.now();
   return (
     <div style={{ display: 'grid', gridTemplateRows: 'auto minmax(0, 1fr) auto', height: '100%', padding: '10px 12px', gap: 6 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -113,14 +111,10 @@ function ShieldRing({ src }) {
           <rect x="115" y="98" width="10" height="30" /><ellipse cx="120" cy="150" rx="13" ry="36" />
           <circle cx="120" cy="82" r="40" /><circle cx="120" cy="82" r="7" fill="#56625e" />
         </g>
-        {QUADS.map(([k, l, mid]) => {
+        {QUADS.map(([k, l, mid, quad]) => {
           const v = read(src, k);
-          if (v != null) {
-            if (prev.current[k] != null && v < prev.current[k] - 2) flare.current[k] = now + 300;
-            prev.current[k] = v;
-          }
           const lv = levelOf(k, v);
-          const hit = flare.current[k] > now;
+          const hit = hitOn(src, quad, 400);
           const col = hit ? '#ffffff' : levelColor(lv) ?? C.chart1;
           const [tx, ty] = polar(mid, mid % 180 ? 98 : 104);
           return (

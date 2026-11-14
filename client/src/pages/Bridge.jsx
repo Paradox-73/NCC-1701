@@ -3,7 +3,7 @@ import { CHANNEL_BY_KEY, GROUPS, GROUP_CHANNELS, SOURCES } from '@ncc/shared/sch
 import { stationById, canEnter } from '../app/stations.js';
 import { useSubscription, useTick } from '../lib/hooks.js';
 import { bandOf, levelOf, worst } from '../lib/limits.js';
-import { conditionOf, ship, shipLog, stardate } from '../lib/ship.js';
+import { conditionOf, hitOn, ship, shipLog, stardate } from '../lib/ship.js';
 import { backfill, getRing, state } from '../lib/store.js';
 import ViewscreenView from '../three/ViewscreenView.jsx';
 import { ArcGauge, ButtonGrid, DivisionPill, Icon, Jewel, KeyCap, LevelChip, LitButton, Monitor, Num, Readout, SweepScope, mayCommand, useCommand } from '../ui/index.js';
@@ -279,15 +279,7 @@ function Turbolift({ onLift }) {
 }
 
 function Viewscreen({ ov, condition, viewer, threeD, user }) {
-  const prevShield = useRef(null);
-  const [hit, setHit] = useState(false);
-  const shield = ov?.shield;
-  useEffect(() => {
-    const p = prevShield.current;
-    prevShield.current = shield;
-    if (p != null && shield != null && shield < p - 2) { setHit(true); const t = setTimeout(() => setHit(false), 450); return () => clearTimeout(t); }
-    return undefined;
-  }, [shield]);
+  const hit = hitOn(SHIP); // the scenario's hit fx: static and a shake on the main viewer
   const orbit = last('helm', 'orbitAlt') > 0 || !!ship.scene;
   const mode = viewer.mode === 'tactical' ? 'tactical' : orbit ? 'orbit' : 'space';
   const timewarp = performance.now() < ship.warpFx;

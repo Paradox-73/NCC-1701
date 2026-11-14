@@ -128,6 +128,9 @@
 
 /* ---- feedback line ------------------------------------------------------------ */
 .toast-slot { position: fixed; left: 50%; bottom: 28px; z-index: 95; transform: translateX(-50%); pointer-events: none; }
+/* on a station the feedback line rides above the console desk, never over its buttons */
+.shell:has(.view--station .console-strip) .toast-slot { bottom: 150px; }
+@media (max-width: 1023px) { .shell:has(.view--station .console-strip) .toast-slot { bottom: 84px; } }
 .toast { padding: 10px 16px; border-radius: 8px; background: var(--raised); color: var(--ink); font: 400 13px var(--font-mono); white-space: nowrap; box-shadow: 0 12px 30px #000c, 0 0 0 1px var(--line2); animation: rise 280ms var(--ease-in); }
 .toast[data-tone='ok']::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 10px; border-radius: 50%; background: var(--ready); box-shadow: 0 0 6px var(--ready); }
 .toast[data-tone='bad']::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 10px; border-radius: 50%; background: var(--crit); }

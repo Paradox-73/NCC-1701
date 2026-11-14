@@ -28,28 +28,41 @@ export function conditionOf(shipId = SHIP) {
   return state.overview.get(shipId)?.condition ?? p?.level ?? 'normal';
 }
 
-// ---- the captain's log: server log lines and this user's command results, newest first --------------------
-export const shipLog = [];
+// ---- the captain's log: server log lines and this user's command results, newest first, per ship -------------
+export const shipLog = []; // the Enterprise's: the bridge and the ticker read it
+const logs = new Map([[SHIP, shipLog]]);
+/** A ship's log lines, newest first. */
+export const logOf = (shipId = SHIP) => logs.get(shipId) ?? [];
 const seen = new Set();
-const add = (e) => {
-  const key = `${e.ts}|${e.text}`;
+const add = (e, shipId = SHIP) => {
+  const key = `${shipId}|${e.ts}|${e.text}`;
   if (seen.has(key)) return;
   seen.add(key);
-  shipLog.unshift(e);
-  shipLog.sort((a, b) => b.ts - a.ts);
-  if (shipLog.length > 300) shipLog.length = 300;
+  let list = logs.get(shipId);
+  if (!list) logs.set(shipId, (list = []));
+  list.unshift(e);
+  list.sort((a, b) => b.ts - a.ts);
+  if (list.length > 300) list.length = 300;
 };
-const logLine = (l, fresh) => add({ id: `${l.ts}-${l.text}`, kind: l.by === 'scenario' ? 'scenario' : 'log', ts: l.ts ?? Date.now(), text: l.text ?? '', by: l.by, fresh });
+const logLine = (l, fresh) => add({ id: `${l.ts}-${l.text}`, kind: l.by === 'scenario' ? 'scenario' : 'log', ts: l.ts ?? Date.now(), text: l.text ?? '', by: l.by, fresh }, Number(l.shipId ?? SHIP));
+
+// ---- shield hits: the scenario's `hit` fx, per ship -------------------------------------------------------------
+const hits = new Map(); // shipId -> { at: performance.now(), quad: 'fore' | 'aft' | 'port' | 'stbd' | 'all' }
+/** True for `ms` after ship `shipId` took a hit, on quadrant `quad` (or on any quadrant when `quad` is left out). */
+export function hitOn(shipId, quad, ms = 450) {
+  const h = hits.get(shipId);
+  return !!h && performance.now() - h.at < ms && (!quad || h.quad === 'all' || h.quad === quad);
+}
 
 const CUE = { chirp: 'chirp', alarm: 'red', klaxon: 'yellow', warp: 'warp', boom: 'boom' };
 onEvent('condition', (p) => { if (LEVELS.includes(p?.level)) pushed.set(Number(p.shipId ?? SHIP), { level: p.level, at: performance.now() }); });
 onEvent('log', (l) => {
-  if (Number(l?.shipId ?? SHIP) !== SHIP) return;
   logLine(l, true);
-  if (l.sound) play(CUE[l.sound] ?? l.sound);
+  if (l.sound && Number(l.shipId ?? SHIP) === SHIP) play(CUE[l.sound] ?? l.sound);
 });
 onEvent('scenario', (s) => { ship.scenario = s; if (s?.state === 'ended' || s?.state === 'stopped') ship.scene = null; });
 onEvent('fx', (f) => {
+  if (f?.name === 'hit') hits.set(Number(f.shipId ?? SHIP), { at: performance.now(), quad: f.quad ?? 'all' });
   if (Number(f?.shipId ?? SHIP) !== SHIP) return;
   if (f.name === 'timewarp') { ship.stardateOffset += f.stardateDelta ?? 0; ship.warpFx = performance.now() + 2500; play('warp'); }
   if (f.name === 'viewscreen') ship.scene = f.scene ?? null;
@@ -57,17 +70,22 @@ onEvent('fx', (f) => {
 });
 onCommandResult((r) => {
   if (r.ok) return; // an accepted command comes back from the server as a log line
-  add({ id: `c${r.at}`, kind: 'command', ok: false, ts: r.at, text: `${commandWords(r.type, r.payload)}: ${r.error}`, fresh: true });
+  add({ id: `c${r.at}`, kind: 'command', ok: false, ts: r.at, text: `${commandWords(r.type, r.payload)}: ${r.error}`, fresh: true }, r.shipId ?? SHIP);
 });
 
-/** Fills condition, scenario and the last 60 log lines in from the server: on sign-in and after a reconnect. */
+/**
+ * Fills condition, scenario and the last 60 log lines in from the server: on sign-in and after a reconnect. For a
+ * ship other than the Enterprise only its log lines are kept (the stardate and the scenario strip are the Enterprise's).
+ */
 export async function loadShip(shipId = SHIP) {
   try {
     const s = await api(`/api/ships/${shipId}/state`);
     if (LEVELS.includes(s.condition)) pushed.set(shipId, { level: s.condition, at: performance.now() - PUSH_MS + 200 });
-    ship.scenario = s.scenario ?? null;
-    ship.stardateOffset = s.stardateOffset ?? 0;
-    for (const l of s.log ?? []) logLine(l, false);
+    if (shipId === SHIP) {
+      ship.scenario = s.scenario ?? null;
+      ship.stardateOffset = s.stardateOffset ?? 0;
+    }
+    for (const l of s.log ?? []) logLine({ ...l, shipId }, false);
   } catch { /* the socket keeps it current anyway */ }
 }
 onConnection((st, info) => { if (st === 'online' && info?.reconnect) loadShip(); });
@@ -76,6 +94,8 @@ onConnection((st, info) => { if (st === 'online' && info?.reconnect) loadShip();
 export function resetShip() {
   pushed.clear();
   shipLog.length = 0;
+  for (const id of logs.keys()) if (id !== SHIP) logs.delete(id);
+  hits.clear();
   seen.clear();
   Object.assign(ship, { scenario: null, stardateOffset: 0, scene: null, warpFx: 0 });
 }

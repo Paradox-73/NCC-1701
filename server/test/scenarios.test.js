@@ -58,6 +58,7 @@ test('Balance of Terror: the statistics catch the ghost, red alert, shield hits,
   assert.ok(b.ev('condition').some((e) => e.payload.level === 'red' && e.payload.by === 'scenario'), 'the runner ordered red alert when nobody did');
   within(at('shield-load', { severity: 'warn' }), 30, 40, 'shield generator load');
   within(at('shield-low', { channel: 'shieldFore', severity: 'critical' }), 36, 46, 'fore shield critical after the second torpedo');
+  assert.deepEqual(b.ev('fx').filter((e) => e.payload.name === 'hit').map((e) => `${e.payload.shipId} ${e.payload.quad} ${e.payload.amount}`), ['1 fore 45', '1 fore 50', '1 all 10'], 'every hit reaches the bridges as an fx, quadrant and size included');
   const hull = b.ships[1].s.hull;
   assert.ok(hull >= 99 || b.ships[1].s.hullHeal > 0, 'hull was damaged and is being repaired after the scenario');
   within(at('phaser-temp', { severity: 'warn' }), 55, 80, 'phaser coolant warn');

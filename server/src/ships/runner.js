@@ -95,7 +95,10 @@ export class ScenarioRunner {
     }
     if (step.cmd) w.execute(ship, step.cmd, SCENARIO_ACTOR);
     for (const verb of ['set', 'ramp', 'noise', 'hit', 'contact', 'crew', 'fault', 'rogue', 'release']) {
-      for (const { source, ...args } of asList(step[verb] ?? [])) w.sendSim(source ?? ship, { type: SIM_VERBS[verb], args });
+      for (const { source, ...args } of asList(step[verb] ?? [])) {
+        w.sendSim(source ?? ship, { type: SIM_VERBS[verb], args });
+        if (verb === 'hit') w.fx(source ?? ship, 'hit', args); // the bridges flare the quadrant that took it
+      }
     }
     if (step.fx) w.fx(ship, step.fx.name, step.fx);
     if (step.condition) w.setCondition(ship, step.condition, 'scenario');

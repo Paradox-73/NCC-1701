@@ -1,33 +1,28 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useMemo, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { SCENARIOS, SCENARIO_LIST } from '@ncc/shared/scenarios/index.js';
 import Chart from '../components/Chart.jsx';
 import VirtualList from '../components/VirtualList.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import { useSubscription, useTick } from '../lib/hooks.js';
+import { ship } from '../lib/ship.js';
 import { ackAlert, state } from '../lib/store.js';
 import { SHIPS, alertFlagOf, conditionOf, isOpen, levelOf, linkOf, posOf, read, ringOf, shipCode, shipName, stardate, useCommand } from './parts/data.js';
 import { Chip, ConsoleStrip, J, LevelChip, LitButton, Monitor, Num, Station } from '../ui/index.js';
 import { C, clamp, fmt, useCanvas } from './parts/ui.jsx';
 
+// a ship's condition is the server's, from its overview row; null until the server has heard from the ship
 const COND = { red: ['crit', 'RED ALERT'], yellow: ['warn', 'YELLOW ALERT'], normal: ['ok', 'NORMAL'] };
-const ringColor = (id) => {
-  const c = conditionOf(id) ?? (alertFlagOf(id) === 'crit' ? 'red' : alertFlagOf(id) === 'warn' ? 'yellow' : 'normal');
-  return c === 'red' ? C.crit : c === 'yellow' ? C.warn : C.chart1;
-};
+const ringColor = (id) => { const c = conditionOf(id); return c === 'red' ? C.crit : c === 'yellow' ? C.warn : C.chart1; };
 const weakest = (id) => {
   const o = state.overview.get(id);
   if (o?.shield != null) return o.shield;
   const vs = ['shieldFore', 'shieldAft', 'shieldPort', 'shieldStbd'].map((k) => read(id, k)).filter((v) => v != null);
   return vs.length ? Math.min(...vs) : undefined;
 };
-// DOMAIN.md section 8, in build order; the server's scenario runner owns the scripts (shared/scenarios)
-const SCENARIOS = [
-  { id: 'balance-of-terror', title: 'Balance of Terror', ep: 'Season 1, 1966', sec: 95, shows: 'Statistical anomaly detection, red alert, shield hits', steps: [0, 8, 12, 20, 30, 38, 40, 45, 50, 58, 72, 75, 85] },
-  { id: 'the-naked-time', title: 'The Naked Time', ep: 'Season 1, 1966', sec: 110, shows: '430-crew stream, medical privacy by role, cold restart', steps: [0, 5, 15, 40, 50, 70, 80, 85, 100] },
-  { id: 'the-doomsday-machine', title: 'The Doomsday Machine', ep: 'Season 2, 1967', sec: 110, shows: 'Several ships, link loss, history of a lost ship', steps: [0, 10, 20, 30, 45, 55, 65, 80, 95, 105] },
-  { id: 'mirror-mirror', title: 'Mirror, Mirror', ep: 'Season 2, 1967', sec: 70, shows: 'Duplicate, out-of-order and malformed telemetry', steps: [0, 5, 15, 25, 30, 45, 55] },
-  { id: 'the-trouble-with-tribbles', title: 'The Trouble with Tribbles', ep: 'Season 2, 1967', sec: 85, shows: 'Deck-by-deck life support, growth forecast', steps: [0, 30, 45, 60, 80] },
-  { id: 'space-seed', title: 'Space Seed', ep: 'Season 1, 1967', sec: 90, shows: 'Device keys, rate limiting, forged data refused', steps: [0, 10, 18, 25, 30, 40, 45, 60, 75, 85] },
-];
+// step times of each episode script, for the timeline's marks (the server's runner plays the same scripts)
+const MARKS = Object.fromEntries(Object.values(SCENARIOS).map((x) => [x.id, [...new Set(x.steps.map((step) => step.t))]]));
+const STATE_WORD = { running: 'running', awaiting: 'waiting for an order', ended: 'complete', stopped: 'stopped' };
 
 /** The task force on one sector plot: heading chevrons, one-minute trails, a condition ring each, links to Starfleet. */
 function SectorMap({ ids }) {
@@ -96,9 +91,9 @@ function SectorMap({ ids }) {
 }
 
 function ShipCard({ id, onOpen }) {
-  const link = linkOf(id), cond = conditionOf(id), flag = alertFlagOf(id);
+  const link = linkOf(id), cond = conditionOf(id);
   const open = state.alerts.filter((a) => a.sourceId === id && isOpen(a)).length;
-  const [lv, word] = cond ? COND[cond] : [flag ?? 'off', flag === 'crit' ? 'RED ALERTS OPEN' : flag === 'warn' ? 'YELLOW ALERTS OPEN' : 'NO OPEN ALERTS'];
+  const [lv, word] = cond ? COND[cond] : ['off', 'NOT HEARD FROM'];
   const sh = weakest(id);
   const shLv = sh < 25 ? 'crit' : sh < 50 ? 'warn' : null; // DOMAIN.md shield limits: warn under 50 %, critical under 25 %
   const body = (
@@ -109,7 +104,7 @@ function ShipCard({ id, onOpen }) {
         <span style={{ font: '400 10px var(--font-display)', letterSpacing: '0.08em', color: C.ink2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{shipName(id).toUpperCase()}</span>
         <span style={{ marginLeft: 'auto' }}><Chip level={link === 'live' ? 'ok' : link === 'lost' ? 'crit' : 'off'}>{link === 'live' ? 'LINK' : link === 'lost' ? 'LOST' : '—'}</Chip></span>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}><Chip level={lv === 'ok' ? 'ok' : lv}>{cond ? `CONDITION ${word}` : word}</Chip></div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}><Chip level={lv}>{cond ? `CONDITION ${word}` : word}</Chip></div>
       <dl className="st-kv" style={{ gridTemplateColumns: 'auto 1fr auto 1fr', gap: '4px 10px' }}>
         <dt>Warp</dt><dd style={{ fontSize: 14 }}><Num value={posOf(id)?.warp ?? read(id, 'warpFactor')} dec={1} className="" /></dd>
         <dt>Weakest shield</dt><dd style={{ fontSize: 14 }}><Num value={sh} dec={0} className="" level={shLv} /><span className="st-unit">%</span>{shLv && <> <LevelChip level={shLv} /></>}</dd>
@@ -119,7 +114,7 @@ function ShipCard({ id, onOpen }) {
     </>
   );
   const style = { display: 'flex', flexDirection: 'column', gap: 8, width: '100%', padding: '10px 12px', border: 0, borderRadius: 8, textAlign: 'left', background: '#ffffff07', boxShadow: `inset 0 0 0 1px ${link === 'lost' ? '#ff4a5555' : '#ffffff12'}` };
-  return onOpen ? <button type="button" style={{ ...style, cursor: 'pointer' }} onClick={() => onOpen(id)} aria-label={`Open the bridge of ${shipName(id)}`}>{body}</button> : <div style={style}>{body}</div>;
+  return <button type="button" className="fleet-card" style={style} onClick={() => onOpen(id)} aria-label={`Open ${shipName(id)}`}>{body}</button>;
 }
 
 const SEV = { critical: ['crit', 'RED'], warn: ['warn', 'YELLOW'], info: ['info', 'INFO'] };
@@ -178,29 +173,32 @@ function System() {
   );
 }
 
-function Scenarios({ cmd, running, setRunning }) {
-  useTick(500);
-  const sc = SCENARIOS.find((s) => s.id === running?.id);
-  const t = running ? (Date.now() - running.at) / 1000 : 0;
-  useEffect(() => { if (sc && t > sc.sec + 15) setRunning(null); }, [sc, t, setRunning]);
+/** The six episodes, from the scenario scripts; the timeline follows the server's `scenario` events, on every bridge. */
+function Scenarios({ cmd }) {
+  const s = ship.scenario;
+  const live = s?.state === 'running' || s?.state === 'awaiting';
+  const t = s?.t ?? 0, len = s?.duration || 1;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '10px 12px', gap: 10 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 8 }}>
-        {SCENARIOS.map((s) => (
-          <button key={s.id} type="button" onClick={() => cmd.send('scenario.start', { id: s.id }, `Start ${s.title}`).then((ok) => ok && setRunning({ id: s.id, at: Date.now() }))}
-            aria-pressed={running?.id === s.id}
-            style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '8px 10px', border: 0, borderRadius: 6, cursor: 'pointer', textAlign: 'left', background: running?.id === s.id ? '#1c6fc033' : '#ffffff07', boxShadow: `inset 0 0 0 1px ${running?.id === s.id ? C.accent : '#ffffff12'}` }}>
-            <span style={{ font: '400 10px var(--font-display)', letterSpacing: '0.08em' }}>{s.title.toUpperCase()}</span>
-            <span className="st-label" style={{ fontSize: 11 }}>{s.ep} · {s.sec} s</span>
-            <span style={{ fontSize: 12, color: C.ink2, lineHeight: 1.3 }}>{s.shows}</span>
-          </button>
-        ))}
+        {SCENARIO_LIST.map((x) => {
+          const on = live && s.id === x.id;
+          return (
+            <button key={x.id} type="button" onClick={() => cmd.send('scenario.start', { id: x.id })} aria-pressed={on} disabled={!cmd.can('scenario.start') || live}
+              title={live && !on ? 'One scenario at a time' : undefined}
+              style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '8px 10px', border: 0, borderRadius: 6, cursor: live ? 'default' : 'pointer', textAlign: 'left', opacity: live && !on ? 0.55 : 1, background: on ? '#1c6fc033' : '#ffffff07', boxShadow: `inset 0 0 0 1px ${on ? C.accent : '#ffffff12'}` }}>
+              <span style={{ font: '400 10px var(--font-display)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>{x.title}</span>
+              <span className="st-label" style={{ fontSize: 11 }}>{x.episode} · {x.duration} s</span>
+              <span style={{ fontSize: 12, color: C.ink2, lineHeight: 1.3 }}>{x.shows.join(', ')}</span>
+            </button>
+          );
+        })}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span className="st-label" style={{ minWidth: 150 }}>{sc ? `${sc.title}: ${fmt(Math.min(t, sc.sec), 0)} of ${sc.sec} s` : 'No scenario running from this console'}</span>
+        <span className="st-label" style={{ minWidth: 150 }}>{s ? `${s.title}: ${STATE_WORD[s.state] ?? s.state} · ${fmt(t, 0)} of ${fmt(len, 0)} s` : 'No scenario has run since sign-in'}</span>
         <div style={{ position: 'relative', flex: 1, height: 14, borderRadius: 3, background: '#ffffff0a' }} aria-hidden="true">
-          {sc && <i style={{ position: 'absolute', inset: '0 auto 0 0', width: `${clamp(t / sc.sec) * 100}%`, background: C.accent, borderRadius: 3, opacity: 0.6 }} />}
-          {sc?.steps.map((x) => <b key={x} style={{ position: 'absolute', top: -3, bottom: -3, left: `${(x / sc.sec) * 100}%`, width: 2, background: x <= t ? C.ink : C.mute }} />)}
+          {s && <i style={{ position: 'absolute', inset: '0 auto 0 0', width: `${clamp(t / len) * 100}%`, background: C.accent, borderRadius: 3, opacity: live ? 0.6 : 0.3 }} />}
+          {s && MARKS[s.id]?.map((x) => <b key={x} style={{ position: 'absolute', top: -3, bottom: -3, left: `${clamp(x / len) * 100}%`, width: 2, background: x <= t ? C.ink : C.mute }} />)}
         </div>
       </div>
     </div>
@@ -210,17 +208,19 @@ function Scenarios({ cmd, running, setRunning }) {
 /** Starfleet Command (DESIGN.md "Starfleet Command"): the whole task force, the fleet log, server health and scenarios. */
 export default function Fleet({ onOpenShip }) {
   useTick();
+  const navigate = useNavigate();
+  // a ship card opens that ship: the Enterprise's bridge, or the helm of another ship of the task force
+  const open = onOpenShip ?? ((id) => navigate(id === 1 ? '/bridge' : `/helm?ship=${id}`));
   const { user } = useAuth();
   const ids = SHIPS.map((s) => s.id);
   const groups = ['helm', 'shields', 'crewsummary'].filter((g) => user?.groups?.includes(g));
   useSubscription(ids, groups);
   const cmd = useCommand(1);
-  const [running, setRunning] = useState(null);
   const admin = !!user?.admin;
   const lost = ids.filter((id) => linkOf(id) === 'lost').length;
   const desk = (
     <ConsoleStrip seed={59} jewels={ids.map((id) => J(shipCode(id), linkOf(id) === 'lost' ? 'crit' : alertFlagOf(id), linkOf(id) === 'unknown' ? 'off' : 'live'))}>
-      <LitButton color="red" label="Stop scenario" onClick={() => cmd.send('scenario.stop', {}, 'Stop the scenario').then((ok) => ok && setRunning(null))} {...cmd.bind('scenario.stop')} />
+      <LitButton color="red" label="Stop scenario" onClick={() => cmd.send('scenario.stop')} {...cmd.bind('scenario.stop')} disabled={!cmd.can('scenario.stop') || !(ship.scenario?.state === 'running' || ship.scenario?.state === 'awaiting')} />
       <LitButton color="white" label="Ack all yellow" onClick={() => state.alerts.filter((a) => isOpen(a) && a.severity === 'warn').slice(0, 50).forEach((a) => ackAlert(a.id))} disabled={!user?.canAck} />
     </ConsoleStrip>
   );
@@ -232,7 +232,7 @@ export default function Fleet({ onOpenShip }) {
       </Monitor>
       <Monitor title="Ship cards" meta={`${ids.length} ships`} className="st-c4">
         <div className="st-fill-scroll" style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 10, height: '100%' }}>
-          {ids.map((id) => <ShipCard key={id} id={id} onOpen={onOpenShip} />)}
+          {ids.map((id) => <ShipCard key={id} id={id} onOpen={open} />)}
         </div>
       </Monitor>
       <Monitor title="Fleet log" meta="alerts from every ship" className="st-c5" style={{ '--mh': '300px' }}>
@@ -242,7 +242,7 @@ export default function Fleet({ onOpenShip }) {
         <System />
       </Monitor>
       <Monitor title="Scenarios" meta="launcher and timeline" state={admin || user?.role === 'captain' ? 'live' : 'restricted'} restricted="Scenarios: captain and Starfleet Command only." className="st-c12">
-        <Scenarios running={running} setRunning={setRunning} />
+        <Scenarios cmd={cmd} />
       </Monitor>
     </Station>
   );

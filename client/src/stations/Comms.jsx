@@ -2,6 +2,8 @@ import { useRef, useState } from 'react';
 import VirtualList from '../components/VirtualList.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import { useTick } from '../lib/hooks.js';
+import { logOf } from '../lib/ship.js';
+import { play } from '../lib/sound.js';
 import { state } from '../lib/store.js';
 import { SHIPS, alertsFor, levelOf, linkOf, meta, monState, read, shipCode, shipName, stardate, useCommand, useFeed, worst } from './parts/data.js';
 import { Chip, ConsoleStrip, J, Jewel, LitButton, Monitor, Num, Station, useKeys } from '../ui/index.js';
@@ -103,14 +105,20 @@ function Hail({ src, target, onTarget }) {
   );
 }
 
-const SEV = { critical: ['crit', 'RED'], warn: ['warn', 'YELLOW'], info: ['info', 'INFO'] };
-function Log({ src, local }) {
-  const items = [...local, ...alertsFor(src).slice(0, 300).map((a) => ({ id: a.id, ts: a.ts, sev: a.severity, from: shipCode(a.sourceId), text: a.message, fresh: a.arrivedAt && Date.now() - a.arrivedAt < 1500 }))].sort((a, b) => b.ts - a.ts);
+const SEV = { critical: ['crit', 'RED'], warn: ['warn', 'YELLOW'], info: ['info', 'INFO'], refused: ['crit', 'REFUSED'], log: ['ok', 'LOG'] };
+const sender = (by, src) => (!by || by === 'log' ? shipCode(src) : by === 'alert system' ? 'ALERTS' : by.toUpperCase());
+/** The ship's traffic, newest first: the log lines the server sends to its room (orders, hails, scenario messages) and its alerts. */
+function Log({ src }) {
+  const now = Date.now();
+  const items = [
+    ...logOf(src).slice(0, 200).map((l) => ({ id: `l${l.id}`, ts: l.ts, sev: l.kind === 'command' ? 'refused' : 'log', from: sender(l.by, src), text: l.text, fresh: l.fresh && now - l.ts < 1500 })),
+    ...alertsFor(src).slice(0, 200).map((a) => ({ id: a.id, ts: a.ts, sev: a.severity, from: shipCode(a.sourceId), text: a.message, fresh: a.arrivedAt && now - a.arrivedAt < 1500 })),
+  ].sort((a, b) => b.ts - a.ts);
   return (
     <VirtualList items={items} rowHeight={36} label="Message log" className="st-list" style={{ height: '100%' }}
-      empty={<div className="st-blank"><b>NO TRAFFIC</b><span>Hails you send and alerts for this ship appear here.</span></div>}
+      empty={<div className="st-blank"><b>NO TRAFFIC</b><span>Hails, orders, scenario messages and alerts for this ship appear here.</span></div>}
       renderRow={(m) => {
-        const [lv, word] = SEV[m.sev] ?? ['ok', 'SENT'];
+        const [lv, word] = SEV[m.sev] ?? SEV.info;
         return (
           <div className={`st-row ${m.fresh ? 'new' : ''}`}>
             <span className="t">{fmt(stardate(m.ts), 2)}</span>
@@ -131,16 +139,11 @@ export default function Comms({ shipId = 1 }) {
   useFeed(src, ['comms']);
   const [target, setTarget] = useState('command');
   const [intercom, setIntercom] = useState(false);
-  const [local, setLocal] = useState([]);
   const cmd = useCommand(shipId);
   const st = (...g) => monState(user, src, g);
-  const note = (text, sev) => setLocal((l) => [{ id: `l${Date.now()}`, ts: Date.now(), sev, from: shipCode(src), text }, ...l].slice(0, 50));
   const tgt = TARGETS.find((x) => x.id === target);
-  const hail = async (priority) => {
-    const say = `${priority ? 'Priority one message to' : 'Hailing'} ${priority ? 'Starfleet Command' : tgt.name}`;
-    if (await cmd.send('comms.hail', { target: priority ? 'command' : target }, say)) note(say);
-  };
-  const close = async () => { if (await cmd.send('comms.close', {}, 'Close channel')) note('Channel closed'); };
+  const hail = (priority) => cmd.send('comms.hail', { target: priority ? 'command' : target });
+  const close = () => cmd.send('comms.close');
   const hailing = read(src, 'hailing') >= 0.5;
   useKeys({ h: () => (hailing ? close() : hail(false)) });
   const sys = (ks) => worst(ks.map((k) => levelOf(k, read(src, k))));
@@ -149,7 +152,7 @@ export default function Comms({ shipId = 1 }) {
       <LitButton color="blue" label={`Hail ${tgt.code}`} keyCap="H" onClick={() => hail(false)} {...cmd.bind('comms.hail')} lit={hailing} />
       <LitButton color="white" label="Close channel" onClick={close} {...cmd.bind('comms.close')} />
       <LitButton color="red" label="Priority one" onClick={() => hail(true)} {...cmd.bind('comms.hail')} />
-      <LitButton color="yellow" label="Intercom" pressed={intercom} onClick={() => { setIntercom(!intercom); note(intercom ? 'Intercom closed' : 'Intercom open to all decks'); }} title="Ship-wide announcement channel, local to this console" />
+      <LitButton color="yellow" label="Intercom" pressed={intercom} onClick={() => { if (!intercom) play('intercom'); setIntercom(!intercom); }} title="Ship-wide announcement channel, local to this console" />
     </ConsoleStrip>
   );
 
@@ -173,7 +176,7 @@ export default function Comms({ shipId = 1 }) {
         <SignalScope src={src} />
       </Monitor>
       <Monitor title="Message log" meta="priority · from · text" state={st('comms')} className="st-c6" style={{ '--mh': '260px' }}>
-        <Log src={src} local={local} />
+        <Log src={src} />
       </Monitor>
     </Station>
   );

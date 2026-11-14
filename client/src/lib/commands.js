@@ -18,7 +18,7 @@ const bump = (type, d) => {
   notify();
 };
 
-/** Every command's outcome: { type, payload, ok, rtt, error, at }. The shell shows these as "aye" lines. */
+/** Every command's outcome: { type, payload, ok, rtt, text, error, at }; `text` is the server's own words. The shell shows these as "aye" lines. */
 export const onCommandResult = (fn) => { resultListeners.add(fn); return () => resultListeners.delete(fn); };
 
 /** Sends a command; resolves { ok, rtt } or { ok: false, error }. Never throws. */
@@ -28,7 +28,7 @@ export async function sendCommand(type, payload = {}, shipId = 1) {
   let out;
   try {
     const res = await api(`/api/ships/${shipId}/command`, { method: 'POST', body: { type, ...payload } });
-    out = { ok: true, rtt: Math.round(performance.now() - t0), at: res?.at ?? Date.now() };
+    out = { ok: true, rtt: Math.round(performance.now() - t0), at: res?.at ?? Date.now(), text: res?.text };
     play(CUE[type] ?? 'ack');
   } catch (e) {
     out = { ok: false, error: e.message, at: Date.now() };

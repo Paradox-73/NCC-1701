@@ -81,6 +81,8 @@
 .view { flex: 1; display: flex; flex-direction: column; min-height: 0; animation: rise var(--t-station) var(--ease-in) both; }
 .view > * { flex: 1; }
 .view--bridge { animation: none; }
+/* a station fills the screen under the top bar on desktop, so its rows of monitors have a height to share */
+@media (min-width: 1024px) { .view--station { flex: none; height: calc(100dvh - var(--topbar-h) - 2px); } }
 @keyframes rise { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: none; } }
 .lift-light { position: fixed; right: 0; bottom: 0; z-index: 70; width: 4px; height: 120px; pointer-events: none; opacity: 0;
   background: linear-gradient(0deg, transparent, var(--lit-amber) 50%, transparent); box-shadow: 0 0 16px var(--lit-amber);

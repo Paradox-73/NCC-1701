@@ -54,4 +54,4 @@ The hosted profile uses each source's `hostedHz` from `shared/registry.js`.
     npm run loadtest -- --sources 85 --hz 20 --clients 600 --seconds 60
     npm run loadtest -- --preset medium --seconds 30 --dup 0.05 --reorder 0.05 --invalid 0.02
 
-Each run prints a JSON summary and writes it to `loadtest/results/` (not committed).
+Each run prints a JSON summary and writes it to `loadtest/results/`. Two raw result files are committed there (`smoke-2026-11-14T13-09-13.json` and `medium-2026-11-14T13-11-01.json`, from a Windows laptop with the simulator embedded, so the numbers differ from the table above). To reproduce the smoke run, start the server as above and run `npm run loadtest:smoke -- --url http://localhost:4000`. It takes about 15 s of load plus a few seconds to start and report, and the medium run takes about 60 s.

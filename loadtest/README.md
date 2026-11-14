@@ -5,7 +5,7 @@ Starts N sources at H Hz and K dashboard clients against a running server and me
     npm run loadtest:smoke
     npm run loadtest -- --sources 40 --hz 10 --clients 100 --seconds 60 --url http://localhost:4000
 
-Options: `--preset smoke|small|medium|large`, `--sources`, `--first-source` (default: above the registry sources, so a running simulator is not replaced), `--hz`, `--clients`, `--seconds`, `--groups warp,shields`, `--watch 1-3`, `--dup`, `--reorder`, `--invalid` (injected share of samples), `--rogue auth|invalid|flood` (runs one phase of the rogue source against `/ingest` instead of a load run, with `--seconds`), `--key`, `--user`, `--password` (default `command` / `ncc-command`, a role with `admin`, so metrics can be read). Each run writes JSON to `loadtest/results/` (not committed).
+Options: `--preset smoke|small|medium|large`, `--sources`, `--first-source` (default: above the registry sources, so a running simulator is not replaced), `--hz`, `--clients`, `--seconds`, `--groups warp,shields`, `--watch 1-3`, `--dup`, `--reorder`, `--invalid` (injected share of samples), `--rogue auth|invalid|flood` (runs one phase of the rogue source against `/ingest` instead of a load run, with `--seconds`), `--key`, `--user`, `--password` (default `command` / `ncc-command`, a role with `admin`, so metrics can be read). Each run writes JSON to `loadtest/results/` (only the two named in `docs/PERFORMANCE.md` are committed).
 
 ## Smoke run on the starship registry (14 Nov 2026, laptop, no Docker stack)
 

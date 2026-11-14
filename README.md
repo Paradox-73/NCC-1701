@@ -304,7 +304,7 @@ npm run loadtest -- --preset large
 
 ## Performance and stress-test results (Warp trials)
 
-Run on one laptop with the full simulator in the same process, 14 Nov 2026. Each source sends the `helm` and `warp` channels over `/ingest`. Each dashboard client signs in as Starfleet Command, subscribes to every load-test source and times each sample from its source timestamp to arrival. Setup details and caveats: [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md).
+Run on one Apple M2 laptop (8 cores, 8 GB) with the full simulator in the same process, 14 Nov 2026. Each source sends the `helm` and `warp` channels over `/ingest`. Each dashboard client signs in as Starfleet Command, subscribes to every load-test source and times each sample from its source timestamp to arrival. Setup details and caveats: [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md).
 
 | Run | Sources x rate | Dashboard clients connected | Samples accepted / s | End to end p50 / p95 / p99 | Errors |
 |---|---|---|---|---|---|
@@ -329,7 +329,7 @@ npm run loadtest -- --sources 85 --hz 20 --clients 600 --seconds 60
 npm run loadtest -- --preset medium --seconds 30 --dup 0.05 --reorder 0.05 --invalid 0.02
 ```
 
-Each run prints a JSON summary and writes it to [`loadtest/results/`](loadtest/results). Two raw results are committed there, from a Windows laptop, so their numbers differ from the table.
+Each run prints a JSON summary and writes it to [`loadtest/results/`](loadtest/results). The raw result behind every row of the table is committed there (all from the Apple M2 laptop; [`docs/PERFORMANCE.md`](docs/PERFORMANCE.md) maps each row to its file), along with a later rerun of smoke and medium on a Windows laptop, whose numbers differ.
 
 ## Bonus items (Commendations)
 

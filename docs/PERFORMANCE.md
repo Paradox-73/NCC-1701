@@ -54,4 +54,14 @@ The hosted profile uses each source's `hostedHz` from `shared/registry.js`.
     npm run loadtest -- --sources 85 --hz 20 --clients 600 --seconds 60
     npm run loadtest -- --preset medium --seconds 30 --dup 0.05 --reorder 0.05 --invalid 0.02
 
-Each run prints a JSON summary and writes it to `loadtest/results/`. Two raw result files are committed there (`smoke-2026-11-14T13-09-13.json` and `medium-2026-11-14T13-11-01.json`, from a Windows laptop with the simulator embedded, so the numbers differ from the table above). To reproduce the smoke run, start the server as above and run `npm run loadtest:smoke -- --url http://localhost:4000`. It takes about 15 s of load plus a few seconds to start and report, and the medium run takes about 60 s.
+Each run prints a JSON summary and writes it to `loadtest/results/`. The raw results behind every row of the table are committed there, all from the Apple M2 laptop described above:
+
+| Row | File |
+|---|---|
+| `smoke` | `smoke-2026-11-14T08-32-29.json` |
+| `medium` | `medium-2026-11-14T08-34-17.json` |
+| `large` | `large-2026-11-14T08-35-29.json` |
+| stretch | `custom-2026-11-14T08-38-03.json` (the CLI names a run without a preset `custom`) |
+| fault injection | `medium-2026-11-14T08-37-09.json` (its `injected` and `injectionCheck` fields hold the counts above) |
+
+Two more files, `smoke-2026-11-14T13-09-13.json` and `medium-2026-11-14T13-11-01.json`, are a later rerun on a Windows laptop with the simulator embedded, so their numbers differ from the table. To reproduce the smoke run, start the server as above and run `npm run loadtest:smoke -- --url http://localhost:4000`. It takes about 15 s of load plus a few seconds to start and report, and the medium run takes about 60 s.

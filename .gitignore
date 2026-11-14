@@ -9,3 +9,8 @@ coverage/
 loadtest/results/*
 !loadtest/results/smoke-2026-11-14T13-09-13.json
 !loadtest/results/medium-2026-11-14T13-11-01.json
+!loadtest/results/smoke-2026-11-14T08-32-29.json
+!loadtest/results/medium-2026-11-14T08-34-17.json
+!loadtest/results/large-2026-11-14T08-35-29.json
+!loadtest/results/medium-2026-11-14T08-37-09.json
+!loadtest/results/custom-2026-11-14T08-38-03.json

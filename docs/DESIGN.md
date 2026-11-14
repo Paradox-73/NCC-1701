@@ -390,7 +390,9 @@ Stack: `three` 0.187.0, `@react-three/fiber` 9.8.2, `@react-three/drei` 10.7.9. 
 
 ### The ship model
 
-Primary: "USS Enterprise (TOS 1966)" by AleixoAlonso on Sketchfab, CC Attribution, 21,126 triangles, 1.16 MB as GLB, 548 KB as glTF. https://sketchfab.com/3d-models/uss-enterprise-tos-1966-d48eeab56cc3472c99c1780202b7a5f8
+Already on `main`: a ship built from primitives (`client/src/three/Starship.jsx`) with warp glow, a shield bubble per quadrant, damage tint per section and alert lighting, lazy-loaded through `StarshipView.jsx` with the SVG fallback `Starship2D.jsx`. Keep it. It is the fallback if the downloaded model fails to load, and it already does the effects listed under Scene parts. The Sketchfab model below is an upgrade for the hero shots, allowed under the asset policy; put it behind the same props so either one renders.
+
+Upgrade: "USS Enterprise (TOS 1966)" by AleixoAlonso on Sketchfab, CC Attribution, 21,126 triangles, 1.16 MB as GLB, 548 KB as glTF. https://sketchfab.com/3d-models/uss-enterprise-tos-1966-d48eeab56cc3472c99c1780202b7a5f8
 
 Backups, both CC Attribution:
 - "Classic U.S.S. Enterprise from Star Trek TOS" by Major Stress, 13,899 triangles, 8.9 MB as GLB because of its textures. https://sketchfab.com/3d-models/classic-uss-enterprise-from-star-trek-tos-acfe41446dc149848559e5542f59cef9
@@ -400,7 +402,7 @@ Pipeline: download the glTF, then run `npx gltfjsx model.glb --transform`. It wr
 
 The task-force ships are the same Constitution-class model with their own registry label (a drei `<Text>` or a canvas sprite) and their own condition ring. Optional contacts, both CC Attribution: "Classic Romulan Bird of Prey from ST:TOS" by Major Stress, 4,389 triangles, 4.5 MB as GLB before compression, for the Balance of Terror scenario (https://sketchfab.com/3d-models/classic-romulan-bird-of-prey-from-sttos-bb741e47650c4571b747c947567a5c6f); without it, a contact is a glowing sprite.
 
-If no model can be used, build the silhouette from primitives: a flattened cylinder for the saucer, a small dome for the bridge, a tapered cylinder for the engineering hull, a cone with an emissive copper disc for the deflector dish, two angled boxes for the pylons, and two cylinders for the nacelles with emissive red-orange spheres at the front. About 1,000 triangles.
+The primitives ship on `main` covers the case where no model can be used.
 
 ### Scene parts
 
@@ -454,7 +456,7 @@ Adapted from the disclaimer the franchise's own fan-production guidelines requir
 
 Cut from the top of this list first:
 
-1. The primitive-built ship, if the Sketchfab model works.
+1. The Sketchfab ship upgrade; the primitives ship on `main` stays.
 2. The Romulan model; use the contact sprite.
 3. The bridge ambience loop.
 4. The planet's atmosphere shell; keep a plain sphere.

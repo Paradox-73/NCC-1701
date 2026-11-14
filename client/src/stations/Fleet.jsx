@@ -9,7 +9,7 @@ import { commandWords } from '../lib/commands.js';
 import { ship } from '../lib/ship.js';
 import { ackAlert, ackAlerts, state } from '../lib/store.js';
 import { SHIPS, alertFlagOf, conditionOf, isOpen, linkOf, posOf, read, ringOf, shipCode, shipName, stardate, useCommand } from './parts/data.js';
-import { Chip, ConsoleStrip, J, LevelChip, LitButton, Monitor, Num, Station } from '../ui/index.js';
+import { Chip, ConsoleStrip, Headline, J, LevelChip, LitButton, Monitor, Num, Station } from '../ui/index.js';
 import { C, clamp, fmt, useCanvas } from './parts/ui.jsx';
 
 // a ship's condition is the server's, from its overview row; null until the server has heard from the ship
@@ -192,7 +192,7 @@ function Scenarios({ cmd }) {
     : `${s.title}: ${STATE_WORD[s.state] ?? s.state} · ${fmt(Math.min(t, len), 0)} of ${fmt(len, 0)} s${live ? ` · step ${s.step} of ${s.steps}` : ''}${wait ? ` · waiting for ${commandWords(wait.type, wait)} (${fmt(wait.secondsLeft, 0)} s)` : ''}`;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '10px 12px', gap: 10 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', alignContent: 'start', gap: 8, flex: 1, minHeight: 0, overflowY: 'auto' }}>
         {SCENARIO_LIST.map((x) => {
           const on = live && s.id === x.id;
           return (
@@ -217,7 +217,7 @@ function Scenarios({ cmd }) {
   );
 }
 
-/** Starfleet Command (DESIGN.md "Starfleet Command"): the whole task force, the fleet log, server health and scenarios. */
+/** Starfleet Command (DESIGN.md "Starfleet Command", The 1966 set): the whole task force, the fleet log, server health and scenarios. */
 export default function Fleet({ onOpenShip }) {
   useTick();
   const navigate = useNavigate();
@@ -236,32 +236,47 @@ export default function Fleet({ onOpenShip }) {
     await ackAlerts(state.alerts.filter((a) => isOpen(a) && a.severity === 'warn').map((a) => a.id));
     setAcking(false);
   };
+  const linked = ids.length - lost;
+  const openAlerts = state.alerts.filter(isOpen);
+  const openLv = openAlerts.some((a) => a.severity === 'critical') ? 'crit' : openAlerts.length ? 'warn' : null;
+  const running = ship.scenario?.state === 'running' || ship.scenario?.state === 'awaiting';
+  const scenarios = admin || user?.role === 'captain';
   const desk = (
     <ConsoleStrip seed={59} jewels={ids.map((id) => J(shipCode(id), linkOf(id) === 'lost' ? 'crit' : alertFlagOf(id), linkOf(id) === 'unknown' ? 'off' : 'live'))}>
-      <LitButton color="red" label="Stop scenario" onClick={() => cmd.send('scenario.stop')} {...cmd.bind('scenario.stop')} disabled={!cmd.can('scenario.stop') || !(ship.scenario?.state === 'running' || ship.scenario?.state === 'awaiting')} />
+      <LitButton color="red" label="Stop scenario" onClick={() => cmd.send('scenario.stop')} {...cmd.bind('scenario.stop')} disabled={!cmd.can('scenario.stop') || !running} />
       <LitButton color="white" label="Ack all yellow" onClick={ackYellow} pending={acking} disabled={!user?.canAck || acking} />
     </ConsoleStrip>
   );
+  // The 1966 set (DESIGN.md): the sector map, then task force, fleet log and operations as headlines. The ship cards, the
+  // full fleet log, the scenario launcher and the server metrics are pages of those monitors.
   return (
-    <Station name="Starfleet Command" division="fleet" ship={null} rows="minmax(250px, 1.3fr) minmax(220px, 1fr) minmax(210px, auto)" desk={desk}
-      end={`${ids.length - lost} of ${ids.length} ships linked · ${fmt(state.rx, 0)} readings/s`}>
-      <Monitor title="Sector map" meta="task force · sector units" className="st-c7" style={{ '--mh': '340px' }}>
+    <Station name="Starfleet Command" division="fleet" ship={null} rows="minmax(280px, 1.2fr) minmax(250px, 1fr)" desk={desk}
+      end={`${linked} of ${ids.length} ships linked · ${fmt(state.rx, 0)} readings/s`}>
+      <Monitor title="Sector map" meta="task force · sector units" className="st-c8" index={0}>
         <SectorMap ids={ids} />
       </Monitor>
-      <Monitor title="Ship cards" meta={`${ids.length} ships · open a ship's history`} className="st-c5" style={{ gridRow: 'span 2' }}>
-        <div className="st-fill-scroll" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', alignContent: 'start', gap: 8, padding: 10, height: '100%' }}>
-          {ids.map((id) => <ShipCard key={id} id={id} onOpen={open} />)}
-        </div>
-      </Monitor>
-      <Monitor title="Fleet log" meta="alerts from every ship" className="st-c7" style={{ '--mh': '320px' }}>
-        <FleetLog canAck={!!user?.canAck} />
-      </Monitor>
-      <Monitor title="System" meta="server · 1 Hz" state={admin ? 'live' : 'restricted'} restricted="Server metrics: Starfleet Command only." className="st-c5" style={{ '--mh': '320px' }}>
-        <System />
-      </Monitor>
-      <Monitor title="Scenarios" meta="launcher and timeline" state={admin || user?.role === 'captain' ? 'live' : 'restricted'} restricted="Scenarios: captain and Starfleet Command only." className="st-c7">
-        <Scenarios cmd={cmd} />
-      </Monitor>
+      <Monitor title="Task force" status={lost ? 'crit' : 'ok'} className="st-c4" index={1}
+        views={[
+          { label: 'Linked', content: (
+            <Headline value={linked} unit={`of ${ids.length} linked`} level={lost ? 'crit' : null} crit={`${lost} LOST`} word={lost ? undefined : 'ALL LINKED'} />
+          ) },
+          { label: 'Ships', content: (
+            <div className="st-fill-scroll" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', alignContent: 'start', gap: 8, padding: 10, height: '100%' }}>
+              {ids.map((id) => <ShipCard key={id} id={id} onOpen={open} />)}
+            </div>
+          ) },
+        ]} />
+      <Monitor title="Fleet log" status={openLv ?? 'ok'} className="st-c6" index={2}
+        views={[
+          { label: 'Open', content: <Headline value={openAlerts.length} unit="open alerts" level={openLv} word={openAlerts.length ? undefined : 'ALL QUIET'} /> },
+          { label: 'Log', content: <FleetLog canAck={!!user?.canAck} /> },
+        ]} />
+      <Monitor title="Operations" state={scenarios ? 'live' : 'restricted'} restricted="Scenarios and server metrics: captain and Starfleet Command only." className="st-c6" index={3}
+        views={[
+          { label: 'Rate', content: <Headline value={state.rx} unit="readings / s" word={running ? (ship.scenario.title ?? 'SCENARIO').toUpperCase() : undefined} /> },
+          { label: 'Scenarios', content: <Scenarios cmd={cmd} /> },
+          { label: 'System', content: admin ? <System /> : <div className="st-blank"><b>RESTRICTED</b><span>Server metrics: Starfleet Command only.</span></div> },
+        ]} />
     </Station>
   );
 }

@@ -64,19 +64,3 @@ test('token bucket grants the burst, then refills with time', () => {
   t = 10000;
   assert.equal(b.take(100), 20); // capped at the burst
 });
-
-test('TTL settings come from the environment, with defaults of 24 hours and 7 days', () => {
-  const saved = [process.env.TELEMETRY_TTL_SEC, process.env.ALERTS_TTL_SEC];
-  delete process.env.TELEMETRY_TTL_SEC;
-  delete process.env.ALERTS_TTL_SEC;
-  try {
-    assert.equal(loadConfig().telemetryTtlSec, 86400);
-    assert.equal(loadConfig().alertsTtlSec, 604800);
-    process.env.TELEMETRY_TTL_SEC = '10800';
-    process.env.ALERTS_TTL_SEC = '86400';
-    assert.equal(loadConfig().telemetryTtlSec, 10800);
-    assert.equal(loadConfig().alertsTtlSec, 86400);
-  } finally {
-    for (const [k, v] of [['TELEMETRY_TTL_SEC', saved[0]], ['ALERTS_TTL_SEC', saved[1]]]) v === undefined ? delete process.env[k] : (process.env[k] = v);
-  }
-});

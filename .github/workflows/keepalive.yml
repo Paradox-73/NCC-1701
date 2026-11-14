@@ -1,0 +1,16 @@
+# Render's free web service sleeps after 15 minutes without traffic, and the embedded simulator sleeps with it.
+# This pings the health route so the bridge is live when someone opens it. Set the repository variable
+# SERVER_URL (Settings → Secrets and variables → Actions → Variables) to the Render URL; without it this does nothing.
+# One always-on service uses about 720 of Render's 750 free hours a month.
+name: keep the server awake
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+jobs:
+  ping:
+    if: vars.SERVER_URL != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - run: curl -fsS --retry 3 --retry-delay 20 --max-time 90 "${{ vars.SERVER_URL }}/api/health"

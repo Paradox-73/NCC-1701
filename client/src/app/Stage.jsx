@@ -98,7 +98,7 @@ function ColdOpen({ intro, onStart, onDone }) {
   useEffect(() => () => stop.current?.(), []);
   useEffect(() => {
     if (shown == null) return undefined;
-    const onKey = (e) => { if (!['Shift', 'Control', 'Alt', 'Meta', 'Tab', 'm', 'M'].includes(e.key)) skip(); };
+    const onKey = (e) => { if (!e.repeat && !['Shift', 'Control', 'Alt', 'Meta', 'Tab', 'm', 'M'].includes(e.key)) skip(); }; // a held Enter from the gate is not a skip
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [shown == null, skip]); // eslint-disable-line react-hooks/exhaustive-deps

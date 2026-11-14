@@ -35,7 +35,7 @@ docker compose up --build
 
 3. Board, take the turbolift to the bridge, then press **SCENARIO** and run *Balance of Terror*. When the ghost ship appears, hit **RED ALERT** (`R`), then fire phasers with the button the scenario lights up.
 
-Sound is off by default. Press `M` to turn it on.
+Sound comes on with the Engage click on the opening screen. `M` or the speaker icon in the top bar mutes and unmutes it.
 
 ## Features
 

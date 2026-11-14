@@ -34,6 +34,12 @@ function ensureContext() {
   }
 }
 
+// A reload with sound saved as on has no AudioContext yet, and the browser only allows one inside a user gesture, so
+// the first click or key after load creates it (and any later one resumes a context the browser suspended).
+if (typeof window !== 'undefined') {
+  for (const ev of ['pointerdown', 'keydown']) window.addEventListener(ev, () => { if (enabled) ensureContext(); }, true);
+}
+
 export const soundOn = () => enabled;
 export const soundChosen = () => chosen;
 export function setSound(on) {

@@ -13,6 +13,8 @@
   font: 400 10px/1 var(--font-mono); color: var(--ink2); border: 1px solid var(--line2); border-radius: 3px; background: #ffffff06;
   white-space: nowrap;
 }
+/* a phone or tablet has no keyboard to press them with: no key caps anywhere (a touch laptop keeps them, it has a fine pointer) */
+@media (hover: none) and (pointer: coarse) { .keycap, .kbd-only { display: none !important; } }
 
 /* ---- lit button: a real control, a translucent jellybean block set into a black plate ------------------------
    The facets are two gradients over the lens colour: a bright top bevel and darker side faces (RESEARCH.md). */

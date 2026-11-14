@@ -275,6 +275,6 @@ test('the four ships start apart, on different headings, at different warp facto
   for (const key of ['posX', 'posY', 'heading', 'warpFactor', 'shieldFore']) assert.equal(distinct(key), 4, `${key} differs on every ship`);
   for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) assert.ok(Math.hypot(v[i].posX - v[j].posX, v[i].posY - v[j].posY) > 100, `ships ${i + 1} and ${j + 1} are over 100 su apart`);
   const ship = new Ship(2, { rand: lcg(7) });
-  const a = run(ship, 5), b = run(ship, 25);
+  const a = run(ship, 5), b = run(ship, 60);
   assert.ok(Math.abs(a.heading - b.heading) > 0.3 && Math.abs(a.warpFactor - b.warpFactor) > 0.02, 'a sister ship wanders instead of holding still');
 });

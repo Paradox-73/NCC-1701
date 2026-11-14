@@ -76,7 +76,7 @@ function ColdOpen({ intro, onStart, onDone }) {
   const skip = useCallback(() => { intro.fadeOut(900); onDone(); }, [intro, onDone]);
 
   const alive = useRef(true);
-  useEffect(() => () => { alive.current = false; }, []);
+  useEffect(() => { alive.current = true; return () => { alive.current = false; }; }, []); // set again on remount (StrictMode runs effects twice)
   const engage = async () => {
     if (!soundChosen()) setSound(true); // the Engage click is the gesture browsers need; a chosen mute stays muted
     const t0 = performance.now();

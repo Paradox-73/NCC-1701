@@ -99,16 +99,17 @@ export function SweepScope({ contacts = [], className, label = 'Sensor scope' })
   data.current = contacts;
   useEffect(() => {
     const el = canvas.current;
+    const box = host.current; // held here: the ref is already null when a last resize lands during unmount
     const ctx = el.getContext('2d');
     let size = 0;
     const fit = () => {
       const dpr = Math.min(2, window.devicePixelRatio || 1);
-      size = host.current.clientWidth;
+      size = box.clientWidth;
       el.width = el.height = Math.max(1, Math.round(size * dpr));
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
     const ro = new ResizeObserver(fit);
-    ro.observe(host.current);
+    ro.observe(box);
     fit();
     const still = reducedMotion();
     let lastStill = -1e9;

@@ -24,7 +24,14 @@ const ou = (x, mu, theta, sigma, dt, z) => {
   return mu + (x - mu) * e + sigma * Math.sqrt((1 - e * e) / (2 * theta)) * z;
 };
 
-const START = { 1: [0, 0], 2: [60, 40], 3: [-80, 55], 4: [35, -90] };
+// Each ship's own start: position (su), heading, cruise warp, the shield level it settles at, and how far its warp factor
+// and heading wander (a sine of about 45 s, a different phase per ship). Ship 1 is the flagship and holds still.
+const PROFILE = {
+  1: { pos: [0, 0], heading: 90, warp: 6, shield: 100, warpDrift: 0, headingDrift: 0 },
+  2: { pos: [260, 170], heading: 35, warp: 7.2, shield: 97.5, warpDrift: 0.12, headingDrift: 2.5 },
+  3: { pos: [-310, 220], heading: 200, warp: 4.8, shield: 95, warpDrift: 0.1, headingDrift: 3 },
+  4: { pos: [180, -340], heading: 310, warp: 5.5, shield: 98, warpDrift: 0.15, headingDrift: 2 },
+};
 
 export class Ship {
   constructor(sourceId, { rand = Math.random } = {}) {
@@ -42,13 +49,14 @@ export class Ship {
     this.condition = 'normal';
     this.shieldsUp = false;
     this.preset = 'cruise';
-    this.order = { warp: 6, impulse: 0, heading: 90 };
-    const [x, y] = START[sourceId] ?? [0, 0];
+    const p = (this.profile = PROFILE[sourceId] ?? PROFILE[1]);
+    this.order = { warp: p.warp, impulse: 0, heading: p.heading };
+    const [x, y] = p.pos;
     const s = (this.s = {
-      warp: 6, impulse: 0, heading: 90, posX: x, posY: y,
-      reaction: 64, dil: 98, dilTemp: 690, chamber: 44, impR: 0, impTemp: 300, inter: 0.8, field: 99,
-      power: 82, al: [...PRESETS.cruise], battery: 100,
-      sh: [100, 100, 100, 100], load: 10, phaser: { Fore: 100, Aft: 100 }, heat: 0, cooldown: 0, torpedoes: 24, tubes: 2, tubeClock: 0,
+      warp: p.warp, impulse: 0, heading: p.heading, posX: x, posY: y,
+      reaction: 10 + 9 * p.warp, dil: 98, dilTemp: 450 + 40 * p.warp, chamber: 20 + 4 * p.warp, impR: 0, impTemp: 300, inter: 0.8, field: 99,
+      power: 40 + 7 * p.warp, al: [...PRESETS.cruise], battery: 100,
+      sh: Array(4).fill(p.shield), load: 10, phaser: { Fore: 100, Aft: 100 }, heat: 0, cooldown: 0, torpedoes: 24, tubes: 2, tubeClock: 0,
       hull: 100, hullHeal: 0, hullTemp: -10, stress: 10, kick: 0,
       o2: Array(DECKS).fill(20.9), co2: Array(DECKS).fill(600), temp: Array(DECKS).fill(21.5), press: Array(DECKS).fill(101.3), grav: Array(DECKS).fill(1),
       lr: 98.5, sr: 98.5, ion: 4, snr: 2,
@@ -199,7 +207,7 @@ export class Ship {
 
   reset(over = 10) {
     const s = this.s;
-    this.order = { warp: 6, impulse: 0, heading: this.order.heading };
+    this.order = { warp: this.profile.warp, impulse: 0, heading: this.order.heading };
     this.setCondition('normal');
     this.crew.reset(over);
     s.contact = { n: 0, bearing: 0, range: 1_000_000 };
@@ -229,10 +237,11 @@ export class Ship {
     }
 
     // helm
-    s.warp = lag(s.warp, o.warp, 2, dt);
+    const wander = Math.sin(this.t / 45 + this.sourceId * 2);
+    s.warp = lag(s.warp, o.warp > 0 ? o.warp + this.profile.warpDrift * wander : 0, 2, dt);
     if (o.warp === 0 && s.warp < 0.02) s.warp = 0;
     s.impulse = lag(s.impulse, o.impulse, 1, dt);
-    const dh = ((o.heading - s.heading + 540) % 360) - 180;
+    const dh = ((o.heading + this.profile.headingDrift * wander - s.heading + 540) % 360) - 180;
     s.heading = (s.heading + clamp(dh, -3 * dt, 3 * dt) + 360) % 360;
     nat.warpFactor = s.warp > 0.005 ? Math.max(0, s.warp + 0.01 * g()) : 0;
     nat.impulse = s.impulse;
@@ -266,8 +275,9 @@ export class Ship {
 
     // shields
     for (let i = 0; i < 4; i++) {
-      s.sh[i] = Math.min(100, s.sh[i] + 2 * dt);
-      nat[`shield${QUADS[i]}`] = Math.min(99.9, s.sh[i] >= 99.9 ? 99.5 + 0.25 * g() : s.sh[i]);
+      const cap = this.profile.shield;
+      s.sh[i] = Math.min(cap, s.sh[i] + 2 * dt);
+      nat[`shield${QUADS[i]}`] = Math.min(99.9, s.sh[i] >= cap - 0.1 ? Math.min(99.9, cap - 0.5 + 0.25 * g()) : s.sh[i]);
     }
     s.load = lag(s.load, this.shieldsUp ? 35 : 10, 4, dt);
     nat.shieldsUp = this.shieldsUp ? 1 : 0;

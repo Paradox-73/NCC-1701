@@ -268,3 +268,13 @@ test('unknown commands are refused; the old fault command still moves one channe
   assert.ok(ship.step(0.1, Date.now() + 5100).chamberTemp < 50);
   assert.equal(channelsOf(1).length, 121);
 });
+
+test('the four ships start apart, on different headings, at different warp factors and shield levels, and keep drifting', () => {
+  const v = [1, 2, 3, 4].map((id) => run(new Ship(id, { rand: lcg(id) }), 30));
+  const distinct = (key, digits = 1) => new Set(v.map((x) => x[key].toFixed(digits))).size;
+  for (const key of ['posX', 'posY', 'heading', 'warpFactor', 'shieldFore']) assert.equal(distinct(key), 4, `${key} differs on every ship`);
+  for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) assert.ok(Math.hypot(v[i].posX - v[j].posX, v[i].posY - v[j].posY) > 100, `ships ${i + 1} and ${j + 1} are over 100 su apart`);
+  const ship = new Ship(2, { rand: lcg(7) });
+  const a = run(ship, 5), b = run(ship, 25);
+  assert.ok(Math.abs(a.heading - b.heading) > 0.3 && Math.abs(a.warpFactor - b.warpFactor) > 0.02, 'a sister ship wanders instead of holding still');
+});

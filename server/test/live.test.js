@@ -125,7 +125,8 @@ test('everyone gets the overview with the live data rate; only Starfleet Command
   await emitAck(source, EVENTS.BATCH, { sourceId: 2, samples: [1, 2].map(sample) });
   await sleep(1400);
   const o = cap.got.overview.at(-1);
-  assert.ok(o.sources.some(([id, flags]) => id === 2 && (flags & 1) === 1));
+  assert.equal(o.sources.some(([id]) => id === 2), false, 'the captain has no row for a sister ship');
+  assert.ok(cmd.got.overview.at(-1).sources.some(([id, flags]) => id === 2 && (flags & 1) === 1));
   assert.equal(typeof o.rx, 'number');
   assert.equal(cap.got.metrics.length, 0);
   assert.ok(cmd.got.metrics.length > 0);

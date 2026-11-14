@@ -1,8 +1,14 @@
-import { CONDITIONS, EVENTS, GROUP_CHANNELS, SHIP_IDS, channelIndex, groupsOf, isCrewSource } from '@ncc/shared/schema.js';
+import { CONDITIONS, EVENTS, GROUP_CHANNELS, ROLES, SHIP_IDS, canSeeGroup, channelIndex, groupsOf, isCrewSource } from '@ncc/shared/schema.js';
 
 // Column of each group's channels in a packed sample, per source kind (the first ship and the first crew hub stand for their kind)
 const IDX = Object.fromEntries([1, 11].map((id) => [isCrewSource(id) ? 'crew' : 'ship', Object.fromEntries(groupsOf(id).map((g) => [g, GROUP_CHANNELS[g].map((k) => channelIndex(id)[k])]))]));
 const kindName = (sourceId) => (isCrewSource(sourceId) ? 'crew' : 'ship');
+
+/** A role's view of the overview: only the ships it may see, with the helm columns (warp, position, heading) blank without the helm group and the shield column blank without the shields group. */
+export function rowsForRole(rows, role) {
+  const helm = canSeeGroup(role, 'helm'), shields = canSeeGroup(role, 'shields');
+  return rows.filter((r) => ROLES[role].ships.includes(r[0])).map(([id, flags, cond, warp, shield, x, y, heading]) => [id, flags, cond, helm ? warp : 0, shields ? shield : 0, helm ? x : 0, helm ? y : 0, helm ? heading : 0]);
+}
 
 /**
  * Owns the frame loop (FRAME_MS), the 200 ms overview and the 1 Hz metrics emit.
@@ -70,8 +76,11 @@ export class Broadcaster {
    * drops it instead of queueing it. Only the registry's ships get a row; crew hubs have none and their ship's row carries the alert flags.
    */
   sendOverview() {
-    if (!this.nsp.adapter.rooms.get('overview')?.size) return;
-    this.nsp.to('overview').volatile.emit(EVENTS.OVERVIEW, { ts: Date.now(), sources: this.overviewRows(), rx: this.rxRate });
+    const rows = this.overviewRows();
+    for (const role of Object.keys(ROLES)) {
+      if (!this.nsp.adapter.rooms.get(`overview:${role}`)?.size) continue;
+      this.nsp.to(`overview:${role}`).volatile.emit(EVENTS.OVERVIEW, { ts: Date.now(), sources: rowsForRole(rows, role), rx: this.rxRate });
+    }
   }
 
   overviewRows() {

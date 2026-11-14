@@ -7,12 +7,13 @@ import { STATIONS, PAGES, canEnter, screenOf } from './stations.js';
 // one lazy component per station file (client/src/stations/<Name>.jsx)
 const SCREENS = Object.fromEntries([...STATIONS, ...PAGES].filter((s) => s.screen).map((s) => [s.id, lazy(screenOf(s.screen))]));
 
+// a station file that failed to load (a tab left open across a redeploy) or a screen that crashed
 class Boundary extends Component {
   state = { error: null };
   static getDerivedStateFromError(error) { return { error }; }
   render() {
     if (!this.state.error) return this.props.children;
-    return <div className="station-msg"><Jewel status="crit" label="Station fault" /><b className="display">Station fault</b><span>{this.state.error.message}</span></div>;
+    return <div className="station-msg"><Jewel status="crit" label="Station fault" /><b className="display">This station failed to load</b><LitButton color="white" label="Reload" onClick={() => location.reload()} /></div>;
   }
 }
 

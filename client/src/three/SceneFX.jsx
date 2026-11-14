@@ -119,7 +119,7 @@ const ZOOM = { near: 1, rest: 1.1, far: 2 }; // login camera distances, in multi
 // or, below 1024 px, the top 42 % above the console. x, y: the view offset that centres the ship there; fit: the camera
 // distance at which the ship, turned any way, just fits inside it.
 function loginSpace({ width, height }, fov) {
-  const side = width >= 1024;
+  const side = !matchMedia('(max-width: 1023px)').matches; // the CSS's own test: the canvas width here is rounded
   const half = ((side ? Math.min(width / 2, height) : Math.min(width, height * 0.42)) / 2) * 0.95; // px, with a margin
   const k = (half / (height / 2)) * Math.tan((fov * Math.PI) / 360); // tan of the angle that half subtends at the camera
   return { x: side ? width / 4 : 0, y: side ? 0 : height * 0.29, fit: SHIP_RADIUS * Math.sqrt(1 + 1 / (k * k)) };

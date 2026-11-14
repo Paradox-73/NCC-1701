@@ -390,7 +390,7 @@ Stack: `three` 0.187.0, `@react-three/fiber` 9.8.2, `@react-three/drei` 10.7.9. 
 
 ### The ship model
 
-Already on `main`: a ship built from primitives (`client/src/three/Starship.jsx`) with warp glow, a shield bubble per quadrant, damage tint per section and alert lighting, lazy-loaded through `StarshipView.jsx` with the SVG fallback `Starship2D.jsx`. Keep it. It is the fallback if the downloaded model fails to load, and it already does the effects listed under Scene parts. The Sketchfab model below is an upgrade for the hero shots, allowed under the asset policy; put it behind the same props so either one renders.
+Already on `main`: a ship built from primitives (`client/src/three/Starship.jsx`) with warp glow, a shield bubble per quadrant, damage tint per section and alert lighting, lazy-loaded through `StarshipView.jsx` with the SVG fallback `Starship2D.jsx`. Keep it. It is the fallback if the downloaded model fails to load. It already has the drei starfield, the shield bubble with hit flashes and the warp glow; the warp streaks, the planet, the weapons and the contacts under Scene parts are still to build. The Sketchfab model below is an upgrade for the hero shots, allowed under the asset policy; put it behind the same props so either one renders.
 
 Upgrade: "USS Enterprise (TOS 1966)" by AleixoAlonso on Sketchfab, CC Attribution, 21,126 triangles, 1.16 MB as GLB, 548 KB as glTF. https://sketchfab.com/3d-models/uss-enterprise-tos-1966-d48eeab56cc3472c99c1780202b7a5f8
 

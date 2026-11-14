@@ -30,7 +30,19 @@ Contrast ratios below were computed with the WCAG 2 formula against the surface 
 | `line` | `#FFFFFF14` | Hairlines |
 | `railing` | `#E0522A` | "Enterprise red", the orange-red of the set's railing. A 2 px line under the top bar, the frame of the main viewscreen, the edge of the captain's console. It is decoration and never a status. |
 
-Monitors are a `void` screen inside an 8 px `panel` bezel with a 14 px outer radius, an inner shadow `inset 0 0 24px #000` and a faint scanline overlay: `repeating-linear-gradient(0deg, #FFFFFF05 0 1px, transparent 1px 3px)`.
+The station set (`RESEARCH.md`, Bridge consoles) adds its own surfaces. They are the physical parts of a station, never a status:
+
+| Token | Hex | Use |
+|---|---|---|
+| `wall-hi`, `wall`, `wall-lo` | `#A4AAB1`, `#878D94`, `#646A71` | The grey wall behind a station's screens, lit from the top, with faint vertical panel seams. Never carries text directly: words on the wall sit on a black placard. |
+| `bay` | `#2A2F37` | The dark rounded recess each wall screen sits in |
+| `bezel` | `#C3C9CF` | The thin pale frame round a screen |
+| `desk`, `plate` | `#121315`, `#050506` | The sloped desk top, and the black plates the jellybeans and real controls sit in |
+| `kick` | `#7B8188` | The grey kick panel under the desk, with backlit grilles |
+
+Under red alert the wall, bay and kick panel take a red cast, like the set under its red lights.
+
+A wall screen is a near-black glass inside a 3 px `bezel` frame with a 12 px radius, set in a `bay` recess with a 17 px radius and an inner top shadow. Scan lines and a faint glass sheen lie over the picture: `repeating-linear-gradient(0deg, #FFFFFF07 0 1px, transparent 1px 3px)`.
 
 ### Text
 
@@ -122,26 +134,32 @@ An optional TOS-style display face for the wordmark and the ship registries only
 ## Space, shape and layout frame
 
 - Spacing steps: 4, 8, 12, 16, 24, 32, 48.
-- Radius: 3 px buttons and chips, the shape of the jellybean lenses; 10 px panels; 14 px monitors, the rounded screens of the set; full round for jewels.
+- Radius: 3-4 px buttons and chips, the shape of the jellybean lenses; 10 px panels; 12 px screens in 17 px bays, the rounded screens of the set; full round for jewels.
 - Touch layouts, narrower than 1024 px or with a coarse pointer, give every control a 44 px target.
 - No sideways page scroll at 390, 768, 1024, 1280 or 1440 px.
 
-Every station screen uses the same frame:
+Every station screen is the view from the operator's seat: the wall in front, the desk under your hands. The same frame, top to bottom, as on the set:
 
 ```
 +------------------------------------------------------------------------+
 | top bar: wordmark | station tabs | condition | stardate | rate | sound | user |
-+================================ railing (2 px, railing colour) =========+
-|                                                                        |
-|   monitor area: the station's own grid of monitors (12 columns)        |
-|                                                                        |
++================================ railing (2 px): the red line under the ceiling cove
+| [black placard: division pill, STATION, ship]              [end plate] |
+|  grey wall:  ( bay [screen] )  ( bay [screen] )  ( instrument housing ) |
+|              screens in their bays on 12 columns; the station's        |
+|              signature piece stands proud of the wall in pale grey      |
 +------------------------------------------------------------------------+
-| console strip, 112 px: real controls (lit buttons with key caps) |      |
-|                        decorative button grid | jewel row         |      |
+| readout band, 42 px: a window per system (lamp, name, word) | live      |
+|                      readouts | small backlit decorative windows        |
+| desk: real controls on a black plate | fan-shaped jellybean plates      |
++===================== red desk edge, 6 px ===============================+
+| kick panel, 15 px: grey with backlit grilles                            |
 +------------------------------------------------------------------------+
 ```
 
-Below 1024 px the monitors stack in one column, the decorative grid hides, and the console strip becomes a bottom bar with the station's four main controls. On phones the station tabs move into a menu.
+Signature pieces, one per station, each a `Monitor` with its own housing class: the astrogator and the targeting scanner on Helm, the hooded viewer on Science, the ear receiver and switch panel on Communications, the slide levers and the readout band on Engineering, the bed monitor on Sickbay.
+
+Below 1024 px the screens stack in one column; the readout band, the jellybean plates and the kick panel hide; the desk becomes a bottom bar holding every control in a wrapping grid, labels on two lines and no key caps. On phones the station tabs move into a menu, and the command feedback line drops from under the top bar instead of rising over the desk.
 
 ## Components
 
@@ -150,10 +168,12 @@ Below 1024 px the monitors stack in one column, the decorative grid hides, and t
 | `TopBar` | Wordmark, station tabs, condition lamp, stardate clock, live readings per second, sound toggle, user and role | Stardate comes from `DOMAIN.md`. Sticky. |
 | `StationTab` | Division pill and a Michroma label | Active tab: `accent` underline sitting on the railing line. A station the role may not use keeps its tab with a lock; it opens to restricted monitors, and the server refuses the data anyway. |
 | `ConditionLamp` | NORMAL, YELLOW ALERT or RED ALERT as a lamp and a word | The captain can click it to change condition. |
-| `Monitor` | A rounded screen in a bezel with a title strip | Slots: chart, readout, scope, list. States: power-on, live, awaiting telemetry (no reading yet, the words blink slowly), no signal, restricted. No signal shows a low-resolution static pattern and the words NO SIGNAL. Restricted shows a lock and "Medical records: CMO and captain only". One component in `client/src/ui` for the bridge and every station. |
+| `Monitor` | A wall screen: a rounded glass in a pale frame, set in a dark bay with its title above. `monitor--housing` turns the bay into a pale grey instrument housing for a signature piece | Slots: chart, readout, scope, list. States: power-on, live, awaiting telemetry (no reading yet, the words blink slowly), no signal, restricted. No signal shows a low-resolution static pattern and the words NO SIGNAL. Restricted shows a lock and "Medical records: CMO and captain only". One component in `client/src/ui` for the bridge and every station. |
 | `Readout` | Label, big number, unit, change arrow, 60 s sparkline with the normal band | The number ticks to its new value. Colour appears only past a limit. |
-| `LitButton` | A real control, a translucent lit rectangle with a Michroma label and a key cap | A real `<button>` with `aria-pressed` where it toggles. States: dim, lit, blinking while the server has not yet acknowledged the command, pressed. Colour from the lit-button table. |
+| `LitButton` | A real control, a translucent jellybean block with a bright top bevel and darker side facets, a Michroma label and a key cap, set into the desk's black plate | A real `<button>` with `aria-pressed` where it toggles. States: dim, lit, blinking while the server has not yet acknowledged the command, pressed. Colour from the lit-button table. |
 | `ButtonGrid` | Decorative rows of jellybeans that light up in random patterns | `aria-hidden`. Pattern seeded per grid. CSS animations only, no JavaScript per frame. |
+| `JellybeanPlate` | A fan-shaped black plate of lenses on the desk: round domes, square blocks and long faceted gems in the six lit colours | `aria-hidden` SVG, seeded. A lit lens stays lit between blinks, so reduced motion leaves a still, lit pattern. Yellow and red alert recolour it like `ButtonGrid`. |
+| `ReadoutWindows` | The readout band's small backlit windows: rows of gel strips, lamp matrices, yellow graph paper with a red line, bars, an orange curve, a schematic | `aria-hidden`, seeded, decoration only. Live readouts in the band go through `ConsoleStrip`'s `readouts`. |
 | `Jewel` | A small round faceted lamp, one per system | Steady dim green when nominal, slow blink in `warn`, fast blink in `crit`, dark with no signal. Always has a text label or `aria-label`. |
 | `SweepScope` | Round sensor scope with a rotating sweep and contact blips that fade | Canvas. One turn every 4 s. A cloaked contact shows as a faint, broken blip. |
 | `BarGauge` | Vertical segmented bar with the normal band and limit ticks | Nacelle output, shield quadrants, deck oxygen. |
@@ -161,9 +181,12 @@ Below 1024 px the monitors stack in one column, the decorative grid hides, and t
 | `ShieldRing` | Top-down silhouette of the ship with four arcs: fore, aft, port, starboard | Each arc coloured by strength; a hit makes the arc flare white for 300 ms. The hit comes from the scenario's `hit` fx event (`PROTOCOL.md`), not from a falling reading. |
 | `DeckStack` | Side view of the ship cut into deck bands | Each band coloured by its life-support status. Click a deck for oxygen, carbon dioxide, temperature, pressure and gravity. |
 | `CrewGrid` | 430 small cells grouped by deck, coloured by biosign deviation | Canvas. Medical and captain only. Hover or tap shows the crew member. |
-| `BiobedPanel` | Vertical scales with moving pointer arrows for heart rate, respiration, temperature, blood pressure and neural activity | Echoes the sickbay bed displays of the show. A dot pulses at the live heart rate. |
+| `BiobedPanel` | The bed monitor of the set: a red scale per vital with a lit band and a white triangle pointer, yellow labels (temp, brain, heart, lungs), two round lamps that flash at the live respiration and pulse | Numbers, units and the level word stay under each scale. Until someone is picked it shows the crew member furthest from their baseline, held for 15 s. |
 | `Viewscreen` | The main viewer, 3D with a 2D fallback | Frame in `railing` colour with a caption strip such as `MAIN VIEWER · FORWARD · ×1`. Modes in "At the helm". |
-| `CommsPanel` | Subspace channels with carrier strength bars, delay and loss, the hailing lamp, the message log | "Hailing frequencies open" lights green. |
+| `CommsPanel` | Subspace channels with carrier strength bars, delay and loss, the hailing lamp, the message log | "Hailing frequencies open" lights green. The hailing housing carries Uhura's ear receiver (its lamp lights and sends waves while hailing), a switch per subspace channel (up and lit when open) and the hail targets as toggle switches. |
+| `Astrogator` | Helm's plotting disc: backlit pale glass, a yellow centre plate, range rings every 50 sector units, a bearing ring, the trail in green, the course in red ending in the bright "flying point", the task force, the nearest contact's bearing | Canvas, north up, own ship at the centre. Its housing carries the sensors alert lamp (a red trapezoid lit with CONTACT CLOSING or COLLISION RANGE) and the chronometer windows: stardate, heading, speed, position, orbit. |
+| `TargetFan` | Navigation's targeting scanner: an amber fan 60° either side of the bow, the forward phaser arc in green, the nearest contact under a crosshair ring | Off the fan, an arrow names the side. The words under it give bearing, range and the level word. |
+| `SlideLevers` | Engineering's power allocation as red-knobbed slide levers, with the preset, total output and battery in readout windows | Display only (`role="meter"`): the server takes the CRUISE, COMBAT and EMERGENCY presets from the desk. |
 | `CaptainsLog` | Feed of alerts, commands and scenario steps, each as a log line with a stardate | Newest first, filter by severity, acknowledge button. |
 | `AlertBars` | The condition bars at the viewport edges | See Condition modes. |
 | `FleetMap` | 2D sector plot of the task force with headings, short trails and a condition ring per ship | Canvas, in the shared animation loop. |

@@ -8,7 +8,7 @@ How a reading gets from a simulated starship to the bridge screen: the system pa
 flowchart LR
   subgraph SIM["Simulator (Node, simulator/)"]
     PHY["4 ships: physics.js<br/>121 channels each, 20-50 Hz"]
-    CREW["4 sickbay hubs: crew.js<br/>430 crew, 7 vitals each, 1 Hz"]
+    CREW["4 sickbay hubs: crew.js<br/>430 crew, 4 vitals each, 1 Hz"]
     SND["Sender: batching, 4 un-acked max,<br/>credit backpressure, resend"]
     PHY --> SND
     CREW --> SND

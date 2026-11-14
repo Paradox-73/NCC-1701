@@ -1,0 +1,7 @@
+/* Bare placeholder styles. The design system replaces this file. */
+:root { color-scheme: dark; font-family: system-ui, sans-serif; background: #0b0c0e; color: #e8eaed; }
+body { margin: 0; }
+main { max-width: 960px; margin: 0 auto; padding: 16px; }
+table { border-collapse: collapse; }
+td, th { padding: 2px 12px 2px 0; text-align: left; }
+.mono { font-family: ui-monospace, monospace; }

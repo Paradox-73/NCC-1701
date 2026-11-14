@@ -68,7 +68,7 @@ function AlertList({ shipId }) {
             );
           }} />
       </div>
-      <p className="st-label" style={{ margin: 0, padding: '8px 12px', borderTop: '1px solid #ffffff0d' }}>Press A to acknowledge the newest alert. Acknowledging tells every console that someone has seen it.</p>
+      <p className="st-label kbd-only" style={{ margin: 0, padding: '8px 12px', borderTop: '1px solid #ffffff0d' }}>Press A to acknowledge the newest alert. Acknowledging tells every console that someone has seen it.</p>
     </div>
   );
 }

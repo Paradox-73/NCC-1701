@@ -8,7 +8,8 @@ const CUES = ['press', 'ack', 'hail', 'intercom', 'yellow', 'red', 'station', 'l
 const COOLDOWN = { press: 60, ack: 150, red: 4500, yellow: 2500, station: 300, lift: 1000 };
 
 let enabled = false;
-try { enabled = localStorage.getItem(KEY) === '1'; } catch { /* private mode */ }
+let chosen = false; // the user has turned sound on or off at least once
+try { const v = localStorage.getItem(KEY); enabled = v === '1'; chosen = v != null; } catch { /* private mode */ }
 let ctx = null;
 let master = null;
 let voices = 0;
@@ -34,8 +35,10 @@ function ensureContext() {
 }
 
 export const soundOn = () => enabled;
+export const soundChosen = () => chosen;
 export function setSound(on) {
   enabled = on;
+  chosen = true;
   try { localStorage.setItem(KEY, on ? '1' : '0'); } catch { /* private mode */ }
   if (on) ensureContext();
   listeners.forEach((fn) => fn());

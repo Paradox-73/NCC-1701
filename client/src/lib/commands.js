@@ -45,6 +45,14 @@ export function useCommand(type, shipId = 1) {
   return { pending: inflight.has(type), send: (payload) => sendCommand(type, payload, shipId) };
 }
 
+// Who may send what when the registry does not list commands per role yet (DOMAIN.md section 7).
+const FALLBACK = { captain: /^(helm|tactical|ship|comms|engineering|transporter|medical|science|security|scenario)\./, communications_officer: /^comms\./, chief_engineer: /^(engineering|transporter)\./, chief_medical_officer: /^medical\./, science_officer: /^science\./, starfleet_command: /^(scenario|sim)\./ };
+/** True when the user's role may send the command type (the server checks again). */
+export function mayCommand(user, type) {
+  if (Array.isArray(user.commands)) return user.commands.some((c) => c === type || (c.endsWith('.*') && type.startsWith(c.slice(0, -1))));
+  return !!FALLBACK[user.role]?.test(type);
+}
+
 // "Warp factor 6, aye": the bridge's spoken acknowledgement for a command result.
 const AYE = {
   'helm.warp': (p) => (p.factor ? `Warp factor ${p.factor}` : 'Drop to impulse'),

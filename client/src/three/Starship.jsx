@@ -2,6 +2,7 @@ import { Component, Suspense, useMemo, useRef } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Stars, useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
+import SceneFX from './SceneFX.jsx';
 
 // The ship: the TOS Enterprise model from client/public/models/enterprise.glb, with a low-poly ship built
 // from three.js primitives as the fallback (if the model fails to load, or with model={null}).
@@ -397,14 +398,16 @@ export function Starship({ warp = 0, shields, damage, alert = 'green', spin = tr
 
 // Drop-in view: canvas, stars and orbit controls around the ship. Pixel ratio is capped so a big screen
 // doesn't cost more GPU than the rest of the bridge.
-export default function StarshipCanvas({ className, style, ...ship }) {
+// `rig` hands the camera to SceneFX's camera moves ('flyby', 'login', 'board') instead of the orbit controls.
+export default function StarshipCanvas({ className, style, rig, ...ship }) {
   return (
     <div className={className} style={{ position: 'relative', width: '100%', height: '100%', ...style }}>
       <Canvas dpr={[1, 1.5]} camera={{ position: [10, 5, 10], fov: 40 }} gl={{ antialias: true, powerPreference: 'low-power' }}>
         <color attach="background" args={['#04060c']} />
         <Stars radius={80} depth={40} count={1500} factor={3} fade speed={0.4} />
         <Starship {...ship} />
-        <OrbitControls enablePan={false} minDistance={6} maxDistance={28} />
+        <SceneFX rig={rig} />
+        {!rig && <OrbitControls enablePan={false} minDistance={6} maxDistance={28} />}
       </Canvas>
     </div>
   );

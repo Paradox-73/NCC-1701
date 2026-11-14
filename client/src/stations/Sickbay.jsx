@@ -147,34 +147,48 @@ function useHeartbeat(hub, n) {
   }, [hub, n]);
 }
 
-/** The sickbay bed display: a vertical scale per vital with a pointer arrow, and a dot pulsing at the live heart rate. */
+// the bed monitor's scales in the order of the set: temperature and brain, the two lamps, then heart and lungs
+const BED = [VITALS[2], VITALS[3], null, VITALS[0], VITALS[1]];
+const BED_NAME = { hr: 'Heart', rr: 'Lungs', bt: 'Temp', nr: 'Brain' };
+
+/**
+ * The bed monitor of the set (RESEARCH.md, Bridge consoles): a black screen with a red scale per vital, a lit band and a
+ * triangle pointer at the reading, labels underneath, and two round lamps in the middle that flash at the live pulse and
+ * respiration. Numbers and the level word stay under each scale.
+ */
 function Biobed({ hub, n }) {
   useHeartbeat(hub, n);
   if (!n) return <div className="st-blank"><b>NO PATIENT</b><span>Select a crew member on the grid or the watch list.</span></div>;
   const r = getRing(hub, BIO[DECK_OF(n) - 1]);
-  const hr = r?.last?.(`hr_${pad3(n)}`);
+  const hr = r?.last?.(`hr_${pad3(n)}`), rr = r?.last?.(`rr_${pad3(n)}`);
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '10px 12px', gap: 8 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ font: '400 11px var(--font-display)', letterSpacing: '0.08em' }}>CREW {pad3(n)}</span>
+    <div className="bed">
+      <div className="bed__who">
+        <span className="display">Crew {pad3(n)}</span>
         <span className="st-label">{crewLabel(n).split(' · ').slice(1).join(' · ')} · {DECK_NAMES[DECK_OF(n) - 1]}</span>
-        <i aria-hidden="true" className="sb-beat" style={{ marginLeft: 'auto', animationDuration: `${Math.max(0.5, 60 / clamp(hr ?? 60, 20, 220))}s` }} title={`Pulses at the heart rate, ${fmt(hr, 0)} bpm`} />
       </div>
-      <div style={{ flex: 1, minHeight: 0, display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 10 }}>
-        {VITALS.map((x) => {
+      <div className="bed__screen">
+        {BED.map((x) => {
+          if (!x) {
+            return (
+              <div key="lamps" className="bed__lamps">
+                <span className="bed__lamp" style={{ '--p': `${60 / clamp(rr ?? 15, 4, 60)}s` }}><i aria-hidden="true" />Respiration</span>
+                <span className="bed__lamp" style={{ '--p': `${60 / clamp(hr ?? 60, 20, 220)}s` }}><i aria-hidden="true" />Pulse</span>
+                <span className="bed__adjust" aria-hidden="true">Adjust for normal</span>
+                <span className="bed__rec" aria-hidden="true">Recorder <i /><i /></span>
+              </div>
+            );
+          }
           const k = `${x.v}_${pad3(n)}`, v = r?.last?.(k), lv = levelOf(k, v);
           const f = v == null ? 0 : clamp((v - x.lo) / (x.hi - x.lo));
           return (
-            <div key={x.v} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, minWidth: 0 }}>
-              <span className="st-label" style={{ textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{x.label}</span>
-              <div style={{ position: 'relative', flex: 1, minHeight: 80, width: 18, borderRadius: 3, background: 'linear-gradient(180deg, #ff4a5533, #ffffff08 22%, #ffffff12 50%, #ffffff08 78%, #2f6fae33)', boxShadow: 'inset 0 0 0 1px #ffffff14' }} role="meter" aria-label={`${x.label} ${fmt(v, x.dec ?? 0)} ${x.unit}`} aria-valuenow={v ?? undefined} aria-valuemin={x.lo} aria-valuemax={x.hi}>
-                {[0.25, 0.5, 0.75].map((q) => <i key={q} style={{ position: 'absolute', left: -4, right: -4, bottom: `${q * 100}%`, borderTop: '1px solid #ffffff22' }} />)}
-                <div style={{ position: 'absolute', inset: 0, transform: `translateY(${(1 - f) * 100}%)`, transition: 'transform 600ms cubic-bezier(0.2,0,0,1)' }}>
-                  <i style={{ position: 'absolute', right: -14, top: -6, width: 0, height: 0, borderTop: '6px solid transparent', borderBottom: '6px solid transparent', borderRight: `10px solid ${lv === 'crit' ? C.crit : lv === 'warn' ? C.warn : C.chart1}` }} />
-                </div>
+            <div key={x.v} className="bed__col" data-level={lv ?? undefined}>
+              <div className="bed__scale" role="meter" aria-label={`${x.label} ${fmt(v, x.dec ?? 0)} ${x.unit}`} aria-valuenow={v ?? undefined} aria-valuemin={x.lo} aria-valuemax={x.hi}>
+                <i className="bed__band" style={{ bottom: `${f * 100}%` }} />
+                <i className="bed__ptr" style={{ bottom: `${f * 100}%` }} />
               </div>
-              <span style={{ font: '700 15px var(--font-mono)', color: lv === 'crit' ? C.critInk : lv === 'warn' ? C.warn : C.ink }}>{fmt(v, x.dec ?? 0)}</span>
-              <span className="st-unit" style={{ margin: 0 }}>{x.unit}</span>
+              <span className="bed__name">{BED_NAME[x.v]}</span>
+              <span className="bed__num">{fmt(v, x.dec ?? 0)}<span className="st-unit">{x.unit}</span></span>
               <LevelChip level={lv} />
             </div>
           );
@@ -185,12 +199,13 @@ function Biobed({ hub, n }) {
 }
 
 function Trend({ hub, k, label, unit, dec }) {
-  const { data } = useHistory(hub, k, 600, !!meta(k));
+  const { data, meta: hm } = useHistory(hub, k, 600, !!meta(k));
   const getData = useHistoryData(data, [hub, k]);
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, minWidth: 0 }}>
-      <Chart key={k} fill x="time" title={`${label} (${unit})`} legend={false} sync="crew" unit={unit} getData={getData} yRange={calmRange(k)}
+      <Chart key={k} fill x="time" title={`${label} (${unit})`} legend={false} sync="crew" unit={unit} getData={getData} yRange={calmRange(k)} wait="Loading history"
         series={[{ label: 'Stored', color: C.mute, dec, unit }, { label: 'Live', color: C.chart1, dec, unit }]} />
+      {hm.status === 'error' && <span className="st-label">Stored readings unavailable; showing the live stream.</span>}
     </div>
   );
 }
@@ -210,7 +225,14 @@ export default function Sickbay({ shipId = 1 }) {
   const stale = isStale(hub);
   const all = medical ? BY_DECK.flat().map((n) => ({ n, ...crewStatus(hub, base.current, n, stale) })) : [];
   const watch = all.filter((c) => c.cls >= 2).sort((a, b) => b.cls - a.cls || b.z - a.z);
-  const shown = sel ?? watch[0]?.n ?? null; // until someone is picked, the bed shows the crew member furthest from baseline
+  // until someone is picked, the bed shows the crew member furthest from baseline: the top of the watch list, else the
+  // largest distance among everyone. The pick holds for 15 s so the bed does not hop between people on resting noise.
+  const auto = useRef({ n: null, z: 0, at: 0 });
+  const best = watch[0] ?? all.reduce((b, c) => (c.cls >= 0 && (!b || c.z > b.z) ? c : b), null);
+  const onWatch = watch.some((c) => c.n === auto.current.n);
+  // re-pick when nobody is picked yet, when the baselines first arrive, when the pick left a non-empty watch list, or every 15 s
+  if (best && (auto.current.n == null || (!auto.current.z && best.z > 0) || (watch.length && !onWatch) || Date.now() - auto.current.at > 15000)) auto.current = { n: best.n, z: best.z, at: Date.now() };
+  const shown = sel ?? auto.current.n;
   const deckOfInterest = shown ? DECK_OF(shown) : null;
   const counts = [0, 1, 2, 3].map((c) => all.filter((x) => x.cls === c).length);
   const sumState = monState(user, shipId, ['crewsummary']);
@@ -259,7 +281,7 @@ export default function Sickbay({ shipId = 1 }) {
           )}
         </div>
       </Monitor>
-      <Monitor title="Biobed" meta={shown ? `crew ${pad3(shown)}${sel ? '' : ' · furthest from baseline'}` : 'no patient'} state={stBio} restricted={MEDICAL} className="st-c4" style={{ '--mh': '300px' }}>
+      <Monitor title="Biobed" meta={shown ? `crew ${pad3(shown)}${sel ? '' : ' · furthest from baseline'}` : 'no patient'} state={stBio} restricted={MEDICAL} className="st-c4 monitor--housing monitor--bed" style={{ '--mh': '330px' }}>
         <Biobed hub={hub} n={shown} />
       </Monitor>
       <Monitor title="Vital trends" meta={shown ? `crew ${pad3(shown)} · last 10 minutes · grey stored, blue live` : 'select a crew member'} state={stBio} restricted={MEDICAL} className="st-c8" style={{ '--mh': shown ? '680px' : '200px' }}>

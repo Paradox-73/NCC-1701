@@ -1,4 +1,4 @@
-import { Fragment, useMemo, useRef } from 'react';
+import { Fragment, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SCENARIOS, SCENARIO_LIST } from '@ncc/shared/scenarios/index.js';
 import Chart from '../components/Chart.jsx';
@@ -7,7 +7,7 @@ import { useAuth } from '../lib/auth.jsx';
 import { useSubscription, useTick } from '../lib/hooks.js';
 import { commandWords } from '../lib/commands.js';
 import { ship } from '../lib/ship.js';
-import { ackAlert, state } from '../lib/store.js';
+import { ackAlert, ackAlerts, state } from '../lib/store.js';
 import { SHIPS, alertFlagOf, conditionOf, isOpen, linkOf, posOf, read, ringOf, shipCode, shipName, stardate, useCommand } from './parts/data.js';
 import { Chip, ConsoleStrip, J, LevelChip, LitButton, Monitor, Num, Station } from '../ui/index.js';
 import { C, clamp, fmt, useCanvas } from './parts/ui.jsx';
@@ -35,10 +35,11 @@ function SectorMap({ ids }) {
       x0 = Math.min(...ships.map((s) => s.p.x)); x1 = Math.max(...ships.map((s) => s.p.x));
       y0 = Math.min(...ships.map((s) => s.p.y)); y1 = Math.max(...ships.map((s) => s.p.y));
     }
-    const span = Math.max(300, x1 - x0, y1 - y0) * 1.3, mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+    // fit the task force itself with room for the labels; a 60 su floor keeps ships in tight formation apart
+    const span = Math.max(60, x1 - x0, y1 - y0) * 1.7, mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
     const s = Math.min(w, h) / span;
     const P = (x, y) => [w / 2 + (x - mx) * s, h / 2 - (y - my) * s];
-    const step = [25, 50, 100, 200, 500, 1000, 2000].find((x) => x * s >= 64) ?? 5000; // labels at least 64 px apart
+    const step = [5, 10, 25, 50, 100, 200, 500, 1000, 2000].find((x) => x * s >= 64) ?? 5000; // labels at least 64 px apart
     ctx.lineWidth = 1; ctx.font = '400 10px "Space Mono", monospace'; ctx.fillStyle = C.mute;
     for (let gx = Math.ceil((mx - w / 2 / s) / step) * step; gx <= mx + w / 2 / s; gx += step) {
       const [px] = P(gx, 0); ctx.strokeStyle = '#ffffff0e'; ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, h); ctx.stroke();
@@ -84,7 +85,7 @@ function SectorMap({ ids }) {
         ctx.fillStyle = C.ink; ctx.beginPath(); ctx.moveTo(0, -9); ctx.lineTo(6, 7); ctx.lineTo(0, 3); ctx.lineTo(-6, 7); ctx.closePath(); ctx.fill(); ctx.restore();
       }
       let ly = py - 2;
-      for (const q of labels) if (Math.abs(q.x - px) < 96 && Math.abs(q.y - ly) < 28) ly = q.y + 28;
+      for (let moved = true, n = 0; moved && n < 8; n++) { moved = false; for (const q of labels) if (Math.abs(q.x - px) < 110 && Math.abs(q.y - ly) < 28) { ly = q.y + 28; moved = true; } }
       labels.push({ x: px, y: ly });
       ctx.font = '700 11px "Space Mono", monospace'; ctx.fillStyle = C.ink; ctx.textAlign = 'left';
       ctx.fillText(shipCode(sh.id), px + 20, ly);
@@ -105,20 +106,20 @@ function ShipCard({ id, onOpen }) {
     <>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
         <i className="pill" style={{ '--div': ringColor(id) }} aria-hidden="true" />
-        <span style={{ font: '700 13px var(--font-mono)' }}>{shipCode(id)}</span>
-        <span style={{ font: '400 10px var(--font-display)', letterSpacing: '0.08em', color: C.ink2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{shipName(id).toUpperCase()}</span>
+        <span style={{ font: '700 13px var(--font-mono)', whiteSpace: 'nowrap' }}>{shipCode(id)}</span>
         <span style={{ marginLeft: 'auto' }}><Chip level={link === 'live' ? 'ok' : link === 'lost' ? 'crit' : 'off'}>{link === 'live' ? 'LINK' : link === 'lost' ? 'LOST' : '—'}</Chip></span>
       </div>
+      <span style={{ font: '400 10px var(--font-display)', letterSpacing: '0.08em', color: C.ink2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{shipName(id).toUpperCase()}</span>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}><Chip level={lv}>{cond ? `CONDITION ${word}` : word}</Chip></div>
-      <dl className="st-kv" style={{ gridTemplateColumns: 'auto 1fr auto 1fr', gap: '4px 10px' }}>
+      <dl className="st-kv" style={{ gridTemplateColumns: 'auto 1fr auto 1fr', gap: '3px 8px' }}>
         <dt>Warp</dt><dd style={{ fontSize: 14 }}><Num value={posOf(id)?.warp ?? read(id, 'warpFactor')} dec={1} className="" /></dd>
-        <dt>Weakest shield</dt><dd style={{ fontSize: 14 }}><Num value={sh} dec={0} className="" level={shLv} /><span className="st-unit">%</span>{shLv && <> <LevelChip level={shLv} /></>}</dd>
-        <dt>Open alerts</dt><dd style={{ fontSize: 14 }}>{open}</dd>
+        <dt>Shield</dt><dd style={{ fontSize: 14 }}><Num value={sh} dec={0} className="" level={shLv} /><span className="st-unit">%</span>{shLv && <> <LevelChip level={shLv} /></>}</dd>
+        <dt>Alerts</dt><dd style={{ fontSize: 14 }}>{open}</dd>
         <dt>Crew</dt><dd style={{ fontSize: 14 }}><Num value={read(id, 'crewAboard')} className="" /><span className="st-unit">aboard</span></dd>
       </dl>
     </>
   );
-  const style = { display: 'flex', flexDirection: 'column', gap: 8, width: '100%', padding: '10px 12px', border: 0, borderRadius: 8, textAlign: 'left', background: '#ffffff07', boxShadow: `inset 0 0 0 1px ${link === 'lost' ? '#ff4a5555' : '#ffffff12'}` };
+  const style = { display: 'flex', flexDirection: 'column', gap: 6, width: '100%', minWidth: 0, padding: '8px 10px', border: 0, borderRadius: 6, textAlign: 'left', background: '#ffffff07', boxShadow: `inset 0 0 0 1px ${link === 'lost' ? '#ff4a5555' : '#ffffff12'}` };
   return <button type="button" style={style} onClick={() => onOpen(id)} aria-label={`Open the history of ${shipName(id)}`} title="Open this ship's history">{body}</button>;
 }
 
@@ -191,7 +192,7 @@ function Scenarios({ cmd }) {
     : `${s.title}: ${STATE_WORD[s.state] ?? s.state} · ${fmt(Math.min(t, len), 0)} of ${fmt(len, 0)} s${live ? ` · step ${s.step} of ${s.steps}` : ''}${wait ? ` · waiting for ${commandWords(wait.type, wait)} (${fmt(wait.secondsLeft, 0)} s)` : ''}`;
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '10px 12px', gap: 10 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: 8 }}>
         {SCENARIO_LIST.map((x) => {
           const on = live && s.id === x.id;
           return (
@@ -229,30 +230,36 @@ export default function Fleet({ onOpenShip }) {
   const cmd = useCommand(1);
   const admin = !!user?.admin;
   const lost = ids.filter((id) => linkOf(id) === 'lost').length;
+  const [acking, setAcking] = useState(false);
+  const ackYellow = async () => {
+    setAcking(true);
+    await ackAlerts(state.alerts.filter((a) => isOpen(a) && a.severity === 'warn').map((a) => a.id));
+    setAcking(false);
+  };
   const desk = (
     <ConsoleStrip seed={59} jewels={ids.map((id) => J(shipCode(id), linkOf(id) === 'lost' ? 'crit' : alertFlagOf(id), linkOf(id) === 'unknown' ? 'off' : 'live'))}>
       <LitButton color="red" label="Stop scenario" onClick={() => cmd.send('scenario.stop')} {...cmd.bind('scenario.stop')} disabled={!cmd.can('scenario.stop') || !(ship.scenario?.state === 'running' || ship.scenario?.state === 'awaiting')} />
-      <LitButton color="white" label="Ack all yellow" onClick={() => state.alerts.filter((a) => isOpen(a) && a.severity === 'warn').slice(0, 50).forEach((a) => ackAlert(a.id))} disabled={!user?.canAck} />
+      <LitButton color="white" label="Ack all yellow" onClick={ackYellow} pending={acking} disabled={!user?.canAck || acking} />
     </ConsoleStrip>
   );
   return (
-    <Station name="Starfleet Command" division="fleet" ship={null} rows="minmax(260px, 1.5fr) minmax(200px, 1fr) minmax(150px, auto)" desk={desk}
+    <Station name="Starfleet Command" division="fleet" ship={null} rows="minmax(250px, 1.3fr) minmax(220px, 1fr) minmax(210px, auto)" desk={desk}
       end={`${ids.length - lost} of ${ids.length} ships linked · ${fmt(state.rx, 0)} readings/s`}>
-      <Monitor title="Sector map" meta="task force · sector units" className="st-c8" style={{ '--mh': '340px' }}>
+      <Monitor title="Sector map" meta="task force · sector units" className="st-c7" style={{ '--mh': '340px' }}>
         <SectorMap ids={ids} />
       </Monitor>
-      <Monitor title="Ship cards" meta={`${ids.length} ships`} className="st-c4">
-        <div className="st-fill-scroll" style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: 10, height: '100%' }}>
+      <Monitor title="Ship cards" meta={`${ids.length} ships · open a ship's history`} className="st-c5" style={{ gridRow: 'span 2' }}>
+        <div className="st-fill-scroll" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', alignContent: 'start', gap: 8, padding: 10, height: '100%' }}>
           {ids.map((id) => <ShipCard key={id} id={id} onOpen={open} />)}
         </div>
       </Monitor>
-      <Monitor title="Fleet log" meta="alerts from every ship" className="st-c5" style={{ '--mh': '300px' }}>
+      <Monitor title="Fleet log" meta="alerts from every ship" className="st-c7" style={{ '--mh': '320px' }}>
         <FleetLog canAck={!!user?.canAck} />
       </Monitor>
-      <Monitor title="System" meta="server · 1 Hz" state={admin ? 'live' : 'restricted'} restricted="Server metrics: Starfleet Command only." className="st-c7" style={{ '--mh': '320px' }}>
+      <Monitor title="System" meta="server · 1 Hz" state={admin ? 'live' : 'restricted'} restricted="Server metrics: Starfleet Command only." className="st-c5" style={{ '--mh': '320px' }}>
         <System />
       </Monitor>
-      <Monitor title="Scenarios" meta="launcher and timeline" state={admin || user?.role === 'captain' ? 'live' : 'restricted'} restricted="Scenarios: captain and Starfleet Command only." className="st-c12">
+      <Monitor title="Scenarios" meta="launcher and timeline" state={admin || user?.role === 'captain' ? 'live' : 'restricted'} restricted="Scenarios: captain and Starfleet Command only." className="st-c7">
         <Scenarios cmd={cmd} />
       </Monitor>
     </Station>

@@ -44,7 +44,9 @@ export function loadConfig(overrides = {}) {
     apiRateLimit: num(env.API_RATE_LIMIT, 600),
     loginRateLimit: num(env.LOGIN_RATE_LIMIT, 10),
     // anomaly detection
-    linkLossMs: 1500,
+    // a ship silent this long raises link-loss. LINK_LOSS_MS=3000 on the free hosted server, where the embedded simulator
+    // shares one small CPU and its short stalls read as 1.5 s gaps on every ship at once
+    linkLossMs: num(env.LINK_LOSS_MS, 1500),
     debounceMs: 3000,
     ...overrides,
   };

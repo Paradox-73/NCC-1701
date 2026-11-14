@@ -18,7 +18,8 @@
 .gate__title { font: 400 44px/1 var(--font-display); letter-spacing: 0.22em; text-transform: uppercase; color: var(--ink); margin: 2px 0 18px; padding-left: 0.22em; }
 .lit.gate__engage { min-width: 220px; min-height: 56px; font-size: 15px; letter-spacing: 0.24em; animation: engage-glow 2.4s ease-in-out infinite; }
 @keyframes engage-glow { 0%, 100% { box-shadow: inset 0 1px 0 #ffffff1c, inset 0 -2px 0 #00000055, 0 0 0 0 #ff9a1f00; } 50% { box-shadow: inset 0 1px 0 #ffffff1c, inset 0 -2px 0 #00000055, 0 0 34px 2px #ff9a1f55; } }
-.gate__panel > .keycap { height: 22px; padding: 0 8px; margin-top: -4px; font-size: 11px; letter-spacing: 0.1em; }
+.lit.gate__engage { flex-direction: column; gap: 6px; padding-top: 10px; padding-bottom: 10px; }
+.gate__engage .keycap { height: 20px; padding: 0 8px; font-size: 10px; letter-spacing: 0.1em; }
 .gate__more { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
 .linkbtn { border: 0; padding: 0; background: none; color: var(--accent); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 

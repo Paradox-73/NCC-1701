@@ -113,7 +113,7 @@ const bezier = (out, p0, c1, c2, p3, u) => out.copy(p0).multiplyScalar((1 - u) *
 
 const IDLE_AFTER_MS = 3000; // the ship's idle turn comes back this long after the visitor lets go
 const SHIP_RADIUS = 6; // round the look point; the glb's mesh bounds reach 5.85 from the ship's centre
-const ZOOM = { near: 1, rest: 1.1, far: 2 }; // login camera distances, in multiples of the one where the ship just fits
+const ZOOM = { near: 0.2, rest: 1.1, far: 8 }; // login camera distances, in multiples of the one where the ship just fits: zoom right up to the hull or far out
 
 // "State your position": the space the ship has to itself beside the console of login.css, the left half of the screen
 // or, below 1024 px, the top 42 % above the console. x, y: the view offset that centres the ship there; fit: the camera

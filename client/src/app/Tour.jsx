@@ -10,7 +10,6 @@ const STEPS = [
   { target: 'helm', title: 'Helm and navigation', text: 'Warp factor, heading and the weakest shield, straight from the ship’s telemetry.' },
   { target: 'chair', title: 'The captain’s chair', text: 'Condition and orders. The captain presses R for red alert, Y for yellow alert and N to stand down.' },
   { target: 'log', title: 'Captain’s log', text: 'Alerts, orders and scenario steps, newest first. A acknowledges the newest alert.' },
-  { target: 'lift', title: 'Turbolift', text: 'Ctrl K takes you to any station; G then a letter jumps straight there. Press ? for every shortcut.' },
 ];
 const seen = () => { try { return localStorage.getItem(KEY) === '1'; } catch { return true; } };
 // a modal panel is open (turbolift, scenario picker, shortcut sheet) or a scenario is running: the tour keeps out of the way

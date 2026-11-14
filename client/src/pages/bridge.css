@@ -140,17 +140,6 @@
 .log__text { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .log__empty { color: var(--mute); font-size: 12px; padding: 6px 0; }
 
-.liftdoor { left: 30px; top: 704px; width: 250px; height: 180px; padding: 0; border: 0; background: none; color: var(--ink); display: flex; flex-direction: column; gap: 8px; }
-.liftdoor__doors { position: relative; flex: 1; display: flex; gap: 2px; padding: 16px 12px 0; border-radius: 18px 18px 4px 4px; overflow: hidden; background: #0b0c0f; box-shadow: inset 0 0 0 1px var(--line2), 0 18px 30px -12px #000; }
-.liftdoor__doors::before { content: ''; position: absolute; left: 30%; right: 30%; top: 6px; height: 4px; border-radius: 2px; background: var(--lit-amber); box-shadow: 0 0 10px var(--lit-amber); opacity: 0.85; }
-.liftdoor__doors i { flex: 1; border-radius: 6px 6px 0 0; background: linear-gradient(90deg, #5c1a0d, #8f2b14 40%, #6e2010), linear-gradient(180deg, #ffffff14, transparent 30%); background-blend-mode: screen; box-shadow: inset 0 1px 0 #ffffff26, inset 0 -30px 40px #0007; transition: transform 380ms var(--ease-in); }
-.liftdoor__doors i:last-child { background: linear-gradient(270deg, #5c1a0d, #8f2b14 40%, #6e2010), linear-gradient(180deg, #ffffff14, transparent 30%); }
-.liftdoor:hover .liftdoor__doors i:first-child { transform: translateX(-10px); }
-.liftdoor:hover .liftdoor__doors i:last-child { transform: translateX(10px); }
-.liftdoor:focus-visible { outline: none; }
-.liftdoor:focus-visible .liftdoor__doors { box-shadow: inset 0 0 0 2px var(--accent); }
-.liftdoor__label { display: flex; align-items: center; justify-content: space-between; padding: 0 4px; }
-.liftdoor__label .display { font-size: 11px; color: var(--ink2); }
 
 /* first-visit tour */
 .tour { position: fixed; inset: 0; z-index: 120; pointer-events: none; }

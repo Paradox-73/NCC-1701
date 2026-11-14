@@ -6,7 +6,7 @@ import { bandOf, levelOf, worst } from '../lib/limits.js';
 import { conditionOf, ship, shipLog, stardate } from '../lib/ship.js';
 import { backfill, getRing, state } from '../lib/store.js';
 import { viewerSlot } from '../app/MainViewer.jsx';
-import { ArcGauge, ButtonGrid, DivisionPill, Icon, Jewel, KeyCap, LevelChip, LitButton, Monitor, Num, Readout, SweepScope, mayCommand, useCommand } from '../ui/index.js';
+import { ArcGauge, ButtonGrid, DivisionPill, Icon, Jewel, LevelChip, LitButton, Monitor, Num, Readout, SweepScope, mayCommand, useCommand } from '../ui/index.js';
 import Tour from '../app/Tour.jsx';
 import { ScenarioPicker, ScenarioStrip, Ticker } from './Scenario.jsx';
 import './bridge.css';
@@ -273,14 +273,6 @@ function CaptainsLog({ onOpen }) {
   );
 }
 
-function Turbolift({ onLift }) {
-  return (
-    <button type="button" className="liftdoor" data-tour="lift" onClick={onLift} aria-label="Turbolift: choose a station (Ctrl K)">
-      <span className="liftdoor__doors" aria-hidden="true"><i /><i /></span>
-      <span className="liftdoor__label"><span className="display">Turbolift</span><KeyCap>Ctrl K</KeyCap></span>
-    </button>
-  );
-}
 
 // The glass and its captions; the viewer inside is the shell's MainViewer, which lives on between visits.
 function Viewscreen({ ov, viewer, user }) {
@@ -305,7 +297,7 @@ function Viewscreen({ ov, viewer, user }) {
 const W = 1600, H = 900;
 const SUBSCRIBE = ['helm', 'warp', 'sensors', 'comms', 'lifesupport', 'crewsummary', 'shields'];
 
-export default function Bridge({ powered, viewer, onViewer, onGo, onLift, user }) {
+export default function Bridge({ powered, viewer, onViewer, onGo, user }) {
   useTick();
   const list = useMedia('(max-width: 899px)');
   const groups = SUBSCRIBE.filter((g) => GROUPS.includes(g) && user.groups.includes(g));
@@ -361,7 +353,6 @@ export default function Bridge({ powered, viewer, onViewer, onGo, onLift, user }
     helm: <HelmConsole ov={ov} />,
     chair: <Chair user={user} condition={condition} viewer={viewer} onViewer={onViewer} onScenarios={() => setPicker(true)} />,
     log: <CaptainsLog onOpen={() => onGo(stationById.alerts)} />,
-    lift: <Turbolift onLift={onLift} />,
     tiles: TILES.map((t, i) => <Tile key={t.id} tile={t} user={user} index={i + 1} onZoom={zoomTo} />),
   };
   const from = enterFrom.current;
@@ -374,7 +365,6 @@ export default function Bridge({ powered, viewer, onViewer, onGo, onLift, user }
           {parts.helm}
           {parts.tiles}
           {parts.log}
-          {parts.lift}
         </div>
       ) : (
         <div className="bridge__fit" style={{ width: W * k, height: H * k }}>
@@ -389,7 +379,6 @@ export default function Bridge({ powered, viewer, onViewer, onGo, onLift, user }
             {parts.helm}
             {parts.chair}
             {parts.log}
-            {parts.lift}
           </div>
           </div>
         </div>

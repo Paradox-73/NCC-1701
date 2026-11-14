@@ -111,8 +111,9 @@ function ColdOpen({ intro, onStart, onDone }) {
           <Delta emblem="command" className="delta gate__delta" />
           <p className="gate__ship">U.S.S. Enterprise · NCC-1701</p>
           <h1 className="gate__title">Bridge</h1>
-          <LitButton color="amber" size="lg" className="gate__engage" label="Engage" aria-keyshortcuts="Enter" autoFocus onClick={onEngage} />
-          <KeyCap>Enter</KeyCap>
+          <LitButton color="amber" size="lg" className="gate__engage" aria-keyshortcuts="Enter" autoFocus onClick={onEngage}>
+            <span className="gate__engage-word">Engage</span><KeyCap>Enter</KeyCap>
+          </LitButton>
           <div className="gate__more">
             <SoundToggle />
             <button type="button" className="stage-pill" onClick={skip}>Skip intro <KeyCap>Esc</KeyCap></button>

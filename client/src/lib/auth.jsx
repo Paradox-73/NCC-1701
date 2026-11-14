@@ -71,6 +71,6 @@ export function AuthProvider({ children, onSignOut }) {
     setNotice(null);
     setSession(s);
   };
-  const v = useMemo(() => ({ user: current?.user, login, logout: () => logout(), notice }), [current, logout, notice]); // eslint-disable-line react-hooks/exhaustive-deps
+  const v = useMemo(() => ({ user: current?.user, login, logout: (why) => logout(why), notice }), [current, logout, notice]); // eslint-disable-line react-hooks/exhaustive-deps
   return <Auth.Provider value={v}>{children}</Auth.Provider>;
 }

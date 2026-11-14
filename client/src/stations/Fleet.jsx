@@ -1,8 +1,10 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { Fragment, useMemo, useRef } from 'react';
 import Chart from '../components/Chart.jsx';
 import VirtualList from '../components/VirtualList.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import { useSubscription, useTick } from '../lib/hooks.js';
+import { commandWords } from '../lib/commands.js';
+import { ship } from '../lib/ship.js';
 import { ackAlert, state } from '../lib/store.js';
 import { SHIPS, alertFlagOf, conditionOf, isOpen, levelOf, linkOf, posOf, read, ringOf, shipCode, shipName, stardate, useCommand } from './parts/data.js';
 import { C, Chip, ConsoleStrip, J, LevelChip, LitButton, Monitor, Num, Station, clamp, fmt, useCanvas } from './parts/ui.jsx';
@@ -177,18 +179,25 @@ function System() {
   );
 }
 
-function Scenarios({ cmd, running, setRunning }) {
+// Progress comes from the server's `scenario` event (lib/ship.js keeps the latest), so every console, and one that
+// signs in mid-scenario, shows the same step and clock, including a step that waits for a crew command.
+function Scenarios({ cmd }) {
   useTick(500);
-  const sc = SCENARIOS.find((s) => s.id === running?.id);
-  const t = running ? (Date.now() - running.at) / 1000 : 0;
-  useEffect(() => { if (sc && t > sc.sec + 15) setRunning(null); }, [sc, t, setRunning]);
+  const live = ship.scenario && (ship.scenario.state === 'running' || ship.scenario.state === 'awaiting') ? ship.scenario : null;
+  const sc = SCENARIOS.find((s) => s.id === live?.id);
+  const dur = live?.duration || sc?.sec || 0;
+  const t = live?.t ?? 0;
+  const wait = live?.awaiting;
+  const label = live
+    ? `${live.title ?? sc?.title}: ${fmt(Math.min(t, dur), 0)} of ${fmt(dur, 0)} s · step ${live.step} of ${live.steps}${wait ? ` · waiting for ${commandWords(wait.type, wait)} (${fmt(wait.secondsLeft, 0)} s)` : ''}`
+    : 'No scenario running';
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', padding: '10px 12px', gap: 10 }}>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 8 }}>
         {SCENARIOS.map((s) => (
-          <button key={s.id} type="button" onClick={() => cmd.send('scenario.start', { id: s.id }, `Start ${s.title}`).then((ok) => ok && setRunning({ id: s.id, at: Date.now() }))}
-            aria-pressed={running?.id === s.id}
-            style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '8px 10px', border: 0, borderRadius: 6, cursor: 'pointer', textAlign: 'left', background: running?.id === s.id ? '#1c6fc033' : '#ffffff07', boxShadow: `inset 0 0 0 1px ${running?.id === s.id ? C.accent : '#ffffff12'}` }}>
+          <button key={s.id} type="button" onClick={() => cmd.send('scenario.start', { id: s.id }, `Start ${s.title}`)}
+            aria-pressed={live?.id === s.id}
+            style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '8px 10px', border: 0, borderRadius: 6, cursor: 'pointer', textAlign: 'left', background: live?.id === s.id ? '#1c6fc033' : '#ffffff07', boxShadow: `inset 0 0 0 1px ${live?.id === s.id ? C.accent : '#ffffff12'}` }}>
             <span style={{ font: '400 10px var(--font-display)', letterSpacing: '0.08em' }}>{s.title.toUpperCase()}</span>
             <span className="st-label" style={{ fontSize: 11 }}>{s.ep} · {s.sec} s</span>
             <span style={{ fontSize: 12, color: C.ink2, lineHeight: 1.3 }}>{s.shows}</span>
@@ -196,10 +205,10 @@ function Scenarios({ cmd, running, setRunning }) {
         ))}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span className="st-label" style={{ minWidth: 150 }}>{sc ? `${sc.title}: ${fmt(Math.min(t, sc.sec), 0)} of ${sc.sec} s` : 'No scenario running from this console'}</span>
+        <span className="st-label" style={{ minWidth: 150, color: wait ? C.warn : undefined }} aria-live="polite">{label}</span>
         <div style={{ position: 'relative', flex: 1, height: 14, borderRadius: 3, background: '#ffffff0a' }} aria-hidden="true">
-          {sc && <i style={{ position: 'absolute', inset: '0 auto 0 0', width: `${clamp(t / sc.sec) * 100}%`, background: C.accent, borderRadius: 3, opacity: 0.6 }} />}
-          {sc?.steps.map((x) => <b key={x} style={{ position: 'absolute', top: -3, bottom: -3, left: `${(x / sc.sec) * 100}%`, width: 2, background: x <= t ? C.ink : C.mute }} />)}
+          {live && dur > 0 && <i style={{ position: 'absolute', inset: '0 auto 0 0', width: `${clamp(t / dur) * 100}%`, background: wait ? C.warn : C.accent, borderRadius: 3, opacity: 0.6 }} />}
+          {live && sc?.steps.map((x) => <b key={x} style={{ position: 'absolute', top: -3, bottom: -3, left: `${clamp(x / dur) * 100}%`, width: 2, background: x <= t ? C.ink : C.mute }} />)}
         </div>
       </div>
     </div>
@@ -214,12 +223,11 @@ export default function Fleet({ onOpenShip }) {
   const groups = ['helm', 'shields', 'crewsummary'].filter((g) => user?.groups?.includes(g));
   useSubscription(ids, groups);
   const cmd = useCommand(1);
-  const [running, setRunning] = useState(null);
   const admin = !!user?.admin;
   const lost = ids.filter((id) => linkOf(id) === 'lost').length;
   const desk = (
     <ConsoleStrip seed={59} cmd={cmd} jewels={ids.map((id) => J(shipCode(id), linkOf(id) === 'lost' ? 'crit' : alertFlagOf(id), linkOf(id) === 'unknown' ? 'off' : 'live'))}>
-      <LitButton color="red" label="Stop scenario" onClick={() => cmd.send('scenario.stop', {}, 'Stop the scenario').then((ok) => ok && setRunning(null))} {...cmd.bind('scenario.stop')} />
+      <LitButton color="red" label="Stop scenario" onClick={() => cmd.send('scenario.stop', {}, 'Stop the scenario')} {...cmd.bind('scenario.stop')} />
       <LitButton color="white" label="Ack all yellow" onClick={() => state.alerts.filter((a) => isOpen(a) && a.severity === 'warn').slice(0, 50).forEach((a) => ackAlert(a.id))} disabled={!user?.canAck} />
     </ConsoleStrip>
   );
@@ -241,7 +249,7 @@ export default function Fleet({ onOpenShip }) {
         <System />
       </Monitor>
       <Monitor title="Scenarios" meta="launcher and timeline" state={admin || user?.role === 'captain' ? 'live' : 'restricted'} note="Scenarios: captain and Starfleet Command only." className="st-c12">
-        <Scenarios cmd={cmd} running={running} setRunning={setRunning} />
+        <Scenarios cmd={cmd} />
       </Monitor>
     </Station>
   );

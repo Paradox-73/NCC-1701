@@ -8,6 +8,7 @@
   },
   "exports": {
     "./registry.js": "./registry.js",
-    "./schema.js": "./schema.js"
+    "./schema.js": "./schema.js",
+    "./scenarios/index.js": "./scenarios/index.js"
   }
 }

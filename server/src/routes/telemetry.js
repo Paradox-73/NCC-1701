@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { CHANNEL_BY_KEY, CHANNELS, GROUPS, GROUP_CHANNELS, LIMITS, canSeeGroup } from '@ncc/shared/schema.js';
+import { CHANNEL_BY_KEY, GROUPS, GROUP_CHANNELS, LIMITS, canSeeGroup, canSeeSource, channelsOf } from '@ncc/shared/schema.js';
 import { HttpError, assertGroup, int, parse } from '../middleware/index.js';
 
 // the dashboard asks for one hour at most; a longer span (from=0) made MongoDB sort up to a day of a source's samples per request
@@ -19,12 +19,14 @@ export function telemetryRoutes({ getTelemetry, writer }) {
   const r = Router();
   r.get('/telemetry', async (req, res) => {
     const q = parse(query, req.query);
+    if (!canSeeSource(req.user.role, q.sourceId)) throw new HttpError(403, `role ${req.user.role} may not see source ${q.sourceId}`);
     if (q.group) assertGroup(req.user, q.group);
     const to = q.to ?? Date.now() + 1000;
     const from = q.from ?? to - 60_000;
     if (to - from > MAX_SPAN_MS) throw new HttpError(400, 'from and to may be at most one hour apart');
-    const visible = (key) => canSeeGroup(req.user.role, CHANNEL_BY_KEY[key].group);
-    const wanted = q.keys ? q.keys.split(',').filter((k) => CHANNEL_BY_KEY[k]) : q.group ? GROUP_CHANNELS[q.group] : CHANNELS.map((c) => c.key);
+    const ofSource = new Set(channelsOf(q.sourceId).map((c) => c.key)); // a ship has no biosign channels and a sickbay no ship channels
+    const visible = (key) => ofSource.has(key) && canSeeGroup(req.user.role, CHANNEL_BY_KEY[key].group);
+    const wanted = q.keys ? q.keys.split(',').filter((k) => CHANNEL_BY_KEY[k]) : q.group ? GROUP_CHANNELS[q.group] : [...ofSource];
     const keys = wanted.filter(visible);
     if (!keys.length) return res.status(wanted.length ? 403 : 400).json({ error: wanted.length ? 'no channel of yours in that request' : 'no valid keys' });
 

@@ -1,6 +1,8 @@
-import { CHANNEL_INDEX, EVENTS, GROUPS, GROUP_CHANNELS } from '@ncc/shared/schema.js';
+import { CONDITIONS, EVENTS, GROUP_CHANNELS, SHIP_IDS, channelIndex, groupsOf, isCrewSource } from '@ncc/shared/schema.js';
 
-const IDX = Object.fromEntries(GROUPS.map((g) => [g, GROUP_CHANNELS[g].map((k) => CHANNEL_INDEX[k])]));
+// Column of each group's channels in a packed sample, per source kind (the first ship and the first crew hub stand for their kind)
+const IDX = Object.fromEntries([1, 11].map((id) => [isCrewSource(id) ? 'crew' : 'ship', Object.fromEntries(groupsOf(id).map((g) => [g, GROUP_CHANNELS[g].map((k) => channelIndex(id)[k])]))]));
+const kindName = (sourceId) => (isCrewSource(sourceId) ? 'crew' : 'ship');
 
 /**
  * Owns the frame loop (FRAME_MS), the 200 ms overview and the 1 Hz metrics emit.
@@ -8,12 +10,13 @@ const IDX = Object.fromEntries(GROUPS.map((g) => [g, GROUP_CHANNELS[g].map((k) =
  * listeners, only that group's columns of only the samples that are new.
  */
 export class Broadcaster {
-  constructor({ io, config, metrics, states, detector }) {
+  constructor({ io, config, metrics, states, detector, world }) {
     this.nsp = io.of('/live');
     this.config = config;
     this.metrics = metrics;
     this.states = states;
     this.detector = detector;
+    this.world = world;
     this.pending = new Map(); // sourceId -> packed samples since the last tick
     this.rxCount = 0; // samples accepted since the last metrics tick
     this.rxRate = 0; // samples accepted per second, over the last metrics tick
@@ -45,11 +48,12 @@ export class Broadcaster {
       this.pending.delete(sourceId);
       q.sort((a, b) => a[0] - b[0]);
       let emitted = false;
-      for (const group of GROUPS) {
+      const idxOf = IDX[kindName(sourceId)];
+      for (const group of groupsOf(sourceId)) {
         const room = `src:${sourceId}:${group}`;
         const listeners = rooms.get(room)?.size;
         if (!listeners) continue;
-        const idx = IDX[group];
+        const idx = idxOf[group];
         const samples = q.map((s) => [s[0], s[1], ...idx.map((i) => s[i])]);
         this.nsp.to(room).emit(EVENTS.FRAME, { sourceId, group, keys: GROUP_CHANNELS[group], samples });
         this.metrics.inc('framesOut');
@@ -60,16 +64,28 @@ export class Broadcaster {
     }
   }
 
-  /** Volatile: a slow client drops this instead of queueing it. One row per active source: [sourceId, flags]. */
+  /**
+   * One row per ship the server has heard from, including ones that went quiet (online bit off, last known values):
+   * [sourceId, flags, condition, warp*100, weakest shield*10, posX*10, posY*10, heading*10]. Volatile: a slow client
+   * drops it instead of queueing it. Only the registry's ships get a row; crew hubs have none and their ship's row carries the alert flags.
+   */
   sendOverview() {
     if (!this.nsp.adapter.rooms.get('overview')?.size) return;
-    const sources = [];
-    for (const c of this.states.sources.values()) {
-      if (!this.states.isActive(c)) continue;
-      const sev = this.detector.openSeverity(c.sourceId);
-      sources.push([c.sourceId, 1 | (sev >= 2 ? 2 : 0) | (sev >= 3 ? 4 : 0)]);
+    this.nsp.to('overview').volatile.emit(EVENTS.OVERVIEW, { ts: Date.now(), sources: this.overviewRows(), rx: this.rxRate });
+  }
+
+  overviewRows() {
+    const rows = [];
+    for (const id of SHIP_IDS) {
+      const c = this.states.sources.get(id);
+      if (!c?.v) continue;
+      const sev = this.detector.openSeverity(id);
+      const v = c.v;
+      const shield = Math.min(v.shieldFore, v.shieldAft, v.shieldPort, v.shieldStbd);
+      const cond = Math.max(0, CONDITIONS.indexOf(this.world?.condition(id) ?? 'normal'));
+      rows.push([id, (this.states.isActive(c) ? 1 : 0) | (sev >= 2 ? 2 : 0) | (sev >= 3 ? 4 : 0), cond, Math.round(v.warpFactor * 100), Math.round(shield * 10), Math.round(v.posX * 10), Math.round(v.posY * 10), Math.round(v.heading * 10)]);
     }
-    this.nsp.to('overview').volatile.emit(EVENTS.OVERVIEW, { ts: Date.now(), sources, rx: this.rxRate });
+    return rows;
   }
 
   sendMetrics() {

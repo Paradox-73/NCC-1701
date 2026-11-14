@@ -33,6 +33,7 @@ export function loadConfig(overrides = {}) {
     // storage: raw telemetry and alerts expire on their own (MongoDB TTL), so a small Atlas cluster does not fill up
     telemetryTtlSec: num(env.TELEMETRY_TTL_SEC, 24 * 3600),
     telemetryTimeseries: env.TELEMETRY_TIMESERIES !== '0', // 0 makes a new telemetry collection plain, as on a refusal
+    crewStoreEvery: num(env.CREW_STORE_EVERY, 1), // 5 on a hosted tier: the crew hub streams every second but stores one sample in 5
     alertsTtlSec: num(env.ALERTS_TTL_SEC, 7 * 24 * 3600),
     // streaming
     frameMs: num(env.FRAME_MS, 50),

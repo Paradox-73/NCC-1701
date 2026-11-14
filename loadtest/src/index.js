@@ -11,7 +11,7 @@ const PRESETS = {
   smoke: { sources: 5, clients: 5, seconds: 15 },
   small: { sources: 10, clients: 10, seconds: 30 },
   medium: { sources: 40, clients: 100, seconds: 60 },
-  large: { sources: 99, clients: 250, seconds: 90 },
+  large: { sources: 80, clients: 250, seconds: 90 },
 };
 
 const raw = Object.fromEntries(process.argv.slice(2).flatMap((x, i, all) => (x.startsWith('--') ? [[x.slice(2), all[i + 1] === undefined || all[i + 1].startsWith('--') ? 'true' : all[i + 1]]] : [])));
@@ -23,7 +23,7 @@ const cfg = {
   url: (raw.url ?? process.env.LOADTEST_URL ?? 'http://localhost:4000').replace(/\/$/, ''),
   sources: num('sources', 40),
   // first source id; start above a running simulator's sources (it uses the registry ids) so the two never replace each other's connection
-  firstSource: num('first-source', SOURCES.length + 1),
+  firstSource: num('first-source', Math.max(...SOURCES.map((s) => s.id)) + 1),
   // sources the dashboard clients subscribe to, e.g. --watch 1-3 for a running simulator; default: the load test's own sources
   watch: raw.watch ? raw.watch.split(',').flatMap((p) => { const [a, b] = p.split('-').map(Number); return Array.from({ length: (b || a) - a + 1 }, (_, i) => a + i); }) : null,
   hz: num('hz', 10),
@@ -65,6 +65,12 @@ async function metrics(token) {
 }
 
 async function main() {
+  if (raw.rogue) {
+    // one rogue phase against /ingest instead of a load run: auth, invalid or flood (simulator/src/rogue.js)
+    const { rogue } = await import('@ncc/simulator/rogue.js');
+    console.log(`rogue ${raw.rogue} against ${cfg.url}:`, JSON.stringify(await rogue({ url: cfg.url, key: cfg.key, phase: raw.rogue, seconds: Number(raw.seconds ?? 5) })));
+    return;
+  }
   console.log(`load test ${cfg.preset}: ${cfg.sources} sources x ${cfg.hz} Hz, ${cfg.clients} dashboard clients, ${cfg.seconds} s, groups ${cfg.groups.join(',')} -> ${cfg.url}`);
   // One login for all clients: the server limits login attempts, and the token is what a /live connection needs.
   const token = cfg.clients > 0 ? await login() : null;

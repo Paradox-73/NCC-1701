@@ -161,7 +161,7 @@ function System() {
   ];
   return (
     <div className="st-split" style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 0.9fr) minmax(0, 1.4fr)', height: '100%' }}>
-      <div style={{ padding: '10px 14px', borderRight: '1px solid #ffffff0d', minWidth: 0 }}>
+      <div className="st-fill-scroll" style={{ padding: '10px 14px', borderRight: '1px solid #ffffff0d', minWidth: 0 }}>
         <dl className="st-kv" style={{ gap: '5px 12px' }}>
           {rows.map(([l, v]) => <Fragment key={l}><dt>{l}</dt><dd style={{ fontSize: 14 }}><Num value={v} dec={0} className="" /></dd></Fragment>)}
         </dl>

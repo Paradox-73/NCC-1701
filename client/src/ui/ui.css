@@ -35,7 +35,7 @@
   box-shadow: 0 0 6px 1px color-mix(in oklab, var(--c) 70%, transparent), 0 0 22px -4px color-mix(in oklab, var(--c) 60%, transparent), inset 0 0 4px #ffffff55;
 }
 .lit.is-pending { animation: lit-blink 500ms steps(1) infinite; }
-.lit:disabled { cursor: not-allowed; filter: saturate(0.25) brightness(0.8); opacity: 0.55; }
+.lit:disabled { cursor: not-allowed; filter: grayscale(1) brightness(0.7); opacity: 0.45; }
 .lit__flash { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0; background: radial-gradient(closest-side, #fff, #ffffff00); }
 .lit__flash.on { animation: lit-flash 200ms var(--ease-in); }
 .lit--red { --c: var(--lit-red); --dim: var(--lit-red-dim); }

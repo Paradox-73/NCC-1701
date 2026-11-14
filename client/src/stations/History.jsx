@@ -41,7 +41,7 @@ export default function History({ shipId = 1 }) {
 
   return (
     <Station name="History" division="fleet" ship={kindOf(src) === 'ship' ? src : null} rows="auto minmax(320px, 1fr) auto" desk={desk}
-      end={`${shipCode(src)} · ${source.name}`}>
+      end={kindOf(src) === 'ship' ? undefined : `${shipCode(src)} · ${source.name}`}>
       <Monitor title="Channel" meta="source · reading · range" className="st-c12">
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 18px', alignItems: 'center', padding: '10px 12px' }}>
           <label className="st-label" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>Source

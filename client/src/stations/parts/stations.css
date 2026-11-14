@@ -113,3 +113,34 @@
   position: absolute; inset: 16% 17% 9%; border-radius: 10px 10px 6px 6px; overflow: hidden; background: #01060c;
   box-shadow: inset 0 0 0 3px #15181c, inset 0 6px 14px #000, 0 0 22px 2px #3fa3ff59;
 }
+
+/* ---- the communications panel (Comms): ear receiver, hailing lamp, channel switches, the hail target switches ----- */
+.monitor--comm .monitor__screen { background: #050506; }
+.comm { display: flex; flex-direction: column; gap: 10px; height: 100%; padding: 10px 12px; }
+.comm__top { display: flex; align-items: center; gap: 14px; }
+.ear { flex: none; width: 112px; height: auto; }
+.ear__cradle { fill: #2a2e33; stroke: #ffffff1f; }
+.ear__lamp { fill: #3b1210; stroke: #000; }
+.ear[data-on] .ear__lamp { fill: var(--lit-green); filter: drop-shadow(0 0 3px var(--lit-green)); }
+.ear__wave { fill: none; stroke: var(--lit-green); stroke-width: 1.6; stroke-linecap: round; opacity: 0; animation: ear-wave 1.2s var(--ease-out) infinite; }
+@keyframes ear-wave { 0% { opacity: 0.9; } 100% { opacity: 0; } }
+.comm__hail { display: flex; align-items: center; gap: 10px; min-width: 0; font: 400 10.5px/1.3 var(--font-display); letter-spacing: 0.08em; color: var(--mute); }
+.comm__hail[data-open] { color: var(--ready); }
+.comm__lamp { flex: none; width: 34px; height: 14px; border-radius: 3px; background: linear-gradient(180deg, #ffffff26, #ffffff00 50%), var(--lit-green-dim); box-shadow: inset 0 -3px 6px #0007; }
+.comm__hail[data-open] .comm__lamp { background: linear-gradient(180deg, #ffffff73, #ffffff00 50%), var(--lit-green); box-shadow: 0 0 10px 2px #3edb6a66; }
+.comm__switches { display: flex; align-items: flex-end; gap: 8px; padding: 8px 10px; border-radius: 4px; background: #0d0e10; box-shadow: inset 0 1px 3px #000; }
+.comm__switch { display: flex; flex-direction: column; align-items: center; gap: 4px; font: 400 9px/1 var(--font-display); letter-spacing: 0.08em; color: #8d95a0; }
+.comm__switch b { font-weight: 400; }
+.comm__switch i { display: block; width: 14px; height: 22px; border-radius: 3px; background: linear-gradient(180deg, #5d636a 0 45%, #2a2e33 46% 100%); box-shadow: 0 0 0 1px #000; }
+.comm__switch[data-on] i { background: linear-gradient(180deg, var(--lit-green) 0 45%, #2a2e33 46% 100%); box-shadow: 0 0 0 1px #000, 0 -2px 8px #3edb6a59; }
+.comm__switch[data-on] b { color: var(--ready); }
+.comm__count { margin-left: auto; font: 700 16px/1 var(--font-mono); color: var(--ink); white-space: nowrap; }
+.comm__targets { display: grid; gap: 4px; min-height: 0; overflow-y: auto; }
+.comm__target { display: grid; grid-template-columns: 20px 64px minmax(0, 1fr) auto; align-items: center; gap: 10px; min-height: 34px; padding: 0 10px; border: 0; border-radius: 4px; text-align: left; background: #ffffff06; color: var(--ink); }
+.comm__target:hover { background: #ffffff0f; }
+.comm__target[aria-checked='true'] { background: var(--raised); box-shadow: inset 0 0 0 1px #5cb8ff88; }
+/* a small toggle: lever down when off, up and lit on the hail target */
+.comm__toggle { position: relative; display: block; width: 12px; height: 20px; border-radius: 6px; background: #15171a; box-shadow: inset 0 0 0 1px #ffffff26; }
+.comm__toggle::after { content: ''; position: absolute; left: 2px; right: 2px; bottom: 2px; height: 8px; border-radius: 4px; background: #8d95a0; }
+.comm__target[aria-checked='true'] .comm__toggle::after { top: 2px; bottom: auto; background: var(--lit-blue); box-shadow: 0 0 6px var(--lit-blue); }
+@media (pointer: coarse), (max-width: 1023px) { .comm__target { min-height: 44px; } }

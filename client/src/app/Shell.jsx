@@ -99,10 +99,11 @@ export default function Shell({ powered, aboard }) {
         case 'v': case 'V': setViewer((v) => ({ ...v, mode: VIEW_MODES[(VIEW_MODES.indexOf(v.mode) + 1) % VIEW_MODES.length] })); return;
         case '+': case '=': setViewer((v) => ({ ...v, zoom: MAGNIFY[Math.min(3, MAGNIFY.indexOf(v.zoom) + 1)] })); return;
         case '-': case '_': setViewer((v) => ({ ...v, zoom: MAGNIFY[Math.max(0, MAGNIFY.indexOf(v.zoom) - 1)] })); return;
-        case 'ArrowUp': e.preventDefault(); order('helm.warp', { factor: Math.min(9, warpNow + 1) }); return;
-        case 'ArrowDown': e.preventDefault(); order('helm.warp', { factor: Math.max(0, warpNow - 1) }); return;
-        case 'ArrowLeft': e.preventDefault(); order('helm.heading', { delta: -5 }); return;
-        case 'ArrowRight': e.preventDefault(); order('helm.heading', { delta: 5 }); return;
+        // arrows steer only for a role that may: everyone else keeps them for scrolling
+        case 'ArrowUp': if (mayCommand(user, 'helm.warp')) { e.preventDefault(); order('helm.warp', { factor: Math.min(9, warpNow + 1) }); } return;
+        case 'ArrowDown': if (mayCommand(user, 'helm.warp')) { e.preventDefault(); order('helm.warp', { factor: Math.max(0, warpNow - 1) }); } return;
+        case 'ArrowLeft': if (mayCommand(user, 'helm.heading')) { e.preventDefault(); order('helm.heading', { delta: -5 }); } return;
+        case 'ArrowRight': if (mayCommand(user, 'helm.heading')) { e.preventDefault(); order('helm.heading', { delta: 5 }); } return;
         case 'a': case 'A': {
           const a = state.alerts.find((x) => !x.ack && x.sourceId === 1);
           if (!a) { say('No open alert to acknowledge'); return; }

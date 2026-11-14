@@ -1,3 +1,5 @@
+import { useId } from 'react';
+
 // Authored SVG icons, one 1.6 px stroke on a 20 px box, plus the Starfleet delta drawn per division (DESIGN.md, Assets).
 
 const PATHS = {
@@ -49,17 +51,18 @@ export const ROLE_EMBLEM = {
 
 /** emblem: command | science | medical | ops | fleet. Gold metal delta, emblem cut in black, as on the uniforms. */
 export function Delta({ emblem = 'command', className = 'delta', title }) {
+  const id = useId(); // one gradient per drawing: a shared id breaks when its first copy is hidden
   return (
     <svg viewBox="0 0 24 28" className={className} role={title ? 'img' : undefined} aria-hidden={title ? undefined : true}>
       {title && <title>{title}</title>}
       <defs>
-        <linearGradient id="delta-gold" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#fbe7a6" />
           <stop offset="0.45" stopColor="#e3b44a" />
           <stop offset="1" stopColor="#9b6f1d" />
         </linearGradient>
       </defs>
-      <path d={DELTA} fill="url(#delta-gold)" stroke="#5c3f0c" strokeWidth="0.6" />
+      <path d={DELTA} fill={`url(#${id})`} stroke="#5c3f0c" strokeWidth="0.6" />
       <g fill="#14110a" stroke="#14110a">{EMBLEM[emblem]}</g>
     </svg>
   );

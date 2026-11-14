@@ -75,11 +75,14 @@ function ColdOpen({ intro, onStart, onDone }) {
   const sound = useSound();
   const skip = useCallback(() => { intro.fadeOut(900); onDone(); }, [intro, onDone]);
 
+  const alive = useRef(true);
+  useEffect(() => () => { alive.current = false; }, []);
   const engage = async () => {
     if (!soundChosen()) setSound(true); // the Engage click is the gesture browsers need; a chosen mute stays muted
     const t0 = performance.now();
     setT(0);
     const a = await intro.start();
+    if (!alive.current) return undefined; // skipped while the audio was starting
     onStart();
     // the audio's own clock keeps the lines on the narration; the wall clock covers a refused or stalled play
     const clock = () => Math.max(a && !a.paused && a.currentTime > 0.05 ? a.currentTime * 1000 : 0, performance.now() - t0 - 250);

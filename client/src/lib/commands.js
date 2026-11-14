@@ -65,5 +65,14 @@ const AYE = {
   'ship.condition': (p) => ({ red: 'Red alert', yellow: 'Yellow alert', normal: 'Stand down' })[p.level],
   'comms.hail': () => 'Hailing frequencies open',
   'comms.close': () => 'Channel closed',
+  'engineering.allocate': (p) => `${p.preset} power`,
+  'engineering.coldRestart': () => 'Cold restart',
+  'transporter.energize': () => 'Energize',
+  'medical.inoculate': () => 'Inoculate',
+  'medical.quarantine': (p) => `Quarantine deck ${p.deck}`,
+  'science.scan': (p) => `${p.mode ?? ''} scan`,
+  'security.ventGas': (p) => `Vent gas, deck ${p.deck}`,
+  'scenario.start': (p) => `Scenario ${p.id?.replace(/-/g, ' ')}`,
+  'scenario.stop': () => 'Scenario stopped',
 };
 export const commandWords = (type, payload = {}) => AYE[type]?.(payload) ?? type;

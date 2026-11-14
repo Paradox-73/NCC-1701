@@ -99,8 +99,9 @@ function ShieldRing({ src }) {
   const now = performance.now();
   return (
     <div style={{ display: 'grid', gridTemplateRows: 'auto minmax(0, 1fr) auto', height: '100%', padding: '10px 12px', gap: 6 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
         <Chip level={up ? 'ok' : 'off'}>{up ? 'SHIELDS UP' : 'SHIELDS DOWN'}</Chip>
+        {QUADS.map(([k, l]) => { const lv = levelOf(k, read(src, k)); return lv ? <Chip key={k} level={lv}>{l.toUpperCase()} {lv === 'crit' ? 'RED' : 'YELLOW'}</Chip> : null; })}
       </div>
       <div style={{ position: 'relative', minHeight: 0 }}>
       <svg viewBox="0 0 240 240" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} role="img"

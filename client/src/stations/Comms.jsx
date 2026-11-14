@@ -37,19 +37,19 @@ function Waterfall({ src }) {
 
 /** One 2 px row of the waterfall at height y. */
 function row(ctx, w, y, t, carrier, noise, loss, open) {
-    ctx.clearRect(0, y, w, 2);
-    for (let x = 0; x < w; x += 2) {
-      const r = Math.sin(x * 12.9898 + t * 0.0137) * 43758.5;
-      let v = (r - Math.floor(r)) * (0.08 + noise * 0.9);
-      for (let i = 0; i < open; i++) {
-        const dx = x - CARRIER_SLOTS[i] * w;
-        const drop = Math.sin((t / 80) * (i + 1.7)) * 0.5 + 0.5 < loss * 1.4; // lost frames show as gaps in the line
-        if (!drop) v += (carrier / 60) * Math.exp(-(dx * dx) / 18);
-      }
-      v = clamp(v);
-      ctx.fillStyle = v > 0.75 ? `rgba(235,248,255,${v})` : `rgba(88,196,255,${v * 0.95})`;
-      ctx.fillRect(x, y, 2, 2);
+  ctx.clearRect(0, y, w, 2);
+  for (let x = 0; x < w; x += 2) {
+    const r = Math.sin(x * 12.9898 + t * 0.0137) * 43758.5;
+    let v = (r - Math.floor(r)) * (0.08 + noise * 0.9);
+    for (let i = 0; i < open; i++) {
+      const dx = x - CARRIER_SLOTS[i] * w;
+      const drop = Math.sin((t / 80) * (i + 1.7)) * 0.5 + 0.5 < loss * 1.4; // lost frames show as gaps in the line
+      if (!drop) v += (carrier / 60) * Math.exp(-(dx * dx) / 18);
     }
+    v = clamp(v);
+    ctx.fillStyle = v > 0.75 ? `rgba(235,248,255,${v})` : `rgba(88,196,255,${v * 0.95})`;
+    ctx.fillRect(x, y, 2, 2);
+  }
 }
 
 /** Oscilloscope trace of the carrier: amplitude from carrier strength, noise from interference, with phosphor persistence. */

@@ -24,7 +24,14 @@ const VITALS = [
 const CLS = [C.raised, C.dev1, C.warn, C.crit]; // under 1, 1-2, 2-3, over 3 standard deviations (DESIGN.md heatmap)
 const MEDICAL = 'Medical records: CMO and captain only.';
 // the overview lists ships only, so a crew hub counts as silent when its newest sample is over 5 s old
-const isStale = (hub) => { const r = getRing(hub, BIO[0]); return !!r?.len && Date.now() - r.lastTs > 5000; };
+const seen = new Map(); // hub -> { seq, at }: when this browser last saw the newest sample change
+const isStale = (hub) => {
+  const r = getRing(hub, BIO[0]);
+  if (!r?.len) return false;
+  const s = seen.get(hub);
+  if (!s || s.seq !== r.lastSeq) { seen.set(hub, { seq: r.lastSeq, at: Date.now() }); return false; }
+  return Date.now() - s.at > 5000;
+};
 const who = (n) => `${crewLabel(n)} · ${DECK_NAMES[DECK_OF(n) - 1]}`;
 
 /** Each crew member's own baseline per vital: the median of what the store holds (up to 600 samples), refreshed every 15 s. */
@@ -212,9 +219,9 @@ export default function Sickbay({ shipId = 1 }) {
         <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
           <dl className="st-kv" style={{ gridTemplateColumns: 'repeat(4, auto 1fr)', padding: '10px 12px', gap: '6px 8px', borderBottom: '1px solid #ffffff0d' }}>
             <dt>Aboard</dt><dd style={{ fontSize: 14 }}><Num v={read(shipId, 'crewAboard')} className="" /></dd>
-            <dt>Watch</dt><dd style={{ fontSize: 14 }}><Num v={read(shipId, 'crewWatch')} className="" level={levelOf('crewWatch', read(shipId, 'crewWatch'))} /></dd>
-            <dt>Critical</dt><dd style={{ fontSize: 14 }}><Num v={read(shipId, 'crewCritical')} className="" level={levelOf('crewCritical', read(shipId, 'crewCritical'))} /></dd>
-            <dt>Mean HR</dt><dd style={{ fontSize: 14 }}><Num v={read(shipId, 'crewMeanHr')} dec={0} className="" /></dd>
+            <dt>Watch</dt><dd style={{ fontSize: 14 }}><Num v={read(shipId, 'crewWatch')} className="" level={levelOf('crewWatch', read(shipId, 'crewWatch'))} /> <LevelChip level={levelOf('crewWatch', read(shipId, 'crewWatch'))} /></dd>
+            <dt>Critical</dt><dd style={{ fontSize: 14 }}><Num v={read(shipId, 'crewCritical')} className="" level={levelOf('crewCritical', read(shipId, 'crewCritical'))} /> <LevelChip level={levelOf('crewCritical', read(shipId, 'crewCritical'))} /></dd>
+            <dt>Mean HR</dt><dd style={{ fontSize: 14 }}><Num v={read(shipId, 'crewMeanHr')} dec={0} className="" /><span className="st-unit">bpm</span></dd>
           </dl>
           {!medical ? <div style={{ position: 'relative', flex: 1 }}><div className="st-blank"><b>RESTRICTED</b><span>Counts only. {MEDICAL}</span></div></div> : (
             <div style={{ flex: 1, minHeight: 0 }}>

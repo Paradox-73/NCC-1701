@@ -113,7 +113,7 @@ export function Monitor({ title, meta: right, state = 'live', className = '', st
             <div className={`st-blank ${state === 'nosignal' ? 'st-static' : ''}`} role="status">
               {state === 'restricted' && <Lock />}
               <b className={state === 'awaiting' ? 'st-blink-slow' : undefined}>{word}</b>
-              <span>{note ?? text}</span>
+              <span>{state === 'restricted' ? note ?? text : text}</span>
             </div>
           )}
         </div>
@@ -376,7 +376,7 @@ export function useKeys(map) {
   ref.current = map;
   useEffect(() => {
     const on = (e) => {
-      if (e.ctrlKey || e.metaKey || e.altKey || e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
+      if (e.repeat || e.ctrlKey || e.metaKey || e.altKey || e.target.closest?.('input, textarea, select, [contenteditable="true"]')) return;
       const fn = ref.current[(e.shiftKey && e.key.length === 1 ? 'Shift+' : '') + e.key] ?? ref.current[e.key];
       if (fn) { e.preventDefault(); fn(e); }
     };

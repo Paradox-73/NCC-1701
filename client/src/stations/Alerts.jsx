@@ -64,14 +64,16 @@ function AlertList({ shipId }) {
  */
 export default function Alerts({ open, onClose, shipId }) {
   const closeRef = useRef(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
   useEffect(() => {
     if (!open) return undefined;
     const back = document.activeElement;
     closeRef.current?.focus();
-    const esc = (e) => { if (e.key === 'Escape') onClose?.(); };
+    const esc = (e) => { if (e.key === 'Escape') onCloseRef.current?.(); };
     window.addEventListener('keydown', esc);
     return () => { window.removeEventListener('keydown', esc); back?.focus?.(); };
-  }, [open, onClose]);
+  }, [open]);
   if (open === undefined) {
     return (
       <Station name="Alerts" division="fleet" ship={null} rows="minmax(360px, 1fr)">

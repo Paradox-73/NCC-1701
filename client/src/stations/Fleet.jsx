@@ -5,7 +5,7 @@ import { useAuth } from '../lib/auth.jsx';
 import { useSubscription, useTick } from '../lib/hooks.js';
 import { ackAlert, state } from '../lib/store.js';
 import { SHIPS, alertFlagOf, conditionOf, isOpen, levelOf, linkOf, posOf, read, ringOf, shipCode, shipName, stardate, useCommand } from './parts/data.js';
-import { C, Chip, ConsoleStrip, J, LitButton, Monitor, Num, Station, clamp, fmt, useCanvas } from './parts/ui.jsx';
+import { C, Chip, ConsoleStrip, J, LevelChip, LitButton, Monitor, Num, Station, clamp, fmt, useCanvas } from './parts/ui.jsx';
 
 const COND = { red: ['crit', 'RED ALERT'], yellow: ['warn', 'YELLOW ALERT'], normal: ['ok', 'NORMAL'] };
 const ringColor = (id) => {
@@ -99,6 +99,7 @@ function ShipCard({ id, onOpen }) {
   const open = state.alerts.filter((a) => a.sourceId === id && isOpen(a)).length;
   const [lv, word] = cond ? COND[cond] : [flag ?? 'off', flag === 'crit' ? 'RED ALERTS OPEN' : flag === 'warn' ? 'YELLOW ALERTS OPEN' : 'NO OPEN ALERTS'];
   const sh = weakest(id);
+  const shLv = sh < 25 ? 'crit' : sh < 50 ? 'warn' : null; // DOMAIN.md shield limits: warn under 50 %, critical under 25 %
   const body = (
     <>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
@@ -110,7 +111,7 @@ function ShipCard({ id, onOpen }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}><Chip level={lv === 'ok' ? 'ok' : lv}>{cond ? `CONDITION ${word}` : word}</Chip></div>
       <dl className="st-kv" style={{ gridTemplateColumns: 'auto 1fr auto 1fr', gap: '4px 10px' }}>
         <dt>Warp</dt><dd style={{ fontSize: 14 }}><Num v={posOf(id)?.warp ?? read(id, 'warpFactor')} dec={1} className="" /></dd>
-        <dt>Weakest shield</dt><dd style={{ fontSize: 14 }}><Num v={sh} dec={0} className="" level={sh < 25 ? 'crit' : sh < 50 ? 'warn' : null} /><span className="st-unit">%</span></dd>
+        <dt>Weakest shield</dt><dd style={{ fontSize: 14 }}><Num v={sh} dec={0} className="" level={shLv} /><span className="st-unit">%</span>{shLv && <> <LevelChip level={shLv} /></>}</dd>
         <dt>Open alerts</dt><dd style={{ fontSize: 14 }}>{open}</dd>
         <dt>Crew</dt><dd style={{ fontSize: 14 }}><Num v={read(id, 'crewAboard')} className="" /><span className="st-unit">aboard</span></dd>
       </dl>
@@ -162,7 +163,7 @@ function System() {
     <div className="st-split" style={{ display: 'grid', gridTemplateColumns: 'minmax(220px, 0.9fr) minmax(0, 1.4fr)', height: '100%' }}>
       <div style={{ padding: '10px 14px', borderRight: '1px solid #ffffff0d', minWidth: 0 }}>
         <dl className="st-kv" style={{ gap: '5px 12px' }}>
-          {rows.map(([l, v]) => <Fragment key={l}><dt>{l}</dt><dd style={{ fontSize: 14 }}><Num v={v} dec={0} className="" level={(l.startsWith('Invalid') || l.startsWith('Throttled')) && v > 0 ? 'warn' : null} /></dd></Fragment>)}
+          {rows.map(([l, v]) => <Fragment key={l}><dt>{l}</dt><dd style={{ fontSize: 14 }}><Num v={v} dec={0} className="" /></dd></Fragment>)}
         </dl>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', padding: 10, minWidth: 0, minHeight: 160 }}>

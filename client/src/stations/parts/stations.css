@@ -1,6 +1,6 @@
 /* Station panels. Tokens follow docs/DESIGN.md and are scoped to the station roots, so loading a station never changes
    the shell's own variables. Classes are prefixed st- so they never collide with the shell's. */
-.st-station, .st-drawer {
+.st-station, .st-drawer, .st-drawer-bg {
   --color-void: #050608; --color-console: #0b0c0f; --color-panel: #14161a; --color-raised: #1e2127;
   --color-bulkhead: #56625e; --color-line: #ffffff14; --color-railing: #e0522a;
   --color-ink: #f1f3f5; --color-ink2: #b3b9c2; --color-mute: #8d95a0;

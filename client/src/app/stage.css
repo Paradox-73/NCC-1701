@@ -32,8 +32,8 @@
 .narration__line[data-done] > span:first-child::after { display: none; }
 .narration__line:last-child[data-done] > span:first-child::after { display: inline-block; }
 @keyframes caret { 50% { opacity: 0; } }
-.coldopen__bar { position: absolute; right: 28px; bottom: 28px; display: flex; align-items: center; gap: 10px; }
-/* the gate's and the cold open's secondary controls: sound and skip */
+.stage__bar { position: absolute; right: 28px; bottom: 28px; z-index: 3; display: flex; align-items: center; gap: 10px; }
+/* the secondary controls of the gate, the cold open and the login: sound and skip */
 .stage-pill { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border: 1px solid var(--line2); border-radius: 20px; background: #0008; color: var(--ink2); font: 500 13px var(--font-ui); cursor: pointer;
   transition: color var(--t-hover) var(--ease-in), background-color var(--t-hover) var(--ease-in); }
 .stage-pill:hover { color: var(--ink); background: var(--raised); }
@@ -57,7 +57,7 @@
   .coldopen { padding: 0 20px 96px; }
   .narration__line { font-size: 17px; }
   .narration__line:first-child { font-size: 19px; }
-  .coldopen__bar { right: 16px; bottom: 20px; }
+  .stage__bar { right: 16px; bottom: 20px; }
   .gate__title { font-size: 30px; }
   .stage { overflow-y: auto; }
   .stage__veil { background: linear-gradient(0deg, #020308 42%, #02030800 70%); }

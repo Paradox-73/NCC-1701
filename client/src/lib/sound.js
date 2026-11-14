@@ -2,6 +2,7 @@
 // start audio only after a user gesture, so the first pointer or key press anywhere creates the one AudioContext
 // and loads every clip; later presses resume it if the browser suspended it. A clip is /sfx/<cue>.mp3 when the
 // sound kit ships it, else a few lines of oscillator code stand in. Master gain -12 dB, at most 4 voices, a cooldown per cue.
+// The original-series theme loops quietly under everything (see Music below); a mute suspends the whole context.
 import { useSyncExternalStore } from 'react';
 
 const MUTED = 'ncc.muted'; // sessionStorage, '1' once the user mutes
@@ -20,6 +21,12 @@ const buffers = new Map();
 const lastAt = new Map();
 const listeners = new Set();
 
+// a clip under client/public as an AudioBuffer, or null (missing, not audio, undecodable)
+const load = (path) => fetch(`${import.meta.env.BASE_URL}${path}`)
+  .then((r) => (r.ok && /audio/.test(r.headers.get('content-type') || '') ? r.arrayBuffer() : null))
+  .then((b) => b && ctx.decodeAudioData(b))
+  .catch(() => null);
+
 function ensureContext() {
   if (ctx) { if (ctx.state === 'suspended') ctx.resume(); return; }
   const AC = window.AudioContext || window.webkitAudioContext;
@@ -28,13 +35,53 @@ function ensureContext() {
   master = ctx.createGain();
   master.gain.value = 0.25; // -12 dB
   master.connect(ctx.destination);
-  for (const cue of CUES) {
-    fetch(`${import.meta.env.BASE_URL}sfx/${cue}.mp3`)
-      .then((r) => (r.ok && /audio/.test(r.headers.get('content-type') || '') ? r.arrayBuffer() : null))
-      .then((b) => b && ctx.decodeAudioData(b))
-      .then((buf) => buf && buffers.set(cue, buf))
-      .catch(() => { /* the synth stands in */ });
-  }
+  for (const cue of CUES) load(`sfx/${cue}.mp3`).then((buf) => buf && buffers.set(cue, buf)); // else the synth stands in
+  load('audio/theme.mp3').then((buf) => buf && startMusic(buf));
+}
+
+// ---- music ---------------------------------------------------------------------------------------------------
+// client/public/audio/theme.mp3 is the original-series end-credits theme, cut at 29.9 s. Its melody comes round again
+// every 23.641 s, so after one pass from the start it loops 5.500 to 29.141 s, the pair of points where the two
+// passes line up best, with an equal-power 0.5 s crossfade. About -27 LUFS, under the sound cues. It ducks out while
+// the opening plays (that has its own music) and to a third under the red-alert klaxon.
+const LOOP = { from: 5.5, to: 29.141, xf: 0.5 };
+const MUSIC_LEVEL = 0.45;
+const FADE_IN = Float32Array.from({ length: 32 }, (_, i) => Math.sin((i / 31) * (Math.PI / 2)));
+const FADE_OUT = FADE_IN.slice().reverse();
+const ducks = { intro: 1, alert: 1 };
+let music = null; // the music's gain node, once the theme has loaded
+
+/** Ducks the background music: `who` is 'intro' or 'alert', `to` the share of its level (1 lifts that duck). */
+export function duckMusic(who, to, seconds = 0.4) {
+  ducks[who] = to;
+  music?.gain.setTargetAtTime(MUSIC_LEVEL * ducks.intro * ducks.alert, ctx.currentTime, seconds / 3);
+}
+
+function startMusic(buf) {
+  music = ctx.createGain();
+  music.gain.value = 0;
+  music.connect(ctx.destination);
+  duckMusic('intro', ducks.intro, 1.5); // fade in
+  let when = ctx.currentTime + 0.05;
+  let offset = 0;
+  // keeps the next pass scheduled on the audio clock; a suspended (muted) clock stands still, so nothing piles up
+  const queue = () => {
+    while (when - ctx.currentTime < 3) {
+      const src = ctx.createBufferSource();
+      const g = ctx.createGain();
+      src.buffer = buf;
+      src.connect(g).connect(music);
+      const len = LOOP.to - offset;
+      if (offset) g.gain.setValueCurveAtTime(FADE_IN, when, LOOP.xf);
+      g.gain.setValueCurveAtTime(FADE_OUT, when + len, LOOP.xf);
+      src.start(when, offset);
+      src.stop(when + len + LOOP.xf);
+      when += len;
+      offset = LOOP.from;
+    }
+  };
+  queue();
+  setInterval(queue, 1000);
 }
 
 // pointerdown is a mouse's activation, pointerup a finger's: either may be the first gesture
@@ -45,6 +92,7 @@ export function setSound(on) {
   enabled = on;
   try { if (on) sessionStorage.removeItem(MUTED); else sessionStorage.setItem(MUTED, '1'); } catch { /* private mode */ }
   if (on) ensureContext();
+  else ctx?.suspend(); // silences the music and any cue still ringing
   listeners.forEach((fn) => fn());
 }
 export const toggleSound = () => setSound(!enabled);
@@ -150,4 +198,5 @@ export function play(cue, times = 1) {
     dur = SYNTH[cue](); // plays once; the red synth already has its two whoops
   }
   setTimeout(() => { voices--; }, dur * 1000 + 50);
+  if (cue === 'red') { duckMusic('alert', 1 / 3, 0.15); setTimeout(() => duckMusic('alert', 1, 1.2), dur * 1000); }
 }

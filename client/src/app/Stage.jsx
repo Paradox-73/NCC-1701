@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { reducedMotion } from '../lib/chartTheme.js';
 import { stardate } from '../lib/ship.js';
-import { play, soundOn, toggleSound, useSound } from '../lib/sound.js';
+import { duckMusic, play, soundOn, toggleSound, useSound } from '../lib/sound.js';
 import Login from '../pages/Login.jsx';
 import StarshipView, { hasWebGL } from '../three/StarshipView.jsx';
 import { FLIGHT_MS, NARRATION_AT, THEME_AT } from '../three/rig.js';
@@ -39,7 +39,8 @@ function Typed({ text, on }) {
 }
 
 // The original-series opening (client/public/audio/intro.mp3): narration, then the theme. It follows the global
-// sound switch live, and fades out when the user skips or picks a position.
+// sound switch live, and fades out when the user skips or picks a position. The background music ducks out while
+// it plays and comes back when it stops.
 function useIntro() {
   const audio = useRef(null);
   const sound = useSound();
@@ -49,7 +50,11 @@ function useIntro() {
     const a = new Audio(`${import.meta.env.BASE_URL}audio/intro.mp3`);
     a.muted = !soundOn();
     audio.current = a;
-    return a.play().then(() => a, () => null); // a refused play leaves the cold open running on its own clock
+    duckMusic('intro', 0);
+    const back = () => duckMusic('intro', 1, 1.5);
+    a.addEventListener('pause', back);
+    a.addEventListener('ended', back);
+    return a.play().then(() => a, () => { back(); return null; }); // a refused play leaves the cold open running on its own clock
   };
   const fadeOut = useCallback((ms = 1200) => {
     const a = audio.current;
@@ -123,7 +128,7 @@ function ColdOpen({ intro, onStart, onDone }) {
       <div className="narration" aria-live="polite">
         {lines.map((l, i) => <Typed key={i} text={l} on={i < shown} />)}
       </div>
-      <div className="coldopen__bar" onPointerDown={(e) => e.stopPropagation()}>
+      <div className="stage__bar" onPointerDown={(e) => e.stopPropagation()}>
         <SoundToggle />
         <button type="button" className="stage-pill" onClick={skip}>Skip <KeyCap>any key</KeyCap></button>
       </div>
@@ -164,7 +169,7 @@ export default function Stage({ phase, onOpened, onBoarded, onFaded }) {
   const skip = useRef(() => {});
   const intro = useIntro();
   useEffect(() => {
-    const onM = (e) => { if ((e.key === 'm' || e.key === 'M') && phase === 'coldopen' && !e.target.closest?.('input')) toggleSound(); };
+    const onM = (e) => { if ((e.key === 'm' || e.key === 'M') && (phase === 'coldopen' || phase === 'identify') && !e.target.closest?.('input')) toggleSound(); };
     window.addEventListener('keydown', onM);
     return () => window.removeEventListener('keydown', onM);
   }, [phase]);
@@ -199,6 +204,7 @@ export default function Stage({ phase, onOpened, onBoarded, onFaded }) {
       <div className="stage__veil" aria-hidden="true" />
       {phase === 'coldopen' && <ColdOpen intro={intro} onStart={() => setGliding(true)} onDone={onOpened} />}
       {(phase === 'identify' || phase === 'boarding') && <Login leaving={phase === 'boarding'} />}
+      {phase === 'identify' && <div className="stage__bar"><SoundToggle /></div>}
       {(phase === 'boarding' || phase === 'fade') && flying && <div className="stage__flash" aria-hidden="true" />}
       {phase === 'boarding' && flying && <p className="stage__skip label">Boarding the bridge · click or Esc to skip</p>}
     </div>

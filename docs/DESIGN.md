@@ -203,7 +203,9 @@ Reduced motion, from `prefers-reduced-motion: reduce` or the Help toggle (`data-
 
 ## Sound
 
-On by default. The speaker button (top bar, Engage gate, cold open) or `M` mutes it; a mute lasts for the tab session only, so a forgotten mute never silences a later visit. Browsers start audio only after a user gesture, so the first click, tap or key press anywhere creates the one `AudioContext` and fetches and decodes every clip into an `AudioBuffer`. Sound runs on the Web Audio API: one master gain at -12 dB, at most 4 voices at once, and a cooldown per cue so a 50 Hz stream never machine-guns beeps.
+On by default. The speaker button (top bar, Engage gate, cold open) or `M` mutes it; a mute lasts for the tab session only, so a forgotten mute never silences a later visit. Browsers start audio only after a user gesture, so the first click, tap or key press anywhere creates the one `AudioContext` and fetches and decodes every clip into an `AudioBuffer`. Sound runs on the Web Audio API: one master gain at -12 dB, at most 4 voices at once, and a cooldown per cue so a 50 Hz stream never machine-guns beeps. Muting suspends the `AudioContext`.
+
+Music: the original-series theme (`client/public/audio/theme.mp3`, the end-credits theme cut to 29.9 s) loops under the whole app, from the gate to every station, at about -27 LUFS, below the cues. It starts with the first gesture, lives in `lib/sound.js` rather than in a page, so route changes and signing in or out never restart it, and loops 5.5 to 29.141 s, one turn of the melody, with an equal-power 0.5 s crossfade. It ducks out while the opening (`intro.mp3`, which has its own music) plays and to a third under the red-alert klaxon.
 
 The team lead approved original-series sound effects with credits (see Assets and credits). The clips below are from the TrekCore audio archive; sizes are the downloaded files, before trimming. Trim each to the length given, mono, 64 kbps:
 

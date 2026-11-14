@@ -400,10 +400,8 @@ export default function StarshipCanvas({ className, style, rig, spin = true, ...
   const onSteer = useCallback(() => setSteered(true), []);
   const [still] = useState(reducedMotion);
   const [touch] = useState(() => matchMedia('(pointer: coarse)').matches);
-  // On a phone or a narrow window the login console sits under the ship and the page has to scroll to it. Orbit
-  // controls on the full-screen canvas would take every swipe, so the ship only turns and zooms with a mouse on a wide
-  // screen; elsewhere it just spins on its own.
-  const [steerable] = useState(() => !matchMedia('(pointer: coarse), (max-width: 1023px)').matches);
+  // phones too: a swipe on the ship turns it and a pinch zooms; a swipe on the console below scrolls the page
+  const steerable = true;
   return (
     <div className={className} style={{ position: 'relative', width: '100%', height: '100%', ...style }}>
       <Canvas dpr={[1, 1.5]} resize={{ offsetSize: true }} camera={{ position: [10, 5, 10], fov: 40 }} gl={{ antialias: true, powerPreference: 'low-power' }}>

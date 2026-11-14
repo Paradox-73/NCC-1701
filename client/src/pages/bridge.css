@@ -157,7 +157,7 @@
 .tour__keys { margin-top: 10px; }
 
 /* ---- narrow screens: the bridge as a list of stations ---- */
-.bridge--list { display: block; overflow: visible; background: var(--void); }
+.bridge--list { display: block; overflow: visible; overflow-x: clip; background: var(--void); }
 .bridge__list { display: grid; gap: 12px; padding: 12px; padding-bottom: 32px; }
 .bridge__list > * { position: relative; left: auto; top: auto; width: auto; height: auto; }
 .bridge--list .viewscreen { height: auto; }
@@ -181,12 +181,12 @@
 .bridge--list .tile__lamps, .bridge--list .helm__lamps { display: none; }
 
 /* ---- scenario progress over the viewscreen, the presenter's button, the log ticker ---- */
-.scn { position: absolute; left: 18px; right: 18px; top: 16px; z-index: 3; display: flex; align-items: center; gap: 12px; height: 34px; padding: 0 12px;
+.scn { position: absolute; left: 18px; right: 18px; top: 16px; z-index: 3; display: flex; align-items: center; gap: 12px; height: 34px; padding: 0 12px; overflow: hidden;
   border-radius: 8px; background: #050608cc; backdrop-filter: blur(4px); box-shadow: inset 0 0 0 1px var(--line2); animation: rise 320ms var(--ease-in); }
 .scn__lamp { width: 9px; height: 9px; border-radius: 50%; background: var(--lit-green); box-shadow: 0 0 8px var(--lit-green); animation: jewel-slow 1s steps(1) infinite; }
 .scn[data-state='awaiting'] .scn__lamp { background: var(--lit-amber); box-shadow: 0 0 8px var(--lit-amber); animation-duration: 500ms; }
 .scn[data-state='ended'] .scn__lamp, .scn[data-state='stopped'] .scn__lamp { background: var(--mute); box-shadow: none; animation: none; }
-.scn__title { font-size: 11px; color: var(--ink); white-space: nowrap; }
+.scn__title { min-width: 0; font-size: 11px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .scn__state { font-size: 11px; color: var(--ink2); white-space: nowrap; }
 .scn[data-state='awaiting'] .scn__state { color: var(--lit-amber); }
 .scn__bar { flex: 1; min-width: 40px; height: 4px; border-radius: 2px; background: #ffffff14; overflow: hidden; }
@@ -217,7 +217,8 @@
 .scenario__act { display: flex; justify-content: flex-end; }
 .scenarios__error { color: var(--crit-ink); font-size: 13px; margin-top: 8px; }
 .scenarios__keys { margin-top: 6px; }
-.bridge--list .scn { left: 8px; right: 8px; top: 8px; gap: 8px; }
+.bridge--list .scn { left: 8px; right: 8px; top: 8px; gap: 8px; padding: 0 8px; }
+.bridge--list .scn__state { font-size: 10px; }
 .bridge--list .scn__time, .bridge--list .scn__bar { display: none; }
 .bridge--list .await { bottom: 8px; padding: 6px; }
 .bridge--list .lit.await__btn { min-width: 150px; }

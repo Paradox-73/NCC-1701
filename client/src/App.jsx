@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Shell from './app/Shell.jsx';
 import Stage from './app/Stage.jsx';
 import { homeOf } from './app/stations.js';
@@ -29,10 +29,14 @@ function Root() {
   // afterwards is untouched.
   const navigate = useNavigate();
   const signedIn = useRef(!!user);
+  // Signed out (or arriving at a station link without a session): the address goes back to the start page, replacing
+  // the station in history, so Back never shows a page the next person has not signed in for.
+  const { pathname } = useLocation();
   useEffect(() => {
     if (user && !signedIn.current) navigate(homeOf(user), { replace: true });
+    else if (!user && pathname !== '/') navigate('/', { replace: true });
     signedIn.current = !!user;
-  }, [user, navigate]);
+  }, [user, pathname, navigate]);
   const toIdentify = useCallback(() => setPhase('identify'), []);
   const toFade = useCallback(() => setPhase('fade'), []);
   const toAboard = useCallback(() => setPhase('aboard'), []);

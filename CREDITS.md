@@ -10,32 +10,32 @@ Third-party assets used in Subspace. Star Trek and related marks belong to their
 
 ## Open-source libraries
 
-Runtime dependencies, with the version installed and the licence from each package.
+Every npm package the workspaces depend on directly, with the version installed by `npm install` and its licence (read from each package's own `package.json`). Their own dependencies come with them under their licences; `npm ls --all` lists them.
 
-| Library | Version | Licence | Used in |
-|---|---|---|---|
-| [@fontsource-variable/space-grotesk](https://www.npmjs.com/package/@fontsource-variable/space-grotesk) | 5.3.0 | OFL-1.1 | client |
-| [@fontsource/michroma](https://www.npmjs.com/package/@fontsource/michroma) | 5.3.0 | OFL-1.1 | client |
-| [@fontsource/space-mono](https://www.npmjs.com/package/@fontsource/space-mono) | 5.3.0 | OFL-1.1 | client |
-| [@react-three/drei](https://www.npmjs.com/package/@react-three/drei) | 10.7.9 | MIT | client |
-| [@react-three/fiber](https://www.npmjs.com/package/@react-three/fiber) | 9.8.2 | MIT | client |
-| [@react-three/postprocessing](https://www.npmjs.com/package/@react-three/postprocessing) | 3.2.2 | MIT | client |
-| [postprocessing](https://www.npmjs.com/package/postprocessing) | 6.39.6 | Zlib | client |
-| [react](https://www.npmjs.com/package/react) | 19.3.1 | MIT | client |
-| [react-dom](https://www.npmjs.com/package/react-dom) | 19.3.1 | MIT | client |
-| [react-router-dom](https://www.npmjs.com/package/react-router-dom) | 7.18.5 | MIT | client |
-| [socket.io-client](https://www.npmjs.com/package/socket.io-client) | 4.8.4 | MIT | client, simulator, loadtest |
-| [socket.io-msgpack-parser](https://www.npmjs.com/package/socket.io-msgpack-parser) | 3.0.2 | MIT | client, server, simulator, loadtest |
-| [three](https://www.npmjs.com/package/three) | 0.187.0 | MIT | client |
-| [uplot](https://www.npmjs.com/package/uplot) | 1.6.32 | MIT | client |
-| [bcryptjs](https://www.npmjs.com/package/bcryptjs) | 2.4.3 | MIT | server |
-| [cors](https://www.npmjs.com/package/cors) | 2.8.6 | MIT | server |
-| [dotenv](https://www.npmjs.com/package/dotenv) | 16.6.1 | BSD-2-Clause | server |
-| [express](https://www.npmjs.com/package/express) | 5.3.0 | MIT | server |
-| [express-rate-limit](https://www.npmjs.com/package/express-rate-limit) | 7.5.1 | MIT | server |
-| [helmet](https://www.npmjs.com/package/helmet) | 8.3.0 | MIT | server |
-| [jsonwebtoken](https://www.npmjs.com/package/jsonwebtoken) | 9.0.3 | MIT | server |
-| [mongoose](https://www.npmjs.com/package/mongoose) | 8.24.9 | MIT | server |
-| [pino](https://www.npmjs.com/package/pino) | 9.14.0 | MIT | server |
-| [socket.io](https://www.npmjs.com/package/socket.io) | 4.8.4 | MIT | server |
-| [zod](https://www.npmjs.com/package/zod) | 3.25.76 | MIT | server |
+| Package | Version | Licence | Used in | What for |
+|---|---|---|---|---|
+| [react](https://react.dev/), [react-dom](https://react.dev/) | 19.3.1 | MIT | client | the UI |
+| [react-router-dom](https://github.com/remix-run/react-router) | 7.18.5 | MIT | client | routes for the bridge and stations |
+| [three](https://threejs.org/) | 0.187.0 | MIT | client | 3D ship and viewscreen |
+| [@react-three/fiber](https://github.com/pmndrs/react-three-fiber) | 9.8.2 | MIT | client | three.js in React |
+| [@react-three/drei](https://github.com/pmndrs/drei) | 10.7.9 | MIT | client | model loading, camera and scene helpers |
+| [@react-three/postprocessing](https://github.com/pmndrs/react-postprocessing) | 3.2.2 | MIT | client | bloom and vignette on the 3D scenes |
+| [postprocessing](https://github.com/pmndrs/postprocessing) | 6.39.6 | Zlib | client | the effects under @react-three/postprocessing |
+| [uplot](https://github.com/leeoniya/uPlot) | 1.6.32 | MIT | client | live and history charts |
+| [@fontsource/michroma](https://fontsource.org/fonts/michroma), [@fontsource/space-mono](https://fontsource.org/fonts/space-mono), [@fontsource-variable/space-grotesk](https://fontsource.org/fonts/space-grotesk) | 5.3.0 | OFL-1.1 | client | self-hosted fonts |
+| [express](https://expressjs.com/) | 5.3.0 | MIT | server | REST API |
+| [socket.io](https://github.com/socketio/socket.io) | 4.8.4 | MIT | server | `/ingest` and `/live` namespaces |
+| [socket.io-client](https://github.com/socketio/socket.io) | 4.8.4 | MIT | client, simulator, loadtest (server tests) | the other end of those sockets |
+| [socket.io-msgpack-parser](https://github.com/socketio/socket.io-msgpack-parser) | 3.0.2 | MIT | server, client, simulator, loadtest | MessagePack on every socket |
+| [mongoose](https://mongoosejs.com) | 8.24.9 | MIT | server | MongoDB models, time-series collection |
+| [zod](https://zod.dev) | 3.25.76 | MIT | server | request and command validation |
+| [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken) | 9.0.3 | MIT | server | sign-in tokens |
+| [bcryptjs](https://github.com/dcodeIO/bcrypt.js) | 2.4.3 | MIT | server | password hashes |
+| [helmet](https://helmet.js.org/) | 8.3.0 | MIT | server | security headers |
+| [cors](https://github.com/expressjs/cors) | 2.8.6 | MIT | server | allowed client origins |
+| [express-rate-limit](https://github.com/express-rate-limit/express-rate-limit) | 7.5.1 | MIT | server | rate limits on the API and sign-in |
+| [pino](https://getpino.io) | 9.14.0 | MIT | server | logging |
+| [dotenv](https://github.com/motdotla/dotenv) | 16.6.1 | BSD-2-Clause | server | `.env` configuration |
+| [vite](https://vite.dev), [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react) | 6.4.6, 5.2.0 | MIT | client (dev) | dev server and production build |
+
+The platforms under them: [Node.js](https://nodejs.org/) (MIT) and [MongoDB](https://www.mongodb.com/) 8 (Server Side Public License; the `mongo:8` Docker image locally, MongoDB Atlas when hosted).

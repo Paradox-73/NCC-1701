@@ -1,0 +1,160 @@
+{
+  "config": {
+    "preset": "large",
+    "url": "http://localhost:4000",
+    "sources": 80,
+    "firstSource": 15,
+    "watch": null,
+    "hz": 10,
+    "clients": 250,
+    "seconds": 90,
+    "groups": [
+      "helm",
+      "warp"
+    ],
+    "key": "dev-device-key",
+    "user": "command",
+    "password": "ncc-command",
+    "inject": {
+      "dup": 0,
+      "reorder": 0,
+      "invalid": 0
+    }
+  },
+  "when": "2026-11-14T08:35:29.266Z",
+  "seconds": 90,
+  "sources": {
+    "offeredPerSec": 799,
+    "nominalPerSec": 800,
+    "sent": 71920,
+    "acked": 71920,
+    "accepted": 71920,
+    "acceptedPerSec": 799,
+    "duplicates": 0,
+    "stale": 0,
+    "invalid": 0,
+    "throttled": 0,
+    "droppedLocally": 0,
+    "unackedAtEnd": 0,
+    "ackTimeouts": 0,
+    "notOkAcks": 0,
+    "disconnects": 0,
+    "ackRttMs": {
+      "count": 70800,
+      "mean": 2.8,
+      "p50": 3,
+      "p95": 8,
+      "p99": 13,
+      "max": 28.5
+    }
+  },
+  "injected": {
+    "dup": 0,
+    "reorder": 0,
+    "invalid": 0
+  },
+  "clients": {
+    "requested": 250,
+    "connectedAtEnd": 250,
+    "frames": 644037,
+    "samplesReceived": 654472,
+    "overviewEvents": 113500,
+    "connectErrors": 0,
+    "unexpectedDisconnects": 0,
+    "subscribeFailures": 0,
+    "framesPerClientPerSec": 28.6,
+    "bytesPerClientPerSec": 6978,
+    "endToEndMs": {
+      "count": 654472,
+      "mean": 107.2,
+      "p50": 107,
+      "p95": 169,
+      "p99": 188,
+      "max": 205
+    }
+  },
+  "tool": {
+    "cpuCoresUsed": 0.26,
+    "rssMB": 299,
+    "workers": 9
+  },
+  "serverMetrics": {
+    "ts": 1794645421051,
+    "uptimeSec": 774,
+    "rates": {
+      "received": 112.9,
+      "accepted": 112.9,
+      "duplicates": 0,
+      "stale": 0,
+      "invalid": 0,
+      "throttled": 0,
+      "framesOut": 0,
+      "framesDelivered": 0,
+      "bytesOut": 332167.8,
+      "alerts": 0,
+      "batches": 73.9,
+      "refused": 0
+    },
+    "totals": {
+      "received": 184741,
+      "accepted": 184741,
+      "duplicates": 0,
+      "stale": 0,
+      "invalid": 0,
+      "throttled": 0,
+      "framesOut": 192508,
+      "framesDelivered": 833235,
+      "bytesOut": 209198406,
+      "alerts": 49,
+      "batches": 154883,
+      "refused": 0
+    },
+    "gauges": {
+      "sourcesConnected": 8,
+      "dashboards": 0,
+      "writerQueue": 0,
+      "lastFlushSize": 24,
+      "lastFlushMs": 9.7,
+      "written": 184706,
+      "writeFailures": 0,
+      "backpressured": false,
+      "backpressureMs": 0
+    },
+    "latencyMs": {
+      "p50": 106,
+      "p95": 158,
+      "p99": 173,
+      "count": 114264
+    },
+    "eventLoopLagMs": {
+      "mean": 11.43,
+      "p99": 16.81,
+      "max": 17.78
+    },
+    "memory": {
+      "rssMB": 202,
+      "heapUsedMB": 85
+    }
+  },
+  "serverDelta": {
+    "received": 82381,
+    "accepted": 82381,
+    "duplicates": 0,
+    "stale": 0,
+    "invalid": 0,
+    "throttled": 0,
+    "framesOut": 134469,
+    "framesDelivered": 644037,
+    "bytesOut": 156998691,
+    "alerts": 0,
+    "batches": 77933,
+    "refused": 0
+  },
+  "injectionCheck": {
+    "duplicatesExpected": 0,
+    "duplicatesCounted": 0,
+    "invalidExpected": 0,
+    "invalidCounted": 0,
+    "match": true
+  }
+}

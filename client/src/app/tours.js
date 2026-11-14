@@ -1,6 +1,7 @@
 // First-visit guides, one per page, worded for the role that is signed in (Tour.jsx). A step points at a monitor by its
 // title (`mon`), at the console along the bottom (`desk`) or at a `data-tour` mark (`target`). `text` may be a function
-// of the user; `when(user)` leaves a step out for a role it does not concern.
+// of the user and of `touch` (a phone or tablet with no keyboard: the wording names the buttons, not the keys);
+// `when(user)` leaves a step out for a role it does not concern.
 import { mayCommand } from '../lib/commands.js';
 import { STATIONS, canEnter } from './stations.js';
 
@@ -8,15 +9,15 @@ const opens = (user) => STATIONS.slice(1).filter((s) => canEnter(user, s)).map((
 const list = (xs) => (xs.length < 2 ? xs.join('') : `${xs.slice(0, -1).join(', ')} and ${xs.at(-1)}`);
 
 /** The console step: what this role may order from here, or who may. */
-const desk = (type, mine, whose) => ({
+const desk = (type, mine, whose, mineTouch = mine) => ({
   desk: true,
   title: 'The console',
-  text: (u) => (mayCommand(u, type) ? `${mine} Every button is a real order to the ship, acknowledged in the captain’s log.` : `${whose} You can watch every reading; the buttons stay dimmed for your role.`),
+  text: (u, touch) => (mayCommand(u, type) ? `${touch ? mineTouch : mine} Every button is a real order to the ship, acknowledged in the captain’s log.` : `${whose} You can watch every reading; the buttons stay dimmed for your role.`),
 });
 
 export const TOURS = {
   bridge: [
-    { target: 'viewscreen', title: 'Main viewer', text: 'The live view outside the ship. V cycles forward, tactical and exterior; + and − magnify.' },
+    { target: 'viewscreen', title: 'Main viewer', text: (u, touch) => (touch ? 'The live view outside the ship. The button at the chair named for the current view (Forward, Tactical or Exterior) switches it.' : 'The live view outside the ship. V cycles forward, tactical and exterior; + and − magnify.') },
     {
       target: 'tile-engineering', title: 'Stations around the rail',
       text: (u) => `Each station shows one live reading; click one to go to its console. As ${u.label} you can open ${list(opens(u)) || 'none of them'}. A lock means your role cannot enter.`,
@@ -24,22 +25,23 @@ export const TOURS = {
     { target: 'helm', title: 'Helm and navigation', text: 'Warp factor, heading and the weakest shield, straight from the ship’s telemetry.' },
     {
       target: 'chair', title: 'The captain’s chair',
-      text: (u) => (u.role === 'captain'
-        ? 'Your chair. R for red alert, Y for yellow, N to stand down; Shift S for shields, and Scenario plays an episode.'
+      text: (u, touch) => (u.role === 'captain'
+        ? (touch ? 'Your chair: Red alert, Yellow and Stand down, Shields and Hail; Scenario plays an episode.' : 'Your chair. R for red alert, Y for yellow, N to stand down; Shift S for shields, and Scenario plays an episode.')
         : 'The captain’s orders: condition, shields, hailing. The buttons are dimmed for you, but you see every change the moment it is given.'),
     },
     {
       target: 'log', title: 'Captain’s log',
-      text: (u) => `Alerts, orders and scenario steps, newest first.${u.canAck ? ' A acknowledges the newest alert.' : ''}`,
+      text: (u, touch) => `Alerts, orders and scenario steps, newest first.${!u.canAck ? '' : touch ? ' All alerts opens the list, where you acknowledge them.' : ' A acknowledges the newest alert.'}`,
     },
-    { target: 'lift', title: 'Turbolift', text: 'These tabs, or Ctrl K, take you to any station; G then a letter jumps straight there. Press ? for every shortcut.' },
+    { target: 'lift', title: 'Turbolift', text: (u, touch) => (touch ? 'The station tabs, or the menu button on a phone, take you to any station.' : 'These tabs, or Ctrl K, take you to any station; G then a letter jumps straight there. Press ? for every shortcut.') },
   ],
   helm: [
     { mon: 'Warp factor', title: 'Warp factor', text: 'The warp the nacelles are making, on the cubic warp scale, and the impulse beneath it.' },
     { mon: 'Astrogator', title: 'Astrogator', text: 'Where the ship is and where it is heading, with the sensor alert above it.' },
     { mon: 'Shields', title: 'Shields', text: 'The four shield quadrants and the generator load.' },
     { mon: 'Targeting scanner', title: 'Weapons', text: 'Phaser charge, torpedoes left and whatever the scanner has locked.' },
-    desk('helm.warp', 'You have the helm: 0 to 9 sets warp, ↑ and ↓ step it, ← and → turn 5°, Shift S shields, P phasers, Shift P a torpedo.', 'The helm takes the captain’s orders.'),
+    desk('helm.warp', 'You have the helm: 0 to 9 sets warp, ↑ and ↓ step it, ← and → turn 5°, Shift S shields, P phasers, Shift P a torpedo.', 'The helm takes the captain’s orders.',
+      'You have the helm: Warp + and −, Impulse, All stop, Port and Stbd 5°, Shields, Phasers and Torpedo.'),
   ],
   engineering: [
     { mon: 'Reaction chamber', title: 'Reaction chamber', text: 'The matter/antimatter reaction that powers the ship: reaction rate, chamber temperature, intermix and field.' },
@@ -57,7 +59,8 @@ export const TOURS = {
     { mon: 'Subspace channels', title: 'Subspace channels', text: 'The receiver waterfall: each open channel is a bright line, newest at the top. Carrier, delay and loss beside it.' },
     { mon: 'Hailing', title: 'Hailing', text: 'Who the ship can reach: Starfleet Command and the task force, and whether each link is up.' },
     { mon: 'Message log', title: 'Message log', text: 'Alerts, answered hails and scenario lines, newest first.' },
-    desk('comms.hail', 'Hail Starfleet (H), close the channel, send a priority-one message or open the intercom.', 'Hailing is for the communications officer and the captain.'),
+    desk('comms.hail', 'Hail Starfleet (H), close the channel, send a priority-one message or open the intercom.', 'Hailing is for the communications officer and the captain.',
+      'Hail Starfleet, close the channel, send a priority-one message or open the intercom.'),
   ],
   sickbay: [
     { mon: 'Crew biosigns', title: 'Crew biosigns', text: 'All 430 crew by deck, each square coloured by how far they are from their own baseline. Click one to put them on the biobed.' },
@@ -79,7 +82,7 @@ export const TOURS = {
   alerts: [
     {
       mon: "Captain's log", title: 'Alerts',
-      text: (u) => `Every alert your role may see, newest first; filter by open, red or yellow.${u.canAck ? ' A acknowledges the newest; Ack all clears the open ones.' : ' Your role can read them; acknowledging is for the officers who own them.'}`,
+      text: (u, touch) => `Every alert your role may see, newest first; filter by open, red or yellow.${!u.canAck ? ' Your role can read them; acknowledging is for the officers who own them.' : touch ? ' Ack on an alert acknowledges it; Ack all clears the open ones.' : ' A acknowledges the newest; Ack all clears the open ones.'}`,
     },
   ],
 };

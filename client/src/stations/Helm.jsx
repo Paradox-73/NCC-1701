@@ -1,9 +1,9 @@
 import { useAuth } from '../lib/auth.jsx';
 import { useSubscription, useTick } from '../lib/hooks.js';
 import { hitOn } from '../lib/ship.js';
-import { SHIPS, eachSlot, levelOf, monState, read, ringOf, shipCode, stardate, useCommand, useFeed, worst } from './parts/data.js';
-import { ArcGauge, BarGauge, Chip, ConsoleStrip, HBar, J, LevelChip, LitButton, Monitor, Num, Station, useKeys } from '../ui/index.js';
-import { C, Readout, Val, clamp, fmt, levelColor, useCanvas } from './parts/ui.jsx';
+import { SHIPS, eachSlot, levelOf, meta, monState, read, ringOf, shipCode, stardate, useCommand, useFeed, worst } from './parts/data.js';
+import { BarGauge, Chip, ConsoleStrip, HBar, Headline, J, LampBar, LevelChip, LitButton, Monitor, Num, Readings, Station, useKeys } from '../ui/index.js';
+import { C, Val, clamp, fmt, levelColor, useCanvas } from './parts/ui.jsx';
 
 const REACH = 160; // sector units from the centre of the astrogator disc to its rim
 const fresh = (src) => { const r = ringOf(src, 'posX'); return r?.len && Date.now() - r.lastTs < 5000; };
@@ -251,7 +251,11 @@ function Bank({ src, k, label }) {
   );
 }
 
-/** Helm and navigation (DESIGN.md "Helm and navigation"): the helm console with the astrogator between helm and navigation. */
+/**
+ * Helm and navigation (DESIGN.md "Helm and navigation", The 1966 set): the astrogator between three headline monitors,
+ * warp factor, the weakest shield and phaser charge. Impulse, the four shield quadrants, both phaser banks, coolant and
+ * the targeting scanner are each one page press away on the monitor they belong to.
+ */
 export default function Helm({ shipId = 1 }) {
   useTick();
   const { user } = useAuth();
@@ -274,6 +278,13 @@ export default function Helm({ shipId = 1 }) {
   for (let d = 0; d <= 9; d++) keys[String(d)] = () => warpTo(d);
   useKeys(keys);
   const sys = (ks) => worst(ks.map((k) => levelOf(k, read(src, k))));
+  const r = (k, label, dec = 0) => { const v = read(src, k); return { label, value: v, unit: meta(k)?.unit, dec, level: levelOf(k, v) }; };
+
+  const QUADS = [['shieldFore', 'Fore'], ['shieldAft', 'Aft'], ['shieldPort', 'Port'], ['shieldStbd', 'Stbd']];
+  const weakest = QUADS.reduce((w, [k, l]) => { const v = read(src, k); return v != null && (!w || v < w.v) ? { v, k, l } : w; }, null);
+  const shieldLv = sys(QUADS.map(([k]) => k));
+  const fore = read(src, 'phaserFore'), aft = read(src, 'phaserAft');
+  const charge = fore == null && aft == null ? null : Math.min(fore ?? 100, aft ?? 100);
 
   const desk = (
     <ConsoleStrip seed={7} jewels={[J('Helm', sys(['warpFactor', 'descentRate']), st('helm')), J('Shields', sys(['shieldFore', 'shieldAft', 'shieldPort', 'shieldStbd', 'shieldLoad']), st('shields')), J('Weapons', sys(['phaserTemp']), st('weapons')), J('Sensors', sys(['contactRange']), st('sensors'))]}>
@@ -291,35 +302,48 @@ export default function Helm({ shipId = 1 }) {
 
   return (
     <Station name="Helm" division="command" ship={src} rows="minmax(250px, 1fr) minmax(250px, 1fr)" desk={desk}>
-      <Monitor title="Warp factor" meta="cubic warp scale" state={st('helm')} className="st-c3" style={{ gridRow: 1 }}>
-        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', height: '100%', padding: '4px 14px 12px', gap: 10 }}>
-          <div style={{ maxWidth: 190, width: '100%', margin: '0 auto' }}>
-            <ArcGauge value={wf} k="warpFactor" min={0} max={9} ticks={[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]} numClass="st-num st-hero" dec={2} unit="" below />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr auto', gap: 10, alignItems: 'center' }}>
-            <span className="st-label">Impulse</span><HBar value={imp} k="impulse" label="Impulse power" />
-            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700 }}><Num value={imp} dec={0} /><span className="st-unit">%</span></span>
-          </div>
-        </div>
-      </Monitor>
-      <Monitor title="Astrogator" meta={`${shipCode(src)} · north up`} state={st('helm')} className="st-c6 monitor--astro" style={{ gridRow: '1 / span 2', '--mh': 'auto' }}>
+      <Monitor title="Warp factor" status={sys(['warpFactor']) ?? 'ok'} state={st('helm')} className="st-c3" style={{ gridRow: 1 }} index={0}
+        views={[
+          { label: 'Warp', content: (
+            <Headline value={wf} dec={1} level={levelOf('warpFactor', wf)} word={wf != null && wf < 0.05 ? (imp >= 1 ? 'IMPULSE' : 'ALL STOP') : undefined}>
+              <LampBar value={wf} k="warpFactor" min={0} max={9} segs={18} label="Warp factor" />
+            </Headline>
+          ) },
+          { label: 'Impulse', content: (
+            <Headline value={imp} unit="% impulse" level={levelOf('impulse', imp)}>
+              <LampBar value={imp} k="impulse" min={0} max={100} label="Impulse power" />
+            </Headline>
+          ) },
+        ]} />
+      <Monitor title="Astrogator" meta={`${shipCode(src)} · north up`} state={st('helm')} className="st-c6 monitor--astro" style={{ gridRow: '1 / span 2', '--mh': 'auto' }} index={1}>
         <AstrogatorPanel src={src} others={others} />
       </Monitor>
-      <Monitor title="Shields" meta="four quadrants" state={st('shields')} className="st-c3" style={{ gridRow: 1, '--mh': '320px' }}>
-        <ShieldRing src={src} />
-      </Monitor>
-      <Monitor title="Phaser banks" meta="charge" state={st('weapons')} className="st-c3" style={{ gridRow: 2, '--mh': '280px' }}>
-        <div style={{ display: 'grid', gridTemplateRows: 'minmax(0, 1fr) auto', gap: 10, height: '100%', padding: '10px 14px 12px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-around', minHeight: 0 }}>
-            <Bank src={src} k="phaserFore" label="Fore" />
-            <Bank src={src} k="phaserAft" label="Aft" />
-          </div>
-          <Readout src={src} k="phaserTemp" label="Coolant temperature" sparkH={22} />
-        </div>
-      </Monitor>
-      <Monitor title="Targeting scanner" meta="torpedoes" state={st('sensors', 'weapons')} className="st-c3" style={{ gridRow: 2, '--mh': '320px' }}>
-        <Targeting src={src} />
-      </Monitor>
+      <Monitor title="Shields" status={shieldLv ?? 'ok'} state={st('shields')} className="st-c3" style={{ gridRow: '1 / span 2', '--mh': 'auto' }} index={2}
+        views={[
+          { label: 'Weakest', content: (
+            <Headline value={weakest?.v} unit={`% ${weakest ? weakest.l.toLowerCase() : ''}`} level={levelOf(weakest?.k, weakest?.v)} word={up ? 'UP' : 'DOWN'}>
+              <LampBar value={weakest?.v} k={weakest?.k ?? 'shieldFore'} min={0} max={100} label="Weakest shield quadrant" />
+            </Headline>
+          ) },
+          { label: 'Quadrants', content: <ShieldRing src={src} /> },
+          { label: 'Detail', content: <Readings items={[...QUADS.map(([k, l]) => r(k, l)), r('shieldLoad', 'Load')]} /> },
+        ]} />
+      <Monitor title="Weapons" status={sys(['phaserTemp']) ?? 'ok'} state={st('weapons', 'sensors')} className="st-c3" style={{ gridRow: 2 }} index={3}
+        views={[
+          { label: 'Phasers', content: (
+            <Headline value={charge} unit="% charged" level={null} word={charge != null && charge >= 99.5 ? 'CHARGED' : undefined}>
+              <LampBar value={charge} k="phaserFore" min={0} max={100} label="Phaser charge, weaker bank" />
+            </Headline>
+          ) },
+          { label: 'Banks', content: (
+            <div style={{ display: 'grid', gridTemplateColumns: 'auto auto minmax(0, 1fr)', gap: 12, height: '100%', padding: '10px 12px' }}>
+              <Bank src={src} k="phaserFore" label="Fore" />
+              <Bank src={src} k="phaserAft" label="Aft" />
+              <Readings items={[r('phaserTemp', 'Coolant')]} />
+            </div>
+          ) },
+          { label: 'Targeting', content: <Targeting src={src} /> },
+        ]} />
     </Station>
   );
 }

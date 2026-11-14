@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../lib/api.js';
-import { reducedMotion } from '../lib/chartTheme.js';
-import { ship, shipLog, stardate } from '../lib/ship.js';
+import { ship } from '../lib/ship.js';
 import { Icon, KeyCap, LitButton, mayCommand, sendCommand, useCommand } from '../ui/index.js';
 
 // The command a scenario waits for, as the presenter's button: label, lamp colour, key and who may press it.
@@ -63,29 +62,6 @@ export function ScenarioStrip({ user }) {
         </div>
       )}
     </>
-  );
-}
-
-/** The newest captain's-log line, typed in under the viewscreen: every bridge sees the same story. */
-export function Ticker() {
-  const line = shipLog[0];
-  const [n, setN] = useState(0);
-  const text = line?.text ?? '';
-  const id = line?.id;
-  const timer = useRef(null);
-  useEffect(() => {
-    clearInterval(timer.current);
-    if (!line?.fresh || reducedMotion()) { setN(text.length); return undefined; }
-    setN(0);
-    timer.current = setInterval(() => setN((k) => (k >= text.length ? (clearInterval(timer.current), k) : k + 1)), 22);
-    return () => clearInterval(timer.current);
-  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
-  return (
-    <p className="ticker" aria-live="polite">
-      <span className="ticker__tag display">Captain’s log</span>
-      <span className="ticker__sd mono">{line ? stardate(line.ts).toFixed(2) : stardate().toFixed(2)}</span>
-      <span className="ticker__text">{line ? <><span aria-hidden="true">{text.slice(0, n)}</span><span className="sr-only">{text}</span></> : 'All quiet on the bridge.'}</span>
-    </p>
   );
 }
 

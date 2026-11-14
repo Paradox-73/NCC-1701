@@ -4,8 +4,8 @@ import { useAuth } from '../lib/auth.jsx';
 import { useTick } from '../lib/hooks.js';
 import { DECK_NAMES, levelOf, meta, monState, pad2, read, useCommand, useFeed, worst } from './parts/data.js';
 import { useHistory, useHistoryData } from './parts/history.js';
-import { ArcGauge, BarGauge, Chip, ConsoleStrip, HBar, J, LevelChip, LitButton, Monitor, Num, Station } from '../ui/index.js';
-import { C, Readout, Val, calmRange, clamp, decOf, fmt, useCanvas } from './parts/ui.jsx';
+import { BarGauge, ConsoleStrip, HBar, Headline, J, LampBar, LevelChip, LitButton, Monitor, Num, Readings, Station } from '../ui/index.js';
+import { C, Readout, calmRange, clamp, decOf, fmt, useCanvas } from './parts/ui.jsx';
 
 // the hull profile each deck band draws, saucer then engineering hull
 const PROFILE = [0.2, 0.52, 0.84, 1, 0.94, 0.72, 0.18, 0.36, 0.58, 0.62, 0.58, 0.44];
@@ -14,8 +14,6 @@ const PRESETS = { cruise: [55, 15, 10, 20], combat: [30, 35, 25, 10], emergency:
 // validated with the dataviz checker on the void surface (CVD 8.0, so every segment also carries a direct label)
 const ALLOC = [['allocWarp', 'Warp', '#C9790E'], ['allocShields', 'Shields', '#3A8BDD'], ['allocWeapons', 'Weapons', '#C95BB5'], ['allocLife', 'Life support', '#2A9E74']];
 const XP = ['IDLE', 'ENERGIZING', 'TRANSPORTING', 'FAULT'];
-// the readout wall along the console band: [channel, label, decimals]
-const READOUT_WALL = [['reactionRate', 'Reaction', 0], ['chamberTemp', 'Chamber', 1], ['intermixDev', 'Intermix', 2], ['warpField', 'Field', 1], ['dilithiumEff', 'Dilithium', 1], ['dilithiumTemp', 'Crystal', 0], ['nacellePort', 'Port nac', 0], ['nacelleStbd', 'Stbd nac', 0], ['impulseReactor', 'Impulse', 0], ['powerTotal', 'Output', 0], ['battery', 'Battery', 0]];
 
 /** Intermix column with plasma rising at the reaction rate, and conduits carrying it up to the two nacelles. */
 function Chamber({ src }) {
@@ -186,7 +184,12 @@ function DeckDetail({ src, deck }) {
   );
 }
 
-/** Engineering (DESIGN.md "Engineering"): reaction chamber, dilithium, nacelles, power, transporter, decks. */
+/**
+ * Engineering (DESIGN.md "Engineering", The 1966 set): four monitors, one picture each. The reaction rate, the
+ * dilithium crystal and the power output are headlines; the decks are a list. Every other reading of the seat is on a
+ * second page of the monitor it belongs to, one press away: the chamber, nacelles, impulse, the slide levers, the
+ * battery, the transporter and each deck's stored history.
+ */
 export default function Engineering({ shipId = 1 }) {
   useTick();
   const { user } = useAuth();
@@ -198,12 +201,15 @@ export default function Engineering({ shipId = 1 }) {
   const xp = Math.round(read(src, 'xpState') ?? 0);
   const preset = (p) => cmd.send('engineering.allocate', { preset: p });
   const presetOn = (p) => PRESETS[p].every((x, i) => Math.abs((read(src, ALLOC[i][0]) ?? -99) - x) < 2);
+  const presetNow = Object.keys(PRESETS).find(presetOn);
   const sys = (keys) => worst(keys.map((k) => levelOf(k, read(src, k))));
   const decksLv = worst(Array.from({ length: 12 }, (_, i) => sys(deckKeys(i + 1))));
   const warpLv = sys(['reactionRate', 'intermixDev', 'dilithiumEff', 'dilithiumTemp', 'chamberTemp', 'nacelleDelta', 'warpField']);
+  const r = (k, label, dec = 0) => { const v = read(src, k); return { label, value: v, unit: meta(k)?.unit, dec, level: levelOf(k, v) }; };
+  const rate = read(src, 'reactionRate'), eff = read(src, 'dilithiumEff'), out = read(src, 'powerTotal');
 
   const desk = (
-    <ConsoleStrip seed={11} readouts={READOUT_WALL.map(([k, l, dec]) => ({ label: l, value: <Num value={read(src, k)} dec={dec} />, unit: meta(k)?.unit }))} jewels={[J('WARP', warpLv, st('warp')), J('IMPULSE', sys(['impulseReactor', 'impulseTemp']), st('impulse')), J('POWER', sys(['powerTotal', 'battery']), st('power')), J('DECKS', decksLv, st('lifesupport')), J('TRANSPORT', xp === 3 ? 'crit' : sys(['xpEnergy', 'xpLock', 'xpPattern']), st('transporter'))]}>
+    <ConsoleStrip seed={11} jewels={[J('WARP', warpLv, st('warp')), J('IMPULSE', sys(['impulseReactor', 'impulseTemp']), st('impulse')), J('POWER', sys(['powerTotal', 'battery']), st('power')), J('DECKS', decksLv, st('lifesupport')), J('TRANSPORT', xp === 3 ? 'crit' : sys(['xpEnergy', 'xpLock', 'xpPattern']), st('transporter'))]}>
       <LitButton color="amber" label="Cruise" onClick={() => preset('cruise')} lit={presetOn('cruise')} {...cmd.bind('engineering.allocate')} />
       <LitButton color="red" label="Combat" onClick={() => preset('combat')} lit={presetOn('combat')} {...cmd.bind('engineering.allocate')} />
       <LitButton color="yellow" label="Emergency power" onClick={() => preset('emergency')} lit={presetOn('emergency')} {...cmd.bind('engineering.allocate')} />
@@ -213,64 +219,53 @@ export default function Engineering({ shipId = 1 }) {
   );
 
   return (
-    <Station name="Engineering" division="ops" ship={src} rows="minmax(240px, 2.6fr) minmax(140px, 1.3fr) minmax(220px, 2.6fr)" desk={desk}>
-        <Monitor title="Reaction chamber" meta="matter / antimatter" state={st('warp')} className="st-c4" style={{ '--mh': '300px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(110px, 44%) 1fr', height: '100%' }}>
-            <div style={{ position: 'relative' }}><Chamber src={src} /></div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '10px 12px 10px 4px', minWidth: 0 }}>
-              <Readout src={src} k="reactionRate" label="Reaction rate" unit="% rated" sparkH={22} />
-              <Readout src={src} k="chamberTemp" label="Chamber temperature" sparkH={22} />
-              <dl className="st-kv" style={{ gridTemplateColumns: 'auto 1fr auto 1fr', gap: '4px 8px' }}>
-                <dt>Intermix</dt><dd style={{ fontSize: 14 }}><Val src={src} k="intermixDev" dec={2} /></dd>
-                <dt>Field</dt><dd style={{ fontSize: 14 }}><Val src={src} k="warpField" dec={1} /></dd>
-              </dl>
+    <Station name="Engineering" division="ops" ship={src} rows="minmax(250px, 1fr) minmax(300px, 1.15fr)" desk={desk}>
+      <Monitor title="Reaction chamber" status={levelOf('reactionRate', rate) ?? 'ok'} state={st('warp')} className="st-c4" index={0}
+        views={[
+          { label: 'Rate', content: (
+            <Headline value={rate} unit="% rated" level={levelOf('reactionRate', rate)}>
+              <LampBar value={rate} k="reactionRate" label="Matter/antimatter reaction rate" />
+            </Headline>
+          ) },
+          { label: 'Chamber', content: <div style={{ position: 'relative', height: '100%' }}><Chamber src={src} /></div> },
+          { label: 'Detail', content: <Readings items={[r('chamberTemp', 'Chamber', 1), r('intermixDev', 'Intermix', 2), r('warpField', 'Warp field', 1)]} /> },
+        ]} />
+      <Monitor title="Dilithium" status={levelOf('dilithiumEff', eff) ?? 'ok'} state={st('warp', 'impulse')} className="st-c4" index={1}
+        views={[
+          { label: 'Crystal', content: (
+            <Headline value={eff} unit="% efficiency" dec={1} level={levelOf('dilithiumEff', eff)}>
+              <LampBar value={eff} k="dilithiumEff" label="Dilithium crystal efficiency" />
+            </Headline>
+          ) },
+          { label: 'Nacelles', content: (
+            <div style={{ display: 'grid', gridTemplateColumns: 'auto auto minmax(0, 1fr)', gap: 14, height: '100%', padding: 12 }}>
+              <BarGauge value={read(src, 'nacellePort')} k="nacellePort" label="Port" min={0} max={130} h="auto" segs={16} dec={0} />
+              <BarGauge value={read(src, 'nacelleStbd')} k="nacelleStbd" label="Stbd" min={0} max={130} h="auto" segs={16} dec={0} />
+              <Readings items={[r('nacelleDelta', 'Imbalance', 1), r('impulseReactor', 'Impulse', 0), r('impulseTemp', 'Impulse temp', 0)]} />
             </div>
-          </div>
-        </Monitor>
-        <Monitor title="Dilithium" meta="crystal articulation" state={st('warp')} className="st-c4">
-          <div className="st-split" style={{ display: 'grid', gridTemplateColumns: 'minmax(150px, 1fr) minmax(0, 1fr)', gap: 14, alignItems: 'center', height: '100%', padding: '8px 14px' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center' }}>
-              <span className="st-label">Crystal efficiency</span>
-              <div style={{ width: '100%', maxWidth: 190 }}>
-                <ArcGauge value={read(src, 'dilithiumEff')} k="dilithiumEff" min={0} max={100} ticks={[0, 25, 50, 75, 100]} unit="%" dec={1} numClass="st-num" below />
-              </div>
+          ) },
+          { label: 'Detail', content: <Readings items={[r('dilithiumTemp', 'Crystal temp', 0), r('dilithiumEff', 'Efficiency', 1)]} /> },
+        ]} />
+      <Monitor title="Power" status={sys(['powerTotal', 'battery']) ?? 'ok'} state={st('power', 'transporter')} className="st-c4" index={2}
+        views={[
+          { label: 'Output', content: (
+            <Headline value={out} unit="% rated" level={levelOf('powerTotal', out)} word={presetNow?.toUpperCase()}>
+              <LampBar value={out} k="powerTotal" label="Total power output" />
+            </Headline>
+          ) },
+          { label: 'Levers', content: <SlideLevers src={src} /> },
+          { label: 'Transporter', content: (
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', height: '100%' }}>
+              <div style={{ position: 'relative' }}><Pads src={src} /></div>
+              <Readings items={[{ label: 'State', value: XP[xp] ?? 'IDLE', level: xp === 3 ? 'crit' : null }, r('xpEnergy', 'Energy', 1), r('xpLock', 'Lock', 0), r('xpPattern', 'Pattern', 1)]} />
             </div>
-            <Readout src={src} k="dilithiumTemp" label="Crystal chamber temperature" sparkH={40} />
-          </div>
-        </Monitor>
-        <Monitor title="Nacelles" meta="warp and impulse" state={st('warp', 'impulse')} className="st-c4" style={{ '--mh': '280px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'auto auto minmax(0, 1fr)', gap: 18, height: '100%', padding: 14 }}>
-            <BarGauge value={read(src, 'nacellePort')} k="nacellePort" label="Port" min={0} max={130} h="auto" segs={20} dec={0} />
-            <BarGauge value={read(src, 'nacelleStbd')} k="nacelleStbd" label="Stbd" min={0} max={130} h="auto" segs={20} dec={0} />
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
-              <Readout src={src} k="nacelleDelta" label="Imbalance" size="sm" sparkH={20} />
-              <Readout src={src} k="impulseReactor" label="Impulse reactor" unit="% rated" size="sm" spark={false} />
-              <Readout src={src} k="impulseTemp" label="Impulse temperature" size="sm" spark={false} />
-            </div>
-          </div>
-        </Monitor>
-        <Monitor title="Power allocation" meta="share of reactor output" state={st('power')} className="st-c8 monitor--housing monitor--levers" style={{ '--mh': '250px' }}>
-          <SlideLevers src={src} />
-        </Monitor>
-        <Monitor title="Transporter" meta="room 1" state={st('transporter')} className="st-c4" style={{ '--mh': '160px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', height: '100%' }}>
-            <div style={{ position: 'relative' }}><Pads src={src} /></div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4, padding: '6px 12px', justifyContent: 'center' }}>
-              <Chip level={xp === 3 ? 'crit' : xp ? 'info' : 'off'}>{XP[xp] ?? 'IDLE'}</Chip>
-              <dl className="st-kv" style={{ fontSize: 12, rowGap: 2 }}>
-                <dt>Energy</dt><dd style={{ fontSize: 13 }}><Val src={src} k="xpEnergy" dec={1} /></dd>
-                <dt>Lock</dt><dd style={{ fontSize: 13 }}><Val src={src} k="xpLock" dec={0} /></dd>
-                <dt>Pattern</dt><dd style={{ fontSize: 13 }}><Val src={src} k="xpPattern" dec={1} /></dd>
-              </dl>
-            </div>
-          </div>
-        </Monitor>
-        <Monitor title="Deck stack" meta="life support · gravity" state={st('lifesupport', 'gravity')} className="st-c5">
-          <DeckStack src={src} sel={deck} onSel={setDeck} />
-        </Monitor>
-        <Monitor title={`Deck ${pad2(deck)} · ${DECK_NAMES[deck - 1]}`} meta="history and live" state={st('lifesupport', 'gravity')} className="st-c7" style={{ '--mh': '620px' }}>
-          <div key={deck} className="swap-in"><DeckDetail src={src} deck={deck} /></div>
-        </Monitor>
+          ) },
+        ]} />
+      <Monitor title="Decks" status={decksLv ?? 'ok'} state={st('lifesupport', 'gravity')} className="st-c12" index={3}
+        views={[
+          { label: 'Decks', content: <DeckStack src={src} sel={deck} onSel={setDeck} /> },
+          { label: `Deck ${pad2(deck)}`, content: <div key={deck} className="swap-in"><DeckDetail src={src} deck={deck} /></div> },
+        ]} />
     </Station>
   );
 }

@@ -1,5 +1,5 @@
 import { SOURCES } from '@ncc/shared/schema.js';
-import { DivisionPill, Jewel, JellybeanPlate, ReadoutWindows, cx } from './controls.jsx';
+import { DivisionPill, Jewel, JellybeanPlate, cx } from './controls.jsx';
 
 /** A jewel-row entry: a system's worst level, or off while its monitor shows no live data. */
 export const J = (label, level, monitorState) => ({ label, status: monitorState !== 'live' ? 'off' : level || 'ok' });
@@ -10,10 +10,10 @@ const WORD = { warn: 'YELLOW', crit: 'RED', off: 'NO SIGNAL', info: 'INFO' };
 const GRILLES = ['#e46bd8', '#ffb347', '#f4f7fa', '#5fe08a', '#7fd4ff'];
 
 /**
- * The console you sit at: the readout band (a window per system in `jewels`: [{ label, status }], live readouts in
- * `readouts`: [{ label, value, unit }], then backlit decorative windows), the black desk with the real controls
- * (children) on a plate beside the jellybean plates, the red desk edge and the kick panel (RESEARCH.md, Bridge
- * consoles). Below 1024 px it is a bottom bar with every control.
+ * The console you sit at: the readout band (a window per system in `jewels`: [{ label, status }], then live readouts
+ * in `readouts`: [{ label, value, unit }]), the black desk with the real controls (children) on a plate beside the
+ * still jellybean plates, the red desk edge and the kick panel (RESEARCH.md, Bridge consoles). Below 1024 px it is a
+ * bottom bar with every control.
  */
 export function ConsoleStrip({ children, jewels = [], readouts = [], seed = 1, className }) {
   return (
@@ -35,7 +35,6 @@ export function ConsoleStrip({ children, jewels = [], readouts = [], seed = 1, c
             {readouts.map((r) => <div key={r.label} className="cs-readout"><dt>{r.label}</dt><dd>{r.value}{r.unit ? <span className="unit">{r.unit}</span> : null}</dd></div>)}
           </dl>
         )}
-        <ReadoutWindows seed={seed} />
       </div>
       <div className="cs-desk">
         <div className="console-strip__controls">{children}</div>

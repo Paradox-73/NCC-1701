@@ -10,10 +10,10 @@ const POSITIONS = [
   { username: 'medical', password: 'ncc-medical', label: 'Chief Medical Officer', emblem: 'medical', color: 'blue', post: 'Sciences · sickbay' },
   { username: 'science', password: 'ncc-science', label: 'Science Officer', emblem: 'science', color: 'blue', post: 'Sciences · library computer' },
   { username: 'comms', password: 'ncc-comms', label: 'Communications Officer', emblem: 'ops', color: 'red', post: 'Operations · subspace radio' },
-  { username: 'command', password: 'ncc-command', label: 'Starfleet Command', emblem: 'fleet', color: 'white', post: 'Task force · all four ships' },
+  { username: 'command', password: 'ncc-command', label: 'Starfleet Command', emblem: 'fleet', color: 'white', post: 'Admin · all four ships' },
 ];
 
-/** "State your position": the login console. leaving: signed in, the console powers down. */
+/** "State your position": the login console beside the ship. leaving: signed in, the console powers down. */
 export default function Login({ leaving }) {
   const { login, notice } = useAuth();
   const [busy, setBusy] = useState(null);

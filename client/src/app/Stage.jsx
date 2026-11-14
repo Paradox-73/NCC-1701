@@ -167,6 +167,7 @@ export default function Stage({ phase, onOpened, onBoarded, onFaded }) {
   const [flying, setFlying] = useState(false);
   const [gliding, setGliding] = useState(false);
   const skip = useRef(() => {});
+  const stage = useRef(null);
   const intro = useIntro();
   useEffect(() => {
     const onM = (e) => { if ((e.key === 'm' || e.key === 'M') && (phase === 'coldopen' || phase === 'identify') && !e.target.closest?.('input')) toggleSound(); };
@@ -179,6 +180,7 @@ export default function Stage({ phase, onOpened, onBoarded, onFaded }) {
     if (phase !== 'boarding') return undefined;
     intro.fadeOut(1200);
     if (reducedMotion() || !hasWebGL()) { onBoarded(); return undefined; }
+    stage.current.scrollTo({ top: 0, behavior: 'smooth' }); // a phone scrolled down to the console: the ship back in view
     setFlying(true);
     play('lift');
     const t = setTimeout(onBoarded, FLIGHT_MS);
@@ -197,9 +199,9 @@ export default function Stage({ phase, onOpened, onBoarded, onFaded }) {
 
   const rig = phase === 'coldopen' ? (gliding ? 'flyby' : 'wait') : flying || phase === 'fade' ? 'board' : 'login';
   return (
-    <div className="stage" data-phase={phase} data-gliding={gliding || undefined} onClick={phase === 'boarding' ? () => skip.current() : undefined}>
+    <div ref={stage} className="stage" data-phase={phase} data-gliding={gliding || undefined} onClick={phase === 'boarding' ? () => skip.current() : undefined}>
       <div className="stage__ship" aria-hidden="true">
-        <StarshipView rig={rig} visible={rig !== 'wait'} spin={false} warp={2} alert="green" shields={NO_SHIELDS} />
+        <StarshipView rig={rig} visible={rig !== 'wait'} spin={phase === 'identify'} warp={2} alert="green" shields={NO_SHIELDS} />
       </div>
       <div className="stage__veil" aria-hidden="true" />
       {phase === 'coldopen' && <ColdOpen intro={intro} onStart={() => setGliding(true)} onDone={onOpened} />}

@@ -10,6 +10,17 @@ import { hasWebGL } from './three/StarshipView.jsx';
 import './index.css';
 import './ui/ui.css';
 
+// After a redeploy, a tab left open asks for code files the server no longer has. Reload once to get the new ones. A
+// second failure within a minute is left to the fallbacks (the flat ship and viewscreen, "This station failed to
+// load"), so a file that is really missing cannot reload the page in a loop.
+window.addEventListener('vite:preloadError', () => {
+  try {
+    if (Date.now() - Number(sessionStorage.getItem('ncc.reloadedAt')) < 60_000) return;
+    sessionStorage.setItem('ncc.reloadedAt', String(Date.now()));
+  } catch { return; } // no storage, no way to tell a loop: leave it to the fallbacks
+  location.reload();
+});
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <BrowserRouter>

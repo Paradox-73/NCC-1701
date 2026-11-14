@@ -3,8 +3,8 @@ import { useAuth } from '../lib/auth.jsx';
 import { useTick } from '../lib/hooks.js';
 import { ago, alertsFor, canSee, levelOf, meta, monState, read, useCommand, useFeed, worst } from './parts/data.js';
 import { useHistory } from './parts/history.js';
-import { BarGauge, Chip, ConsoleStrip, J, LevelChip, LitButton, Monitor, Num, Station } from '../ui/index.js';
-import { C, Readout, clamp, fmt, levelColor, useCanvas } from './parts/ui.jsx';
+import { BarGauge, Chip, ConsoleStrip, Headline, J, LampBar, LevelChip, LitButton, Monitor, Num, Readings, Station } from '../ui/index.js';
+import { C, clamp, fmt, levelColor, useCanvas } from './parts/ui.jsx';
 
 const SWEEP_MS = 4000; // one turn of the scope (DESIGN.md SweepScope)
 const NOISE_DB = 3.5; // returns under this are the sensor noise floor (DOMAIN.md: 1-3 dB)
@@ -77,12 +77,12 @@ function Contacts({ src }) {
   const conf = snr == null ? null : clamp((snr - 2) / 18) * 100; // our estimate: 2 dB noise floor is 0 %, 20 dB is certain
   const rl = levelOf('contactRange', rng);
   return (
-    <div className="st-split" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.6fr) minmax(150px, 1fr)', gap: 16, height: '100%', padding: '10px 14px' }}>
+    <div style={{ height: '100%', padding: '10px 14px' }}>
       <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <span className="st-label">{n >= 1 ? `${fmt(n, 0)} contact${n === 1 ? '' : 's'} tracked; the nearest is detailed` : k ? 'Unconfirmed return above the noise floor' : 'No contacts. Sensors read the noise floor.'}</span>
         <div className="st-scroll">
           <table className="st-table">
-            <thead><tr><th>Contact</th><th className="n">Bearing</th><th className="n">Range</th><th className="n">Signal</th><th className="n">Confidence</th></tr></thead>
+            <thead><tr><th>Contact</th><th className="n">Bearing</th><th className="n">Range</th><th className="n">Signal</th><th className="n" title="Confidence">Conf.</th></tr></thead>
             <tbody>
               {k ? (
                 <tr>
@@ -98,7 +98,6 @@ function Contacts({ src }) {
         </div>
         {rl && <span><LevelChip level={rl} warn="CLOSING" crit="COLLISION RANGE" /> <span className="st-label">nearest contact inside {fmt(rl === 'crit' ? 10000 : 50000, 0)} km</span></span>}
       </div>
-      <Readout src={src} k="contactSnr" label="Return signal" sparkH={44} />
     </div>
   );
 }
@@ -245,7 +244,11 @@ function Anomalies({ src }) {
   );
 }
 
-/** Science (DESIGN.md "Science"): the sensor scope, contacts, the life-forms forecast, the viewer, arrays and anomalies. */
+/**
+ * Science (DESIGN.md "Science", The 1966 set): the sensor scope beside three headline monitors, contacts, sensor arrays
+ * and life-forms aboard. The hooded viewer, the contact table, the anomaly list, both arrays with ion flux and the
+ * life-forms forecast are each a page of the monitor they belong to.
+ */
 export default function Science({ shipId = 1 }) {
   useTick();
   const { user } = useAuth();
@@ -259,6 +262,12 @@ export default function Science({ shipId = 1 }) {
   const range = (m) => { setMode(m); if (cmd.can('science.scan')) scan(m); };
   const sys = (ks) => worst(ks.map((k) => levelOf(k, read(src, k))));
   const p = cmd.pending('science.scan');
+  const n = read(src, 'contacts'), rng = read(src, 'contactRange'), snr = read(src, 'contactSnr');
+  const lr = read(src, 'lrSensor'), sr = read(src, 'srSensor');
+  const arr = lr == null && sr == null ? null : Math.min(lr ?? 100, sr ?? 100);
+  const arrK = (lr ?? 100) <= (sr ?? 100) ? 'lrSensor' : 'srSensor';
+  const life = read(src, 'lifeforms');
+  const anomalies = alertsFor(src).filter((a) => a.type === 'zscore' && !a.ack).length;
   const desk = (
     <ConsoleStrip seed={23} jewels={[J('LONG RANGE', sys(['lrSensor']), st('sensors')), J('SHORT RANGE', sys(['srSensor']), st('sensors')), J('ION FLUX', sys(['ionFlux']), st('sensors')), J('LIFE-FORMS', sys(['lifeforms']), st('sensors'))]}>
       <LitButton color="blue" label="Scan" onClick={() => scan(mode)} {...cmd.bind('science.scan')} />
@@ -269,29 +278,47 @@ export default function Science({ shipId = 1 }) {
   );
 
   return (
-    <Station name="Science" division="science" ship={src} rows="minmax(160px, 0.9fr) minmax(180px, 1fr) minmax(220px, 1.2fr)" desk={desk}>
-      <Monitor title="Sensor scope" meta={`${mode === 'long' ? 'long' : 'short'} range · fore up`} state={st('sensors')} className="st-c5" style={{ gridRow: 'span 2', '--mh': '380px' }}>
-        <Scope src={src} mode={mode} />
-      </Monitor>
-      <Monitor title="Contacts" meta="nearest return" state={st('sensors')} className="st-c7">
-        <Contacts src={src} />
-      </Monitor>
-      <Monitor title="Life-forms aboard" meta="stored · live · forecast" state={st('sensors')} className="st-c7">
-        <Lifeforms src={src} showCo2={canSee(user, 'lifesupport')} />
-      </Monitor>
-      <Monitor title="Viewer" meta="return spectrum" state={st('sensors')} className="st-c3 monitor--housing monitor--hood" style={{ '--mh': '260px' }}>
-        <HoodedViewer src={src} />
-      </Monitor>
-      <Monitor title="Sensor arrays" meta="health" state={st('sensors')} className="st-c4" style={{ '--mh': '220px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'auto auto minmax(0, 1fr)', gap: 16, height: '100%', padding: 12 }}>
-          <BarGauge value={read(src, 'lrSensor')} k="lrSensor" label="Long" min={0} max={100} h="auto" segs={14} dec={0} />
-          <BarGauge value={read(src, 'srSensor')} k="srSensor" label="Short" min={0} max={100} h="auto" segs={14} dec={0} />
-          <Readout src={src} k="ionFlux" label="Ion flux" unit="index" />
-        </div>
-      </Monitor>
-      <Monitor title="Anomalies" meta="statistical detector" state={st('sensors')} className="st-c5" style={{ '--mh': '220px' }}>
-        <Anomalies src={src} />
-      </Monitor>
+    <Station name="Science" division="science" ship={src} rows="minmax(250px, 1fr) minmax(250px, 1fr)" desk={desk}>
+      <Monitor title="Sensor scope" meta={`${mode === 'long' ? 'long' : 'short'} range · fore up`} state={st('sensors')} className="st-c6" style={{ gridRow: '1 / span 2', '--mh': 'auto' }} index={0}
+        views={[
+          { label: 'Scope', content: <Scope src={src} mode={mode} /> },
+          { label: 'Viewer', content: <HoodedViewer src={src} /> },
+        ]} />
+      <Monitor title="Contacts" status={levelOf('contactRange', rng) ?? (anomalies ? 'warn' : 'ok')} state={st('sensors')} className="st-c3" index={1}
+        views={[
+          { label: 'Nearest', content: (
+            <Headline value={n ?? 0} unit={n === 1 ? 'contact' : 'contacts'} level={levelOf('contactRange', rng)} warn="CLOSING" crit="COLLISION RANGE"
+              word={n >= 1 ? `${fmt(rng, 0)} KM` : snr >= NOISE_DB ? 'GHOST?' : 'CLEAR'}>
+              <LampBar value={snr} k="contactSnr" min={0} max={30} label="Return signal" />
+            </Headline>
+          ) },
+          { label: 'Table', content: <Contacts src={src} /> },
+          { label: anomalies ? `Anomalies ${anomalies}` : 'Anomalies', content: <Anomalies src={src} /> },
+        ]} />
+      <Monitor title="Sensor arrays" status={sys(['lrSensor', 'srSensor', 'ionFlux']) ?? 'ok'} state={st('sensors')} className="st-c3" index={2}
+        views={[
+          { label: 'Health', content: (
+            <Headline value={arr} unit={`% ${arrK === 'lrSensor' ? 'long range' : 'short range'}`} level={levelOf(arrK, arr)}>
+              <LampBar value={arr} k={arrK} min={0} max={100} label="Weaker sensor array" />
+            </Headline>
+          ) },
+          { label: 'Arrays', content: (
+            <div style={{ display: 'grid', gridTemplateColumns: 'auto auto minmax(0, 1fr)', gap: 14, height: '100%', padding: 12 }}>
+              <BarGauge value={lr} k="lrSensor" label="Long" min={0} max={100} h="auto" segs={14} dec={0} />
+              <BarGauge value={sr} k="srSensor" label="Short" min={0} max={100} h="auto" segs={14} dec={0} />
+              <Readings items={[{ label: 'Ion flux', value: read(src, 'ionFlux'), unit: 'index', dec: 1, level: levelOf('ionFlux', read(src, 'ionFlux')) }]} />
+            </div>
+          ) },
+        ]} />
+      <Monitor title="Life-forms aboard" status={levelOf('lifeforms', life) ?? 'ok'} state={st('sensors')} className="st-c6" index={3}
+        views={[
+          { label: 'Count', content: (
+            <Headline value={life} unit="aboard" level={levelOf('lifeforms', life)}>
+              <LampBar value={life == null ? null : Math.log10(Math.max(1, life))} k="lifeforms" min={0} max={7} label="Life-forms aboard, log scale" />
+            </Headline>
+          ) },
+          { label: 'Forecast', content: <Lifeforms src={src} showCo2={canSee(user, 'lifesupport')} /> },
+        ]} />
     </Station>
   );
 }

@@ -144,3 +144,28 @@
 .comm__toggle::after { content: ''; position: absolute; left: 2px; right: 2px; bottom: 2px; height: 8px; border-radius: 4px; background: #8d95a0; }
 .comm__target[aria-checked='true'] .comm__toggle::after { top: 2px; bottom: auto; background: var(--lit-blue); box-shadow: 0 0 6px var(--lit-blue); }
 @media (pointer: coarse), (max-width: 1023px) { .comm__target { min-height: 44px; } }
+
+/* ---- slide levers (Engineering): the power allocation as the desk's red-knobbed levers, readout windows beside ---- */
+.monitor--levers .monitor__screen { background: #0a0b0c; }
+.levers { display: flex; flex-wrap: wrap; gap: 14px 18px; height: 100%; padding: 10px 14px; align-items: stretch; }
+.levers__bank { display: flex; gap: 4px; flex: none; padding: 6px 8px; border-radius: 4px; background: #000; box-shadow: inset 0 1px 3px #000, 0 0 0 1px #ffffff14; }
+.lever { display: grid; grid-template-rows: auto minmax(44px, 1fr) auto; justify-items: center; gap: 7px; width: 78px; }
+.lever__val { font: 700 14px/1 var(--font-mono); color: var(--ink); white-space: nowrap; }
+.lever__slot { position: relative; width: 10px; border-radius: 5px; background: #000; box-shadow: inset 0 0 0 1px #ffffff2e, inset 0 2px 4px #000; }
+/* tick marks either side of the slot, every 20 % */
+.lever__slot::before {
+  content: ''; position: absolute; left: -13px; right: -13px; top: 0; bottom: 0; pointer-events: none;
+  background: repeating-linear-gradient(0deg, #ffffff4d 0 1px, #ffffff00 1px 20%);
+  -webkit-mask: linear-gradient(90deg, #000 0 7px, #0000 7px calc(100% - 7px), #000 calc(100% - 7px)); mask: linear-gradient(90deg, #000 0 7px, #0000 7px calc(100% - 7px), #000 calc(100% - 7px));
+}
+.lever__knob {
+  position: absolute; left: 50%; width: 30px; height: 13px; transform: translate(-50%, 50%); border-radius: 3px;
+  background: linear-gradient(180deg, #ff8a70, #d42a1c 55%, #8f150c); box-shadow: 0 2px 3px #000c, inset 0 1px 0 #ffffff80;
+  transition: bottom 600ms var(--ease-in);
+}
+.lever__name { display: flex; align-items: center; justify-content: center; gap: 5px; font: 400 9px/1.25 var(--font-display); letter-spacing: 0.08em; text-transform: uppercase; color: #c9d0d8; text-align: center; }
+.lever__name i { flex: none; width: 8px; height: 8px; border-radius: 2px; }
+.levers__side { flex: 1 1 260px; min-width: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(118px, 1fr)); gap: 8px; align-content: center; }
+.levers__win { display: flex; flex-direction: column; gap: 6px; min-width: 0; padding: 8px 10px; border-radius: 3px; background: #020203; box-shadow: 0 0 0 1px #000, 0 0 0 2px #ffffff14; }
+.levers__win > span { font: 400 9px/1 var(--font-display); letter-spacing: 0.1em; text-transform: uppercase; color: #a3abb5; }
+.levers__win > b { display: flex; align-items: baseline; gap: 4px; font: 700 16px/1 var(--font-mono); color: var(--ink); white-space: nowrap; }

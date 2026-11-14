@@ -14,6 +14,8 @@ const PRESETS = { cruise: [55, 15, 10, 20], combat: [30, 35, 25, 10], emergency:
 // validated with the dataviz checker on the void surface (CVD 8.0, so every segment also carries a direct label)
 const ALLOC = [['allocWarp', 'Warp', '#C9790E'], ['allocShields', 'Shields', '#3A8BDD'], ['allocWeapons', 'Weapons', '#C95BB5'], ['allocLife', 'Life support', '#2A9E74']];
 const XP = ['IDLE', 'ENERGIZING', 'TRANSPORTING', 'FAULT'];
+// the readout wall along the console band: [channel, label, decimals]
+const READOUT_WALL = [['reactionRate', 'Reaction', 0], ['chamberTemp', 'Chamber', 1], ['intermixDev', 'Intermix', 2], ['warpField', 'Field', 1], ['dilithiumEff', 'Dilithium', 1], ['dilithiumTemp', 'Crystal', 0], ['nacellePort', 'Port nac', 0], ['nacelleStbd', 'Stbd nac', 0], ['impulseReactor', 'Impulse', 0], ['powerTotal', 'Output', 0], ['battery', 'Battery', 0]];
 
 /** Intermix column with plasma rising at the reaction rate, and conduits carrying it up to the two nacelles. */
 function Chamber({ src }) {
@@ -62,27 +64,37 @@ function Chamber({ src }) {
   return <canvas ref={ref} className="st-canvas" role="img" aria-label="Reaction chamber: plasma rises at the reaction rate and flows to both nacelles" />;
 }
 
-function PowerBar({ src }) {
+/**
+ * Power allocation as the slide levers of the engineering desk (RESEARCH.md, Bridge consoles): one slot per system, its
+ * red knob at the share of power. The levers show the allocation; the presets on the console set it (the server takes
+ * presets only). Total output and the emergency battery sit in readout windows beside them.
+ */
+function SlideLevers({ src }) {
   const vals = ALLOC.map(([k]) => read(src, k));
   const total = vals.reduce((a, v) => a + (v ?? 0), 0) || 1;
   const preset = Object.entries(PRESETS).find(([, p]) => p.every((x, i) => Math.abs((vals[i] ?? -99) - x) < 2))?.[0];
+  const battery = read(src, 'battery'), bLv = levelOf('battery', battery);
   return (
-    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px 24px', alignItems: 'center', height: '100%' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minWidth: 0, flex: '1 1 300px' }}>
-        <div style={{ display: 'flex', gap: 2, height: 30, borderRadius: 4, overflow: 'hidden' }} role="img" aria-label={`Power allocation: ${ALLOC.map(([, l], i) => `${l} ${fmt(vals[i], 0)}%`).join(', ')}`}>
-          {ALLOC.map(([k, , col], i) => <i key={k} style={{ flex: `${Math.max(0.001, vals[i] ?? 0)} 1 0`, background: col, transition: 'flex-grow 600ms cubic-bezier(0.2,0,0,1)' }} />)}
-        </div>
-        <div className="st-legend">
-          {ALLOC.map(([k, l, col], i) => <span key={k}><i style={{ background: col }} />{l} <b className="mono" style={{ fontFamily: 'var(--font-mono)', color: C.ink }}>{fmt(((vals[i] ?? 0) / total) * 100, 0)}%</b></span>)}
-        </div>
+    <div className="levers">
+      <div className="levers__bank">
+        {ALLOC.map(([k, l, col], i) => {
+          const pct = ((vals[i] ?? 0) / total) * 100;
+          return (
+            <div key={k} className="lever" role="meter" aria-label={`${l} ${fmt(pct, 0)}% of power`} aria-valuemin={0} aria-valuemax={100} aria-valuenow={vals[i] == null ? undefined : Math.round(pct)}>
+              <span className="lever__val"><Num value={pct} dec={0} /><span className="st-unit">%</span></span>
+              <div className="lever__slot"><i className="lever__knob" style={{ bottom: `${clamp(pct / 100) * 100}%` }} /></div>
+              <span className="lever__name"><i style={{ background: col }} aria-hidden="true" />{l}</span>
+            </div>
+          );
+        })}
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'center' }}>
-        <div className="st-ro"><span className="st-label">Preset</span><span className="st-num st-xs" style={{ fontFamily: 'var(--font-display)', fontWeight: 400, fontSize: 12, letterSpacing: '0.08em' }}>{preset ? preset.toUpperCase() : 'CUSTOM'}</span></div>
-        <div style={{ width: 150 }}><Readout src={src} k="powerTotal" label="Total output" unit="% rated" sparkH={22} /></div>
-        <div style={{ width: 130 }} className="st-ro">
-          <span className="st-label">Battery</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><Num value={read(src, 'battery')} dec={0} className="st-num st-sm" level={levelOf('battery', read(src, 'battery'))} /><span className="st-unit">%</span><LevelChip level={levelOf('battery', read(src, 'battery'))} /></span>
-          <HBar value={read(src, 'battery')} k="battery" label="Emergency battery charge" />
+      <div className="levers__side">
+        <div className="levers__win"><span>Preset</span><b className="display" style={{ fontSize: 12, fontWeight: 400 }}>{preset ? preset.toUpperCase() : 'CUSTOM'}</b></div>
+        <div className="levers__win levers__win--wide"><Readout src={src} k="powerTotal" label="Total output" unit="% rated" size="sm" sparkH={18} /></div>
+        <div className="levers__win">
+          <span>Battery</span>
+          <b><Num value={battery} dec={0} level={bLv} /><span className="st-unit">%</span> <LevelChip level={bLv} /></b>
+          <HBar value={battery} k="battery" label="Emergency battery charge" />
         </div>
       </div>
     </div>
@@ -191,7 +203,7 @@ export default function Engineering({ shipId = 1 }) {
   const warpLv = sys(['reactionRate', 'intermixDev', 'dilithiumEff', 'dilithiumTemp', 'chamberTemp', 'nacelleDelta', 'warpField']);
 
   const desk = (
-    <ConsoleStrip seed={11} jewels={[J('WARP', warpLv, st('warp')), J('IMPULSE', sys(['impulseReactor', 'impulseTemp']), st('impulse')), J('POWER', sys(['powerTotal', 'battery']), st('power')), J('DECKS', decksLv, st('lifesupport')), J('TRANSPORT', xp === 3 ? 'crit' : sys(['xpEnergy', 'xpLock', 'xpPattern']), st('transporter'))]}>
+    <ConsoleStrip seed={11} readouts={READOUT_WALL.map(([k, l, dec]) => ({ label: l, value: <Num value={read(src, k)} dec={dec} />, unit: meta(k)?.unit }))} jewels={[J('WARP', warpLv, st('warp')), J('IMPULSE', sys(['impulseReactor', 'impulseTemp']), st('impulse')), J('POWER', sys(['powerTotal', 'battery']), st('power')), J('DECKS', decksLv, st('lifesupport')), J('TRANSPORT', xp === 3 ? 'crit' : sys(['xpEnergy', 'xpLock', 'xpPattern']), st('transporter'))]}>
       <LitButton color="amber" label="Cruise" onClick={() => preset('cruise')} lit={presetOn('cruise')} {...cmd.bind('engineering.allocate')} />
       <LitButton color="red" label="Combat" onClick={() => preset('combat')} lit={presetOn('combat')} {...cmd.bind('engineering.allocate')} />
       <LitButton color="yellow" label="Emergency power" onClick={() => preset('emergency')} lit={presetOn('emergency')} {...cmd.bind('engineering.allocate')} />
@@ -201,7 +213,7 @@ export default function Engineering({ shipId = 1 }) {
   );
 
   return (
-    <Station name="Engineering" division="ops" ship={src} rows="minmax(230px, 2.6fr) minmax(128px, 1.1fr) minmax(286px, 3.2fr)" desk={desk}>
+    <Station name="Engineering" division="ops" ship={src} rows="minmax(240px, 2.6fr) minmax(150px, 1.3fr) minmax(200px, 2.4fr)" desk={desk}>
         <Monitor title="Reaction chamber" meta="matter / antimatter" state={st('warp')} className="st-c4" style={{ '--mh': '300px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(110px, 44%) 1fr', height: '100%' }}>
             <div style={{ position: 'relative' }}><Chamber src={src} /></div>
@@ -237,8 +249,8 @@ export default function Engineering({ shipId = 1 }) {
             </div>
           </div>
         </Monitor>
-        <Monitor title="Power allocation" meta="warp · shields · weapons · life support" state={st('power')} className="st-c8">
-          <div className="st-pad" style={{ height: '100%' }}><PowerBar src={src} /></div>
+        <Monitor title="Power allocation" meta="slide levers · warp · shields · weapons · life support" state={st('power')} className="st-c8 monitor--housing monitor--levers" style={{ '--mh': '230px' }}>
+          <SlideLevers src={src} />
         </Monitor>
         <Monitor title="Transporter" meta="room 1" state={st('transporter')} className="st-c4" style={{ '--mh': '160px' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto', height: '100%' }}>

@@ -1,0 +1,60 @@
+# One command for everything: docker compose up --build
+# App: http://localhost:5173   API: http://localhost:4000   Placeholder login: command / ncc-command
+# Build context is the repo root for server and client because both import the shared/ workspace.
+services:
+  mongo:
+    image: mongo:8
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  server:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    restart: unless-stopped
+    environment:
+      # A local demo stack with public default secrets. With NODE_ENV=production the server
+      # refuses those defaults, so set JWT_SECRET and DEVICE_KEY as well.
+      NODE_ENV: ${NODE_ENV:-development}
+      MONGO_URI: mongodb://mongo:27017/ncc1701
+      PORT: 4000
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-real-deployments}
+      DEVICE_KEY: ${DEVICE_KEY:-dev-device-key}
+      CORS_ORIGIN: http://localhost:5173,http://127.0.0.1:5173
+    ports:
+      - "4000:4000"
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+  client:
+    build:
+      context: .
+      dockerfile: client/Dockerfile
+      args:
+        VITE_API_URL: http://localhost:4000
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    depends_on:
+      - server
+
+  simulator:
+    build:
+      context: .
+      dockerfile: simulator/Dockerfile
+    restart: unless-stopped
+    environment:
+      SIM_URL: http://server:4000
+      DEVICE_KEY: ${DEVICE_KEY:-dev-device-key}
+    depends_on:
+      - server
+
+volumes:
+  mongo-data:

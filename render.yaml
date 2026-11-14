@@ -1,0 +1,33 @@
+# Render blueprint: one free web service runs the API server and, inside it, the simulator (SIM_EMBED=1), because
+# Render has no free background worker and one always-on service fits the 750 free hours a month. The client is on
+# Vercel (vercel.json at the repository root) and MongoDB is a free Atlas cluster. Set the values marked sync: false
+# in the Render dashboard.
+services:
+  - type: web
+    name: ncc1701-server
+    runtime: docker
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: MONGO_URI # MongoDB Atlas connection string
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DEVICE_KEY # the simulator inside this service uses it too
+        generateValue: true
+      - key: CORS_ORIGIN # the Vercel client URL, for example https://ncc1701.vercel.app
+        sync: false
+      - key: PORT
+        value: 10000
+      - key: TELEMETRY_TTL_SEC # 2 hours of raw samples keeps a free Atlas cluster small
+        value: 7200
+      - key: ALERTS_TTL_SEC
+        value: 86400
+      - key: TRUST_PROXY # Render's proxy is in front: rate limits then count per client, not one shared proxy address
+        value: 1
+      - key: SIM_EMBED
+        value: 1
+      - key: SIM_HZ # a low rate fits the free plan's small CPU share
+        value: 5

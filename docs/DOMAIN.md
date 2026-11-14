@@ -46,7 +46,7 @@ If time runs out, cut items 5 and 6 first.
 
 ### Stardate
 
-`stardate(ts) = 4000 + (ts - Date.UTC(2026, 0, 1)) / 8_640_000`: ten units a day, one decimal in the top bar, two in log lines. The original series used stardates between roughly 1000 and 6000 without a fixed rule, so any formula in that range reads right.
+`stardate(ts) = 1000 + (ts - Date.UTC(2026, 0, 1)) / 8_640_000`: ten units a day, about 4170 in mid-November 2026, one decimal in the top bar, two in log lines. The original series used stardates between roughly 1000 and 6000 without a fixed rule, so any formula that stays in that range reads right.
 
 ## 2. Groups and rooms
 

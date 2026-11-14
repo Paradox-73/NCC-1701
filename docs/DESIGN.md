@@ -148,7 +148,7 @@ Below 1024 px the monitors stack in one column, the decorative grid hides, and t
 | Component | What it is | Notes |
 |---|---|---|
 | `TopBar` | Wordmark, station tabs, condition lamp, stardate clock, live readings per second, sound toggle, user and role | Stardate comes from `DOMAIN.md`. Sticky. |
-| `StationTab` | Division pill and a Michroma label | Active tab: `accent` underline sitting on the railing line. Tabs the role cannot open are hidden. |
+| `StationTab` | Division pill and a Michroma label | Active tab: `accent` underline sitting on the railing line. A station the role may not use keeps its tab with a lock; it opens to restricted monitors, and the server refuses the data anyway. |
 | `ConditionLamp` | NORMAL, YELLOW ALERT or RED ALERT as a lamp and a word | The captain can click it to change condition. |
 | `Monitor` | A rounded screen in a bezel with a title strip | Slots: chart, readout, scope, list. States: power-on, live, no signal, restricted. No signal shows a low-resolution static pattern and the words NO SIGNAL. Restricted shows a lock and "Medical records: CMO and captain only". |
 | `Readout` | Label, big number, unit, change arrow, 60 s sparkline with the normal band | The number ticks to its new value. Colour appears only past a limit. |
@@ -236,7 +236,7 @@ Budget: 1.5 MB for all cues together after trimming. If a clip cannot be used, t
 
 ## Stations
 
-Seven screens plus login. A role sees only the station tabs it may open; the server enforces the same rules (`DOMAIN.md`, Roles). Each wireframe shows the monitor area; the console strip lists its real controls.
+Seven screens plus login. Every role sees every station tab; monitors fed by groups the role may not see show as restricted, and the server enforces the same rules (`DOMAIN.md`, Roles). Each wireframe shows the monitor area; the console strip lists its real controls.
 
 ### Bridge, the captain's chair (`/bridge`)
 
@@ -252,15 +252,15 @@ Everyone can open it; tiles a role may not see show as restricted.
 +---------------+-------------------+-----------------+---------------+
 | HELM: warp arc, heading, speed    | CAPTAIN'S LOG: alerts and steps |
 +-----------------------------------+---------------------------------+
-| SICKBAY: crew counts (CMO and captain) | TASK FORCE: 3 jewels       |
+| SICKBAY: crew on watch, critical      | TASK FORCE: 3 jewels       |
 +--------------------------------------------------------------------+
 ```
 
-Each side tile is a small monitor with one number, a sparkline and a jewel; clicking it takes the turbolift to that station. Console strip, the arms of the captain's chair: RED ALERT, YELLOW ALERT, STAND DOWN, HAIL, VIEWER mode, SHIELDS, and the scenario button.
+Each side tile is a small monitor with one number, a sparkline and a jewel; clicking it takes the turbolift to that station. The sickbay tile shows counts only, which every role may see. Console strip, the arms of the captain's chair: RED ALERT, YELLOW ALERT, STAND DOWN, HAIL, VIEWER mode, SHIELDS, SCENARIO, and the button a running scenario waits for, such as VENT GAS.
 
 ### Helm and navigation (`/helm`)
 
-The helm also runs the weapons, as on the show. The captain gives the orders; other roles see it read-only.
+The helm also runs the weapons, as on the show. The captain gives the orders; other roles see the monitors their groups allow, read-only.
 
 ```
 +------------------------------------------+-------------------------+
@@ -290,7 +290,7 @@ Console strip: WARP −, WARP +, FULL IMPULSE, ALL STOP, HEADING ◀ ▶, SHIELD
 +-------------------------------+-------------------------------------+
 ```
 
-Console strip: allocation presets (CRUISE, COMBAT, EMERGENCY), EMERGENCY POWER, COLD RESTART when a scenario asks for it.
+Console strip: allocation presets CRUISE, COMBAT and EMERGENCY POWER; ENERGIZE for the transporter; COLD RESTART when a scenario asks for it.
 
 ### Science (`/science`)
 
@@ -333,7 +333,7 @@ Console strip: HAIL, CLOSE CHANNEL, PRIORITY ONE, INTERCOM.
 +---------------------+----------------------------------------------+
 ```
 
-Console strip: QUARANTINE DECK, CLEAR WATCH, SEDATIVE (scenario only).
+Console strip: INOCULATE, QUARANTINE DECK.
 
 ### Starfleet Command (`/fleet`), admin
 
@@ -375,7 +375,7 @@ Shortcuts are ignored while the focus is in a text field. Commands go to the ser
 | `H` | Open or close hailing frequencies | Captain, communications officer |
 | `V` | Next viewscreen mode: forward, aft, tactical, magnify | Everyone, local view only |
 | `+` `-` | Magnification ×1, ×2, ×4, ×8 | Everyone |
-| `G` then `B` `H` `E` `S` `C` `M` `F` | Go to Bridge, Helm, Engineering, Science, Comms, Medical, Fleet | Stations the role may open |
+| `G` then `B` `H` `E` `S` `C` `M` `F` | Go to Bridge, Helm, Engineering, Science, Comms, Medical, Fleet | Everyone; restricted monitors stay restricted |
 | `Ctrl`+`K` | Turbolift: station picker | Everyone |
 | `A` | Acknowledge the newest alert | Roles that can see it |
 | `M` | Sound on or off | Everyone |

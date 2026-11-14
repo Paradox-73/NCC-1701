@@ -154,12 +154,12 @@ test('the sickbay hub stores 1,720 vitals per sample; only the captain and the c
   assert.equal(Object.keys(doc).filter((k) => /^(hr|rr|bt|nr)_\d{3}$/.test(k)).length, 1720);
 });
 
-test('the overview carries a row per ship with flags (online plus the open alert level), condition, warp, weakest shield, position and heading', async () => {
+test('the overview carries Starfleet Command a row per ship with flags (online plus the open alert level), condition, warp, weakest shield, position and heading', async () => {
   const ship = await sim(2);
   const v = Object.fromEntries(channelsOf(2).map((c) => [c.key, c.nominal]));
   Object.assign(v, { warpFactor: 7.5, shieldAft: 41.5, posX: 12.3, posY: -4.5, heading: 270 });
   await ship.send([packSample(Math.round(Date.now() / 20), Date.now(), v, 2)]);
-  const bridge = await dash('captain');
+  const bridge = await dash('command');
   const o = await new Promise((res) => bridge.s.on(EVENTS.OVERVIEW, (p) => p.sources.some((r) => r[0] === 2) && res(p)));
   assert.deepEqual(o.sources.find((r) => r[0] === 2), [2, 3, 0, 750, 415, 123, -45, 2700]);
   assert.ok(o.sources.every((r) => r.length === 8 && r[0] < 5), 'ships only');

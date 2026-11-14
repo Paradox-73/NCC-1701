@@ -35,7 +35,7 @@ export function setupLive({ io, config, metrics, alerts, log }) {
     socket.conn.on('packetCreate', (p) => metrics.inc('bytesOut', p.data?.length ?? 0));
     const ships = ROLES[user.role].ships;
     // ship:<id> carries condition, log, scenario and command acks of the ships the role sees; deny:<id> marks the sources it does not, so alerts skip it
-    socket.join(['overview', 'alerts', ...allowed.map(alertRoom), ...ships.filter((id) => !isCrewSource(id)).map((id) => `ship:${id}`), ...SOURCES.filter((s) => !ships.includes(s.id)).map((s) => denyRoom(s.id))]);
+    socket.join([`overview:${user.role}`, 'alerts', ...allowed.map(alertRoom), ...ships.filter((id) => !isCrewSource(id)).map((id) => `ship:${id}`), ...SOURCES.filter((s) => !ships.includes(s.id)).map((s) => denyRoom(s.id))]);
     if (ROLES[user.role].admin) socket.join('admin');
 
     const guard = (fn) => async (payload, ack) => {

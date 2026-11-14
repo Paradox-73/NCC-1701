@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { EVENTS, ROLES, SOURCES, canSeeGroup } from '@ncc/shared/schema.js';
+import { EVENTS, ROLES, SOURCES, canSeeGroup, shipOf } from '@ncc/shared/schema.js';
 import { Alert } from './models/index.js';
 
 const wire = (a) => ({
@@ -29,11 +29,22 @@ export const sourceFilter = (role) => ({ $or: [{ sourceId: { $in: ROLES[role]?.s
 /** Stores an alert and broadcasts it to the alert room of its group. */
 export function makeAlerts({ io, log, metrics }) {
   const room = (group, sourceId) => io.of('/live').to(alertRoom(group)).except(denyRoom(sourceId));
+  let pending = [];
+  let timer = null;
+  const flush = () => {
+    clearTimeout(timer);
+    timer = null;
+    const docs = pending;
+    pending = [];
+    return docs.length ? Alert.insertMany(docs, { ordered: false }).catch((err) => log.error({ err: err.message }, 'alert save failed')) : Promise.resolve();
+  };
   return {
+    flush,
     raise(alert) {
       const doc = { _id: new mongoose.Types.ObjectId(), ...alert };
       metrics.inc('alerts');
-      Alert.create(doc).catch((err) => log.error({ err: err.message }, 'alert save failed'));
+      pending.push(doc);
+      timer ??= setTimeout(flush, 100); // a burst (The Naked Time raises 503 at once) is one insert, not 503: Atlas M0 allows 100 operations a second
       room(alert.group, alert.sourceId).emit(EVENTS.ALERT, wire(doc));
     },
     /**
@@ -41,6 +52,7 @@ export function makeAlerts({ io, log, metrics }) {
      * acknowledged, or the user's role may not acknowledge alerts of its group.
      */
     async ack(id, user) {
+      await flush();
       if (!ROLES[user.role]?.canAck) return null;
       const a = await Alert.findOneAndUpdate(
         { _id: id, 'ack.by': { $exists: false }, group: { $in: [...ROLES[user.role].groups, null] }, ...sourceFilter(user.role) },
@@ -49,6 +61,30 @@ export function makeAlerts({ io, log, metrics }) {
       ).lean();
       if (a) room(a.group, a.sourceId).emit(EVENTS.ALERT_ACK, { id: String(a._id), by: user.username });
       return a;
+    },
+    /** Acknowledges every open alert the user's role may see and ack; returns how many. */
+    async ackAll(user) {
+      await flush();
+      if (!ROLES[user.role]?.canAck) return 0;
+      const filter = { 'ack.by': { $exists: false }, group: { $in: [...ROLES[user.role].groups, null] }, ...sourceFilter(user.role) };
+      const docs = await Alert.find(filter, { _id: 1, group: 1, sourceId: 1 }).lean();
+      if (!docs.length) return 0;
+      await Alert.updateMany({ _id: { $in: docs.map((d) => d._id) }, 'ack.by': { $exists: false } }, { ack: { by: user.username, at: Date.now() } });
+      for (const a of docs) room(a.group, a.sourceId).emit(EVENTS.ALERT_ACK, { id: String(a._id), by: user.username });
+      return docs.length;
+    },
+    /** A scenario starts or ends: its ships' open warn and critical alerts are closed and acknowledged as the system, so the next run starts from a clean list. */
+    async resolveForShips(shipIds, reason) {
+      await flush();
+      const sourceIds = SOURCES.filter((s) => shipIds.includes(shipOf(s.id))).map((s) => s.id);
+      const docs = await Alert.find({ sourceId: { $in: sourceIds }, severity: { $ne: 'info' }, 'resolved.at': { $exists: false } }, { _id: 1, group: 1, sourceId: 1, 'ack.by': 1 }).lean();
+      if (!docs.length) return 0;
+      const now = Date.now();
+      const ids = docs.map((d) => d._id);
+      await Alert.updateMany({ _id: { $in: ids }, 'ack.by': { $exists: false } }, { ack: { by: 'system', at: now, reason } });
+      await Alert.updateMany({ _id: { $in: ids } }, { resolved: { at: now, reason } });
+      for (const a of docs) if (!a.ack?.by) room(a.group, a.sourceId).emit(EVENTS.ALERT_ACK, { id: String(a._id), by: 'system' });
+      return docs.length;
     },
     /** The detector's open conditions live in memory, so alerts left open by a stopped server have nobody watching them: close them, and acknowledge them as the system so every client shows them as seen. */
     async closeStale() {

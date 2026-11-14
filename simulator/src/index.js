@@ -89,12 +89,13 @@ export function start(cfg) {
     console.log(`source ${e.src.id}: command ${JSON.stringify(cmd)}`);
     const a = cmd?.args ?? {};
     const secs = (Number(a.seconds) || 5) * 1000;
+    if (cmd?.type === 'clear') { e.stormUntil = 0; e.mute = Date.now(); } // a muted source sends what it held at the next tick
     if (cmd?.type === 'mute') e.mute = Date.now() + (Number(a.seconds) || 3) * 1000;
     else if (cmd?.type === 'fault.storm') e.stormUntil = Date.now() + secs;
     else if (cmd?.type === 'scn.fault') {
       if (a.fault === 'mute') e.mute = Date.now() + secs;
       else if (a.fault === 'storm') e.stormUntil = Date.now() + secs;
-      else if (a.fault === 'lost') e.lost = true; // the ship is gone: nothing is sent, and nothing is sent later to make up for it
+      else if (a.fault === 'lost') { e.lost = true; e.lostUntil = 0; } // the ship is gone: nothing is sent, and nothing is sent later to make up for it
       else if (a.fault === 'spike') e.ship.command({ type: 'fault.spike' });
     } else if (cmd?.type === 'scn.rogue') rogue({ url: cfg.url, key: cfg.key, phase: a.phase, seconds: a.seconds }).catch((err) => console.log(`rogue ${a.phase}: ${err.message}`));
     else if (cmd?.type === 'scn.release') {

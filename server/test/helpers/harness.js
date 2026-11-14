@@ -13,6 +13,7 @@ const START = Date.UTC(2026, 10, 14, 12, 0, 0);
 export function makeBridge({ seed = 1, scenarios = SCENARIOS, withCrew = true } = {}) {
   let now = START;
   const alerts = []; // { t, sourceId, type, channel, severity, group, message } with t in seconds on the virtual clock
+  const resolved = []; // { t, shipIds, reason } each time a scenario edge asked for open alerts to be closed
   const events = []; // { t, shipId, event, payload } what ship:<id> rooms would carry
   const stream = { storm: new Map() }; // sourceId -> storm seconds requested
   const ships = Object.fromEntries(SOURCES.filter((s) => s.kind === 'ship').map((s) => [s.id, new Ship(s.id, { rand: lcg(seed * 100 + s.id) })]));
@@ -40,6 +41,7 @@ export function makeBridge({ seed = 1, scenarios = SCENARIOS, withCrew = true } 
     scenarios,
     online: (id) => !!ships[id],
     latest: (id) => lastValues[id] ?? null,
+    resolveAlerts: async (shipIds, reason) => { resolved.push({ t: t(), shipIds, reason }); return 0; },
   });
 
   const lastValues = {};
@@ -82,7 +84,7 @@ export function makeBridge({ seed = 1, scenarios = SCENARIOS, withCrew = true } 
 
   const as = (username, role) => ({ username, role });
   return {
-    ships, world, detector, watch, alerts, events, stream, run, t, lastValues, as,
+    ships, world, detector, watch, alerts, resolved, events, stream, run, t, lastValues, as,
     /** Sends a bridge command as a dashboard would. */
     command: (shipId, cmd, who = as('captain', 'captain')) => world.execute(shipId, cmd, who),
     /** Alerts matching `type` (and optionally a source id), as [t, severity] rows. */

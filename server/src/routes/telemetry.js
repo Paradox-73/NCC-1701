@@ -37,6 +37,8 @@ export function telemetryRoutes({ getTelemetry, writer }) {
     const unwritten = writer.unwritten().filter((d) => d.sourceId === q.sourceId && d.ts >= match.ts.$gte && d.ts < match.ts.$lt);
     const count = await col.countDocuments(match);
     const downsampled = count > q.maxPoints;
+    // only the wanted columns go into the sort and the buckets: whole samples (121 or 1,720 channels) overflow Atlas M0's 32 MB in-memory sort limit
+    const fields = { _id: 0, ts: 1, seq: 1, ...Object.fromEntries(keys.map((k) => [k, 1])) };
     let docs;
     if (downsampled) {
       // each bucket keeps its newest sample (max seq), so lastSeq is exact; buckets is count / (whole samples per point), so MongoDB
@@ -44,12 +46,13 @@ export function telemetryRoutes({ getTelemetry, writer }) {
       const rows = await col
         .aggregate([
           { $match: match },
+          { $project: fields },
           { $bucketAuto: { groupBy: '$ts', buckets: Math.ceil(count / Math.ceil(count / q.maxPoints)), output: { top: { $top: { sortBy: { seq: -1 }, output: '$$ROOT' } } } } },
         ])
         .toArray();
       docs = rows.map((b) => b.top);
     } else {
-      docs = await col.find(match).sort({ seq: 1 }).toArray();
+      docs = await col.find(match, { projection: fields }).sort({ seq: 1 }).toArray();
     }
     const stored = new Set(docs.map((d) => d.seq));
     for (const d of unwritten) if (!stored.has(d.seq)) docs.push(d);

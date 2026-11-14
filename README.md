@@ -1,8 +1,16 @@
 # NCC-1701 Bridge
 
-**A real-time telemetry platform you can sit inside.** Four starships and 430 crew stream about 20,000 readings a second. A MERN stack validates, deduplicates, stores and fans them out by role, and they arrive on a recreation of the original-series Enterprise bridge, where every station is a live dashboard.
+**A real-time telemetry platform you can sit inside.** Four starships and 430 crew send about 115 samples a second, which is about 20,000 channel values a second. A MERN stack validates, deduplicates, stores and fans them out by role, and they arrive on a recreation of the original-series Enterprise bridge, where every station is a live dashboard.
 
 Built for the MERNify hackathon.
+
+**Links**
+
+- Repository: _add the GitHub URL_
+- Demo video: _add the video URL_
+- Live app: _add the hosted URL_
+
+**Two units, used everywhere in this project.** A *sample* is one reading of a whole source at one instant: a ship's 121 channels, or a sickbay hub's 1,720 crew values. A *channel value* is one number inside a sample. The app's top bar shows samples per second (`rd/s`, about 115 with the full local simulator). The "about 20,000" headline counts channel values per second: roughly 110 ship samples times 121 channels, plus 4 hub samples times 1,720.
 
 ![The bridge during Balance of Terror: warp 6, the scenario strip across the viewscreen, every station live](docs/screenshots/app-bridge.png)
 
@@ -17,6 +25,8 @@ A starship is a good test case: one ship carries 121 channels (warp core, shield
 
 ## Run it in 60 seconds
 
+You need Docker (with Compose) and free ports 5173 (the app) and 4000 (the server).
+
 ```bash
 docker compose up --build
 ```
@@ -26,14 +36,17 @@ docker compose up --build
 
    | User | Role | Sees |
    |---|---|---|
-   | `captain` | Captain | everything on the Enterprise, every command |
+   | `captain` | Captain | everything on the Enterprise, every command. The Starfleet (fleet) station is locked for this role |
    | `engineer` | Chief Engineer | warp, power, shields, hull, decks, transporter |
    | `medical` | Chief Medical Officer | 430 crew biosigns, life support (medical privacy) |
    | `science` | Science Officer | sensors, helm, shields, hull |
    | `comms` | Communications Officer | comms, helm, sensors |
-   | `command` | Starfleet Command | the whole task force, scenarios, server metrics |
+   | `command` | Starfleet Command | the whole task force and the Starfleet station, scenarios, server metrics |
 
-3. Board, take the turbolift to the bridge, then press **SCENARIO** and run *Balance of Terror*. When the ghost ship appears, hit **RED ALERT** (`R`), then fire phasers with the button the scenario lights up.
+Log in as `command` to see the fleet: all four ships on the sector map and the scenario launcher. The other roles see the Enterprise only.
+
+3. You board and reach the bridge automatically. Press **SCENARIO** and run *Balance of Terror*. The scenario raises red alert itself when the enemy ship appears. Press `V` to switch the viewscreen to the tactical view, and press **FIRE PHASERS** when it lights up.
+4. History and Alerts are pages without a station button. Press `Ctrl K` to open the turbolift, type "History" or "Alerts" and press Enter, or open `/history` and `/alerts` on the same address.
 
 Sound is off by default. Press `M` to turn it on.
 
@@ -68,11 +81,11 @@ Sound is off by default. Press `M` to turn it on.
 
 There's no hardware, so `simulator/` plays the ships, and it talks to the server exactly as a real device would:
 
-- **4 ships** (Enterprise, Constellation, Exeter, Intrepid), each running a physics model: matter/antimatter reaction, dilithium wear, nacelle balance, power allocation, shields that take hits and recharge, hull stress, oxygen and CO₂ on twelve decks, sensor contacts, transporter cycles and subspace comms. 121 channels per sample, at 50 Hz for the Enterprise and 20 Hz for the others.
+- **4 ships** (Enterprise, Constellation, Exeter, Intrepid), each starting at its own position, heading and warp factor and drifting slowly, each running a physics model: matter/antimatter reaction, dilithium wear, nacelle balance, power allocation, shields that take hits and recharge, hull stress, oxygen and CO₂ on twelve decks, sensor contacts, transporter cycles and subspace comms. 121 channels per sample, at 50 Hz for the Enterprise and 20 Hz for the others.
 - **4 sickbay hubs**, one per ship. Each streams heart rate, respiration, body temperature and neural activity for all **430 crew**, every crew member with their own baseline. That's 1,720 values a second per hub.
 - **Scenarios** steer the simulator through `sim:command` verbs (`hit`, `ramp`, `fault`, `crew`, `mute`), so an episode is real telemetry that the detector has to catch, not canned alerts.
 
-Locally that adds up to about 110 ship samples and 4 crew samples a second, roughly **20,000 readings a second**. The whole domain (sources, channels, ranges, roles, alert rules) is one file, `shared/registry.js`.
+Locally that adds up to about 110 ship samples and 4 crew samples a second: about 115 samples a second, or roughly **20,000 channel values a second**. The whole domain (sources, channels, ranges, roles, alert rules) is one file, `shared/registry.js`.
 
 ## How real-time works
 
@@ -89,7 +102,7 @@ simulator ──telemetry:batch──▶ /ingest ─▶ validate ─▶ rate lim
 - **Fan-out (`/live` namespace), rooms per role:**
   - `src:<id>:<group>`: one channel group of one source (`src:1:shields`). A client subscribes, and the server joins only the groups its role may see.
   - `ship:<id>`: ship events such as condition, captain's log, scenario progress and visual effects.
-  - `overview`, `alerts:<group>`, `admin`: the 5 Hz fleet summary, alerts by group, and server metrics.
+  - `overview:<role>`, `alerts:<group>`, `admin`: the 5 Hz fleet summary (only the ships of that role, with helm and shield columns blank for roles without those groups), alerts by group, and server metrics.
 - **Batching and throttling.** The broadcaster sends **one frame per room every 50 ms** (built once, sent to every subscriber), not one message per sample. The overview is volatile, so slow clients drop it instead of queueing. On the client, frames go into ring buffers outside React state and are drawn on one shared animation-frame loop.
 
 More detail: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) (diagrams of the system, data flow and DB schema), [`docs/PROTOCOL.md`](docs/PROTOCOL.md) (wire format, rooms, REST API), [`docs/DOMAIN.md`](docs/DOMAIN.md) (channels, roles, alert rules, scenarios), [`docs/DESIGN.md`](docs/DESIGN.md) (the design system).
@@ -130,10 +143,23 @@ Configuration is in `.env.example`. With `NODE_ENV=production` the server refuse
 
 `render.yaml` deploys the server with the simulator embedded (`SIM_EMBED=1`, lower rates for the free tier) to a free Render web service. `vercel.json` builds the client, with `VITE_API_URL` pointing at the server, and MongoDB runs on an Atlas M0 cluster.
 
+## What is new in this repository
+
+The real-time engine (ingest with validation, de-duplication and rate limits, the batched time-series writer, history merged with live data, rooms, the alert detector, the load test, the client live store, Chart and VirtualList) is adapted from PitWall, a race-car telemetry project our team wrote earlier inside this hackathon's window. We reused it and did not write it from scratch here. The race-specific parts were removed and the wire format was made data-driven.
+
+Written for this project:
+
+- The domain: `shared/registry.js` (4 ships, 121 channels each, 430 crew, roles, alert rules) and the six scenario scripts in `shared/scenarios/`.
+- The simulator's ship physics and crew vitals model.
+- The ship world on the server: condition (green, yellow, red), the captain's log, commands from the stations, the scenario runner, and role access by ship and channel group, including crew medical privacy.
+- The whole bridge client: stations, the 3D viewscreen, Starfleet fleet view, sickbay biosign grid and the sound system.
+
+## Optional audio
+
+The opening narration (`client/public/audio/intro.mp3`) and the sound effects (`client/public/sfx/`) are copyrighted original-series audio, listed in [`CREDITS.md`](CREDITS.md). They are optional. Delete those two folders, or replace the files under the same names with your own, and the app still runs: missing effects fall back to sounds synthesized in the browser, and the opening plays without narration.
+
 ## Credits and disclaimer
 
 Third-party assets (the 3D Enterprise model, the opening narration, the original-series sound effects and the fonts) are listed with their sources and licences in [`CREDITS.md`](CREDITS.md).
-
-The real-time engine (ingest with validation, de-duplication and rate limits, the batched time-series writer, history merged with live data, rooms, the alert detector, the load test, the client live store, Chart and VirtualList) is adapted from PitWall, our earlier race-car telemetry project from this same hackathon. The race-specific parts were removed and the wire format was made data-driven.
 
 *Star Trek* and all related marks, names, ships, sounds and images belong to CBS Studios and Paramount. This is a non-commercial fan project made for a college hackathon, not affiliated with or endorsed by them.

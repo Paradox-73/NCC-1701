@@ -25,6 +25,9 @@ export function alertRoutes({ alerts }) {
     const docs = await Alert.find(filter).sort({ ts: -1 }).limit(q.limit).lean();
     res.json({ alerts: docs.map(alerts.wire) });
   });
+  r.post('/alerts/ack-all', requireCap('canAck'), async (req, res) => {
+    res.json({ acked: await alerts.ackAll(req.user) });
+  });
   r.post('/alerts/:id/ack', requireCap('canAck'), async (req, res) => {
     const { id } = parse(idParam, req.params);
     const existing = await Alert.findById(id).lean();

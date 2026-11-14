@@ -27,6 +27,8 @@ services:
         value: 86400
       - key: TRUST_PROXY # Render's proxy is in front: rate limits then count per client, not one shared proxy address
         value: 1
+      - key: CREW_STORE_EVERY # the sickbay hub streams every second but stores one sample in 5: 1 in 1 measured 10.5 GB a week against Atlas M0's 10 GB
+        value: 5
       - key: SIM_EMBED
         value: 1
       - key: SIM_PROFILE # the registry's hostedHz: Enterprise 20 Hz, sister ships 5 Hz, one sickbay hub at 1 Hz (about 34 MB of

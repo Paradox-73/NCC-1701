@@ -6,4 +6,6 @@ dist/
 *.log
 coverage/
 .DS_Store
-loadtest/results/
+loadtest/results/*
+!loadtest/results/smoke-2026-11-14T13-09-13.json
+!loadtest/results/medium-2026-11-14T13-11-01.json

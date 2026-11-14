@@ -7,8 +7,8 @@ import { HttpError, int, parse, requireCap } from '../middleware/index.js';
 // and what `args` mean. The server only checks the shape, relays it, and resets the detector on `clear`.
 const command = z.object({
   type: z.string().regex(/^[a-z][a-z0-9:_-]{0,39}$/),
-  args: z.record(z.string(), z.any()).optional(),
-});
+  args: z.record(z.string().max(40), z.union([z.string().max(100), z.number().finite(), z.boolean(), z.null(), z.array(z.union([z.string().max(100), z.number().finite()])).max(500)])).optional(),
+}).refine((c) => c.type !== 'fault' || ['target', 'rampSec'].every((k) => c.args?.[k] === undefined || typeof c.args[k] === 'number'), { message: 'fault target and rampSec must be numbers' });
 
 export function adminRoutes({ metrics, ingest, detector }) {
   const r = Router();

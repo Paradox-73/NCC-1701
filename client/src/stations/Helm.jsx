@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import { useAuth } from '../lib/auth.jsx';
 import { useSubscription, useTick } from '../lib/hooks.js';
 import { SHIPS, eachSlot, levelOf, monState, read, ringOf, shipCode, useCommand, useFeed, worst } from './parts/data.js';
-import { ArcGauge, Station, BarGauge, C, Chip, ConsoleStrip, HBar, LitButton, Monitor, Num, Readout, Val, clamp, fmt, levelColor, useCanvas, useKeys } from './parts/ui.jsx';
+import { ArcGauge, J, Station, BarGauge, C, Chip, ConsoleStrip, HBar, LitButton, Monitor, Num, Readout, Val, clamp, fmt, levelColor, useCanvas, useKeys } from './parts/ui.jsx';
 
 const SPAN = 320; // sector units across the shorter side of the plot
 const fresh = (src) => { const r = ringOf(src, 'posX'); return r?.len && Date.now() - r.lastTs < 5000; };
@@ -197,20 +197,19 @@ export default function Helm({ shipId = 1 }) {
   for (let d = 0; d <= 9; d++) keys[String(d)] = () => warpTo(d);
   useKeys(keys);
   const sys = (ks) => worst(ks.map((k) => levelOf(k, read(src, k))));
-  const jewel = (lv, state) => (state !== 'live' ? 'off' : lv || 'ok');
   const p = (t) => cmd.pending === t;
 
   const desk = (
-    <ConsoleStrip seed={7} cmd={cmd} jewels={[['HELM', jewel(sys(['warpFactor', 'descentRate']), st('helm'))], ['SHIELDS', jewel(sys(['shieldFore', 'shieldAft', 'shieldPort', 'shieldStbd', 'shieldLoad']), st('shields'))], ['WEAPONS', jewel(sys(['phaserTemp']), st('weapons'))], ['SENSORS', jewel(sys(['contactRange']), st('sensors'))]]}>
-      <LitButton c="amber" label="Warp −" keyCap="↓" onClick={keys.ArrowDown} pending={p('helm.warp')} />
-      <LitButton c="amber" label="Warp +" keyCap="↑" onClick={keys.ArrowUp} pending={p('helm.warp')} lit={wf >= 1} />
-      <LitButton c="amber" label="Full impulse" keyCap="I" onClick={keys.i} pending={p('helm.impulse')} lit={imp >= 99} />
-      <LitButton c="red" label="All stop" keyCap="X" onClick={keys.x} pending={p('helm.stop')} />
-      <LitButton c="white" label="Port 5°" keyCap="←" onClick={keys.ArrowLeft} pending={p('helm.heading')} />
-      <LitButton c="white" label="Stbd 5°" keyCap="→" onClick={keys.ArrowRight} pending={p('helm.heading')} />
-      <LitButton c="green" label="Shields" keyCap="⇧ S" onClick={keys['Shift+S']} pending={p('tactical.shields')} pressed={up} />
-      <LitButton c="red" label="Phasers" keyCap="P" onClick={keys.p} pending={p('tactical.phasers')} />
-      <LitButton c="red" label="Torpedo" keyCap="⇧ P" onClick={keys['Shift+P']} pending={p('tactical.torpedo')} />
+    <ConsoleStrip seed={7} cmd={cmd} jewels={[J('HELM', sys(['warpFactor', 'descentRate']), st('helm')), J('SHIELDS', sys(['shieldFore', 'shieldAft', 'shieldPort', 'shieldStbd', 'shieldLoad']), st('shields')), J('WEAPONS', sys(['phaserTemp']), st('weapons')), J('SENSORS', sys(['contactRange']), st('sensors'))]}>
+      <LitButton color="amber" label="Warp −" keyCap="↓" onClick={keys.ArrowDown} pending={p('helm.warp')} />
+      <LitButton color="amber" label="Warp +" keyCap="↑" onClick={keys.ArrowUp} pending={p('helm.warp')} lit={wf >= 1} />
+      <LitButton color="amber" label="Full impulse" keyCap="I" onClick={keys.i} pending={p('helm.impulse')} lit={imp >= 99} />
+      <LitButton color="red" label="All stop" keyCap="X" onClick={keys.x} pending={p('helm.stop')} />
+      <LitButton color="white" label="Port 5°" keyCap="←" onClick={keys.ArrowLeft} pending={p('helm.heading')} />
+      <LitButton color="white" label="Stbd 5°" keyCap="→" onClick={keys.ArrowRight} pending={p('helm.heading')} />
+      <LitButton color="green" label="Shields" keyCap="⇧ S" onClick={keys['Shift+S']} pending={p('tactical.shields')} pressed={up} />
+      <LitButton color="red" label="Phasers" keyCap="P" onClick={keys.p} pending={p('tactical.phasers')} />
+      <LitButton color="red" label="Torpedo" keyCap="⇧ P" onClick={keys['Shift+P']} pending={p('tactical.torpedo')} />
     </ConsoleStrip>
   );
 

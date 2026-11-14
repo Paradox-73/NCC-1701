@@ -93,6 +93,10 @@ export function useFeed(src, groups, ms = 120000) {
   return ready;
 }
 
+// DOMAIN.md deck names (our choice; the show never gave a full deck plan)
+export const DECKS = ['Bridge', "Officers' quarters", 'Crew quarters', 'Laboratories', 'Sickbay', 'Recreation', 'Transporter rooms', 'Shuttle hangar', 'Cargo and food stores', 'Life support plant', 'Main engineering', 'Impulse and auxiliary control'];
+export const pad2 = (n) => String(n).padStart(2, '0');
+
 /** Stardate as the top bar shows it (DOMAIN.md): ten units a day. */
 export const stardate = (ts) => 1000 + (ts - Date.UTC(2026, 0, 1)) / 8_640_000;
 

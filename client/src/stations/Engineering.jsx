@@ -2,19 +2,17 @@ import { useState } from 'react';
 import Chart from '../components/Chart.jsx';
 import { useAuth } from '../lib/auth.jsx';
 import { useTick } from '../lib/hooks.js';
-import { levelOf, meta, monState, read, useCommand, useFeed, worst } from './parts/data.js';
+import { DECKS, levelOf, meta, monState, pad2, read, useCommand, useFeed, worst } from './parts/data.js';
 import { useHistory, useHistoryData } from './parts/history.js';
-import { ArcGauge, Station, BarGauge, C, Chip, ConsoleStrip, HBar, LevelChip, LitButton, Monitor, Num, Readout, Val, clamp, decOf, fmt, useCanvas } from './parts/ui.jsx';
+import { ArcGauge, J, Station, BarGauge, C, Chip, ConsoleStrip, HBar, LevelChip, LitButton, Monitor, Num, Readout, Val, clamp, decOf, fmt, useCanvas } from './parts/ui.jsx';
 
-// DOMAIN.md deck names (our choice; the show never gave a full deck plan) and the hull profile each band draws
-const DECKS = ['Bridge', "Officers' quarters", 'Crew quarters', 'Laboratories', 'Sickbay', 'Recreation', 'Transporter rooms', 'Shuttle hangar', 'Cargo and food stores', 'Life support plant', 'Main engineering', 'Impulse and auxiliary control'];
+// the hull profile each deck band draws, saucer then engineering hull
 const PROFILE = [0.2, 0.52, 0.84, 1, 0.94, 0.72, 0.18, 0.36, 0.58, 0.62, 0.58, 0.44];
-const pad2 = (n) => String(n).padStart(2, '0');
 const deckKeys = (d) => [`o2_${pad2(d)}`, `co2_${pad2(d)}`, `temp_${pad2(d)}`, `press_${pad2(d)}`, `grav_${pad2(d)}`];
 const PRESETS = { cruise: [55, 15, 10, 20], combat: [30, 35, 25, 10], emergency: [10, 40, 10, 40] };
 // validated with the dataviz checker on the void surface (CVD 8.0, so every segment also carries a direct label)
 const ALLOC = [['allocWarp', 'Warp', '#C9790E'], ['allocShields', 'Shields', '#3A8BDD'], ['allocWeapons', 'Weapons', '#C95BB5'], ['allocLife', 'Life support', '#2A9E74']];
-const XP = ['IDLE', 'ENERGIZING', 'TRANSPORTING', 'FAULT'];
+const XP = { label: 'IDLE', status: 'ENERGIZING', 'TRANSPORTING', 'FAULT'];
 
 /** Intermix column with plasma rising at the reaction rate, and conduits carrying it up to the two nacelles. */
 function Chamber({ src }) {
@@ -190,15 +188,14 @@ export default function Engineering({ shipId = 1 }) {
   const sys = (keys) => worst(keys.map((k) => levelOf(k, read(src, k))));
   const decksLv = worst(Array.from({ length: 12 }, (_, i) => sys(deckKeys(i + 1))));
   const warpLv = sys(['reactionRate', 'intermixDev', 'dilithiumEff', 'dilithiumTemp', 'chamberTemp', 'nacelleDelta', 'warpField']);
-  const jewel = (lv, state) => (state !== 'live' ? 'off' : lv || 'ok');
 
   const desk = (
-    <ConsoleStrip seed={11} cmd={cmd} jewels={[['WARP', jewel(warpLv, st('warp'))], ['IMPULSE', jewel(sys(['impulseReactor', 'impulseTemp']), st('impulse'))], ['POWER', jewel(sys(['powerTotal', 'battery']), st('power'))], ['DECKS', jewel(decksLv, st('lifesupport'))], ['TRANSPORT', jewel(xp === 3 ? 'crit' : sys(['xpEnergy', 'xpLock', 'xpPattern']), st('transporter'))]]}>
-      <LitButton c="amber" label="Cruise" onClick={() => preset('cruise')} lit={presetOn('cruise')} pending={cmd.pending === 'engineering.allocate'} />
-      <LitButton c="red" label="Combat" onClick={() => preset('combat')} lit={presetOn('combat')} pending={cmd.pending === 'engineering.allocate'} />
-      <LitButton c="yellow" label="Emergency power" onClick={() => preset('emergency')} lit={presetOn('emergency')} pending={cmd.pending === 'engineering.allocate'} />
-      <LitButton c="green" label="Energize" onClick={() => cmd.send('transporter.energize', {}, 'Energize')} lit={xp === 1 || xp === 2} pending={cmd.pending === 'transporter.energize'} />
-      <LitButton c="red" label="Cold restart" onClick={() => cmd.send('engineering.coldRestart', {}, 'Cold restart')} pending={cmd.pending === 'engineering.coldRestart'} title="Only when a scenario asks for it" />
+    <ConsoleStrip seed={11} cmd={cmd} jewels={[J('WARP', warpLv, st('warp')), J('IMPULSE', sys(['impulseReactor', 'impulseTemp']), st('impulse')), J('POWER', sys(['powerTotal', 'battery']), st('power')), J('DECKS', decksLv, st('lifesupport')), J('TRANSPORT', xp === 3 ? 'crit' : sys(['xpEnergy', 'xpLock', 'xpPattern']), st('transporter'))]}>
+      <LitButton color="amber" label="Cruise" onClick={() => preset('cruise')} lit={presetOn('cruise')} pending={cmd.pending === 'engineering.allocate'} />
+      <LitButton color="red" label="Combat" onClick={() => preset('combat')} lit={presetOn('combat')} pending={cmd.pending === 'engineering.allocate'} />
+      <LitButton color="yellow" label="Emergency power" onClick={() => preset('emergency')} lit={presetOn('emergency')} pending={cmd.pending === 'engineering.allocate'} />
+      <LitButton color="green" label="Energize" onClick={() => cmd.send('transporter.energize', {}, 'Energize')} lit={xp === 1 || xp === 2} pending={cmd.pending === 'transporter.energize'} />
+      <LitButton color="red" label="Cold restart" onClick={() => cmd.send('engineering.coldRestart', {}, 'Cold restart')} pending={cmd.pending === 'engineering.coldRestart'} title="Only when a scenario asks for it" />
     </ConsoleStrip>
   );
 

@@ -289,17 +289,18 @@ export function ArcGauge({ v, k, min, max, ticks = [], label, unit, dec, numClas
   );
 }
 
-export function Jewel({ s = 'ok', label }) {
-  return <span className="st-jewel" data-s={s} role="img" aria-label={`${label}: ${s === 'crit' ? 'critical' : s === 'warn' ? 'warning' : s === 'off' ? 'no signal' : 'nominal'}`} />;
+export function Jewel({ status = 'ok', label }) {
+  return <span className="st-jewel" data-s={status} role="img" aria-label={`${label}: ${status === 'crit' ? 'red' : status === 'warn' ? 'yellow' : status === 'off' ? 'no signal' : 'nominal'}`} />;
 }
 
-/** A real control: a lit lens, a Michroma label and a key cap. Blinks while its command waits for the server. */
-export function LitButton({ c = 'amber', label, keyCap, onClick, lit, pending, disabled, title, pressed }) {
+/** A real control: a translucent lit rectangle with a Michroma label and a key cap. Blinks while its command waits for the server. Same props as the shell's ui/LitButton. */
+export function LitButton({ color = 'blue', label, keyCap, onClick, lit, pending, disabled, title, pressed }) {
   return (
-    <button type="button" className="st-lit" data-c={c} data-lit={lit ? 'true' : undefined} data-pending={pending ? 'true' : undefined}
-      aria-pressed={pressed} onClick={onClick} disabled={disabled} title={title} aria-keyshortcuts={keyCap || undefined}>
-      <span className="top"><span className="lens" aria-hidden="true" />{keyCap && <kbd className="key">{keyCap}</kbd>}</span>
-      <span className="lab">{label}</span>
+    <button type="button" className="st-lit" data-c={color} data-lit={lit ? 'true' : undefined} data-pending={pending ? 'true' : undefined}
+      aria-pressed={pressed} aria-busy={pending || undefined} onClick={onClick} disabled={disabled} title={title} aria-keyshortcuts={keyCap || undefined}>
+      <span className="flash" aria-hidden="true" />
+      {label}
+      {keyCap && <kbd className="key">{keyCap}</kbd>}
     </button>
   );
 }
@@ -322,6 +323,9 @@ export function ButtonGrid({ seed = 1, n = 42 }) {
   );
 }
 
+/** A jewel-row entry: a system's worst level, or off while its monitor has no live data. */
+export const J = (label, level, monitorState) => ({ label, status: monitorState !== 'live' ? 'off' : level || 'ok' });
+
 /** The console strip: real controls, the decorative grid, a jewel per system and the last command's answer. */
 export function ConsoleStrip({ children, seed, jewels = [], cmd }) {
   return (
@@ -329,7 +333,7 @@ export function ConsoleStrip({ children, seed, jewels = [], cmd }) {
       <div className="st-controls">{children}</div>
       <ButtonGrid seed={seed} />
       <div className="st-console-side">
-        <div className="st-jewels">{jewels.map(([label, s]) => <span key={label}><Jewel s={s} label={label} />{label}</span>)}</div>
+        <div className="st-jewels">{jewels.map((j) => <span key={j.label}><Jewel status={j.status} label={j.label} />{j.label}</span>)}</div>
         <div className={`st-cmdlog ${cmd?.last && !cmd.last.ok ? 'bad' : ''}`} role="status" aria-live="polite">{cmd?.last?.text ?? ''}</div>
       </div>
     </div>

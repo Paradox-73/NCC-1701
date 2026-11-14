@@ -3,7 +3,7 @@ import { useAuth } from '../lib/auth.jsx';
 import { useTick } from '../lib/hooks.js';
 import { alertsFor, canSee, levelOf, meta, monState, read, useCommand, useFeed, worst } from './parts/data.js';
 import { useHistory } from './parts/history.js';
-import { BarGauge, C, Chip, ConsoleStrip, LevelChip, LitButton, Monitor, Num, Readout, Station, clamp, fmt, levelColor, useCanvas } from './parts/ui.jsx';
+import { BarGauge, J, C, Chip, ConsoleStrip, LevelChip, LitButton, Monitor, Num, Readout, Station, clamp, fmt, levelColor, useCanvas } from './parts/ui.jsx';
 
 const SWEEP_MS = 4000; // one turn of the scope (DESIGN.md SweepScope)
 const NOISE_DB = 3.5; // returns under this are the sensor noise floor (DOMAIN.md: 1-3 dB)
@@ -76,7 +76,7 @@ function Contacts({ src }) {
   const conf = snr == null ? null : clamp((snr - 2) / 18) * 100; // our estimate: 2 dB noise floor is 0 %, 20 dB is certain
   const rl = levelOf('contactRange', rng);
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.6fr) minmax(150px, 1fr)', gap: 16, height: '100%', padding: '10px 14px' }}>
+    <div className="st-split" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.6fr) minmax(150px, 1fr)', gap: 16, height: '100%', padding: '10px 14px' }}>
       <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <span className="st-label">{n >= 1 ? `${fmt(n, 0)} contact${n === 1 ? '' : 's'} tracked; the nearest is detailed` : k ? 'Unconfirmed return above the noise floor' : 'No contacts. Sensors read the noise floor.'}</span>
         <div className="st-scroll">
@@ -163,7 +163,7 @@ function Lifeforms({ src, showCo2 }) {
     }
   }
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(140px, 32%)', height: '100%' }}>
+    <div className="st-split" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(140px, 32%)', height: '100%' }}>
       <div style={{ position: 'relative' }}>
         <canvas ref={ref} className="st-canvas" role="img" aria-label="Unregistered life-forms aboard, log scale, with a one-minute forecast" />
         {hm.status === 'ready' && !(fit?.last >= 1) && <div className="st-blank" style={{ pointerEvents: 'none' }}><span>No unregistered life-forms aboard. The forecast starts when a count appears.</span></div>}
@@ -241,14 +241,13 @@ export default function Science({ shipId = 1 }) {
   const scan = (m, say) => cmd.send('science.scan', { mode: m }, say);
   const range = (m) => { setMode(m); scan(m, m === 'long' ? 'Long-range scan' : 'Short-range scan'); };
   const sys = (ks) => worst(ks.map((k) => levelOf(k, read(src, k))));
-  const jewel = (lv, state) => (state !== 'live' ? 'off' : lv || 'ok');
   const p = cmd.pending === 'science.scan';
   const desk = (
-    <ConsoleStrip seed={23} cmd={cmd} jewels={[['LONG RANGE', jewel(sys(['lrSensor']), st('sensors'))], ['SHORT RANGE', jewel(sys(['srSensor']), st('sensors'))], ['ION FLUX', jewel(sys(['ionFlux']), st('sensors'))], ['LIFE-FORMS', jewel(sys(['lifeforms']), st('sensors'))]]}>
-      <LitButton c="blue" label="Scan" onClick={() => scan(mode, 'Sensor sweep')} pending={p} />
-      <LitButton c="blue" label="Focus contact" onClick={() => scan('focus', 'Focus sensors on the contact')} pending={p} disabled={!(read(src, 'contacts') >= 1 || read(src, 'contactSnr') >= NOISE_DB)} />
-      <LitButton c="white" label="Long range" onClick={() => range('long')} pressed={mode === 'long'} pending={p} />
-      <LitButton c="white" label="Short range" onClick={() => range('short')} pressed={mode === 'short'} pending={p} />
+    <ConsoleStrip seed={23} cmd={cmd} jewels={[J('LONG RANGE', sys(['lrSensor']), st('sensors')), J('SHORT RANGE', sys(['srSensor']), st('sensors')), J('ION FLUX', sys(['ionFlux']), st('sensors')), J('LIFE-FORMS', sys(['lifeforms']), st('sensors'))]}>
+      <LitButton color="blue" label="Scan" onClick={() => scan(mode, 'Sensor sweep')} pending={p} />
+      <LitButton color="blue" label="Focus contact" onClick={() => scan('focus', 'Focus sensors on the contact')} pending={p} disabled={!(read(src, 'contacts') >= 1 || read(src, 'contactSnr') >= NOISE_DB)} />
+      <LitButton color="white" label="Long range" onClick={() => range('long')} pressed={mode === 'long'} pending={p} />
+      <LitButton color="white" label="Short range" onClick={() => range('short')} pressed={mode === 'short'} pending={p} />
     </ConsoleStrip>
   );
 
@@ -260,7 +259,7 @@ export default function Science({ shipId = 1 }) {
       <Monitor title="Contacts" meta="nearest return" state={st('sensors')} className="st-c7">
         <Contacts src={src} />
       </Monitor>
-      <Monitor title="Life-forms aboard" meta="stored · live · forecast" state={st('sensors')} className="st-c7" style={{ '--mh': '240px' }}>
+      <Monitor title="Life-forms aboard" meta="stored · live · forecast" state={st('sensors')} className="st-c7">
         <Lifeforms src={src} showCo2={canSee(user, 'lifesupport')} />
       </Monitor>
       <Monitor title="Viewer" meta="return spectrum" state={st('sensors')} className="st-c3" style={{ '--mh': '200px' }}>

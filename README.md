@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="docs/figures/banner.svg" alt="Subspace: the Enterprise's telemetry, live. 4 starships, 430 crew, 6 roles, MERN + Socket.IO, 6 original-series episodes as demo scenarios. Synergy '26 MERNify, IIIT Bangalore. Team Claude laggye: Kanav Bhardwaj, Aaryan Antala, Bhavya Jain." width="100%">
+
 # Subspace
 
 **Space: the final frontier, and every reading on it arrives in real time.**

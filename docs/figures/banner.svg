@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 320" width="1280" height="320" role="img" aria-labelledby="banner-title banner-desc">
+<title id="banner-title">Subspace: the Enterprise's telemetry, live</title>
+<desc id="banner-desc">Synergy '26 MERNify, IIIT Bangalore. Team Claude laggye: Kanav Bhardwaj, Aaryan Antala, Bhavya Jain. A real-time MERN and Socket.IO telemetry bridge for the USS Enterprise from Star Trek: The Original Series: 4 starships, 430 crew, 6 roles and 6 original-series episodes as demo scenarios.</desc>
+<defs>
+<pattern id="stars" width="64" height="64" patternUnits="userSpaceOnUse"><circle cx="7" cy="11" r="1" fill="#fff" fill-opacity="0.35"/><circle cx="41" cy="29" r="0.8" fill="#fff" fill-opacity="0.22"/><circle cx="23" cy="53" r="1.1" fill="#fff" fill-opacity="0.28"/><circle cx="57" cy="47" r="0.6" fill="#fff" fill-opacity="0.18"/></pattern>
+<radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#f5c518" stop-opacity="0.14"/><stop offset="1" stop-color="#f5c518" stop-opacity="0"/></radialGradient>
+<linearGradient id="rule" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#f5c518"/><stop offset="0.34" stop-color="#f5c518"/><stop offset="0.34" stop-color="#5cb8ff"/><stop offset="0.67" stop-color="#5cb8ff"/><stop offset="0.67" stop-color="#d6322b"/><stop offset="1" stop-color="#d6322b"/></linearGradient>
+<linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe27a"/><stop offset="1" stop-color="#c9971a"/></linearGradient>
+<clipPath id="frame"><rect width="1280" height="320" rx="16"/></clipPath>
+</defs>
+<g clip-path="url(#frame)">
+<rect width="1280" height="320" fill="#07080c"/>
+<rect width="1280" height="320" fill="url(#stars)"/>
+<ellipse cx="1030" cy="150" rx="280" ry="200" fill="url(#glow)"/>
+<rect y="312" width="1280" height="8" fill="url(#rule)"/>
+<rect x="0.5" y="0.5" width="1279" height="319" rx="16" fill="none" stroke="#2a2d36"/>
+</g>
+
+<g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+<text x="64" y="62" fill="#f5c518" font-size="14" font-weight="600" letter-spacing="2.2" font-family="ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', Menlo, monospace">SYNERGY '26 MERNIFY · IIIT BANGALORE · U.S.S. ENTERPRISE NCC-1701</text>
+<text x="62" y="124" fill="#f0f4f8" font-size="54" font-weight="700" letter-spacing="6">SUBSPACE</text>
+<text x="62" y="174" fill="#f0f4f8" font-size="34" font-weight="600">The Enterprise's telemetry, <tspan fill="#5cb8ff">live</tspan></text>
+<text x="64" y="214" fill="#9aa3b2" font-size="18">4 starships · 430 crew · 6 roles · MERN + Socket.IO · 6 original-series episodes as demo scenarios</text>
+<text x="64" y="268" fill="#6e7787" font-size="15">Team Claude laggye · Kanav Bhardwaj · Aaryan Antala · Bhavya Jain</text>
+</g>
+
+<g transform="translate(1030 150)">
+<circle r="104" fill="none" stroke="#2a2d36" stroke-width="2"/>
+<circle r="72" fill="none" stroke="#1c1f27" stroke-width="2"/>
+<line x1="0" y1="0" x2="74" y2="-74" stroke="#5cb8ff" stroke-opacity="0.55" stroke-width="2"/>
+<path d="M0 -62 C 22 -20 30 22 34 58 L 0 34 L -34 58 C -30 22 -22 -20 0 -62 Z" fill="url(#gold)" stroke="#8a6612" stroke-width="2"/>
+<path d="M0 -22 L 9 4 L 0 0 L -9 4 Z" fill="#07080c"/>
+</g>
+<g transform="translate(900 278)">
+<rect x="0" width="40" height="14" rx="3" fill="#d6322b"/><rect x="52" width="40" height="14" rx="3" fill="#f5c518"/><rect x="104" width="40" height="14" rx="3" fill="#2fbf71"/><rect x="156" width="40" height="14" rx="3" fill="#5cb8ff"/><rect x="208" width="40" height="14" rx="3" fill="#d6322b" fill-opacity="0.45"/>
+</g>
+</svg>
